@@ -15,7 +15,7 @@ template <typename Float, typename Spectrum>
 class Tape final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, set_crop_window)
+                   m_filter, m_flags, set_crop_window)
     MI_IMPORT_TYPES(ImageBlock)
 
     Tape(const Properties &props) : Base(props) {
@@ -58,6 +58,9 @@ public:
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
+
+        // set flags
+        m_flags = +FilmFlags::Special; // the film provides a special prepare method
 
         props.mark_queried("banner"); // no banner in Mitsuba 3
     }
