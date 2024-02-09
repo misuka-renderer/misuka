@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT class Microphone final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2)
+    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2, sample_wavelengths)
     MI_IMPORT_TYPES()
 
     Microphone(const Properties &props) : Base(props) {
@@ -50,8 +50,22 @@ public:
         ray.time = time;
 
         // 1. Sample spectrum
-        Spectrum wav_weight(1.f);
-        ray.wavelengths = wavelength_sample;
+        Spectrum wav_weight(0.f);
+        if (has_flag(m_film->flags(), FilmFlags::Spectral)){
+            auto [wavelengths, wav_weight] =
+                sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
+                                wavelength_sample,
+                                active);
+            Log(Debug, "Spectral film detected, sampling continuous wavelengths %s with weight %s.",
+                wavelengths, wav_weight);
+            ray.wavelengths = wavelengths;
+
+        } else {
+            Log(Debug, "No spectral film detected, iterating through wavelength bins.");
+            Spectrum wav_weight(1.f);
+            ray.wavelengths = wavelength_sample;
+        }
+
 
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();
@@ -72,8 +86,22 @@ public:
         ray.time = time;
 
         // 1. Sample spectrum
-        Spectrum wav_weight(1.f);
-        ray.wavelengths = Wavelength(wavelength_sample);
+        Spectrum wav_weight(0.f);
+        if (has_flag(m_film->flags(), FilmFlags::Spectral)){
+            auto [wavelengths, wav_weight] =
+                sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
+                                wavelength_sample,
+                                active);
+            Log(Debug, "Spectral film detected, sampling continuous wavelength(s) %s with weight %s.",
+                wavelengths, wav_weight);
+            ray.wavelengths = wavelengths;
+
+        } else {
+            Log(Debug, "No spectral film detected, iterating through wavelength bins.");
+            Spectrum wav_weight(1.f);
+            ray.wavelengths = wavelength_sample;
+        }
+
 
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();

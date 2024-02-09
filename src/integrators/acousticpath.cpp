@@ -81,6 +81,12 @@ public:
 
         film->prepare({ });
 
+        if (has_flag(sensor->film()->flags(), FilmFlags::Spectral))
+            Log(Info, "Spectral film detected, sampling continuous wavelengths.");
+        else
+            Log(Info, "No spectral film detected, iterating through wavelength bins.");
+
+
         m_render_timer.reset();
 
         TensorXf result;
@@ -516,10 +522,21 @@ protected:
         ScalarVector2f scale  = 1.f / ScalarVector2f(sensor->film()->crop_size());
         Vector2f adjusted_pos = pos * scale;
 
-        Float wavelength_sample = pos.x() + 1.f;
+        // check if the film is a tape or spectape. In the future, this could be changed by implementing two acoustic variants:
+        // acoustic, with "spectrum": "Color<Float, 1>" and acoustic_spectral, with "spectrum": "Spectrum<Float, 1>"
+        Float wavelength_sample = 0.f;
+        if (has_flag(sensor->film()->flags(), FilmFlags::Spectral)) {
+            wavelength_sample = sampler->next_1d(active);
+        }
+        else {
+            wavelength_sample = pos.x() + 1.f;
+
+        }
+        Log(Debug, "Wavelength sample: %f", wavelength_sample);
 
         auto [ray, ray_weight] = sensor->sample_ray_differential(
             0.f, wavelength_sample, adjusted_pos, aperture_sample);
+        // Log(Debug, "Ray: %s", ray);
 
         sample(scene, sampler, ray, block, UInt32(pos.x()), active);
     }
