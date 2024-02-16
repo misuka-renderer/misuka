@@ -108,6 +108,7 @@ public:
             // Total number of blocks to be handled, including multiple passes.
             uint32_t total_blocks = film_size.x() * n_passes,
                      blocks_done = 0;
+            Log(Debug, "Total blocks: %u", total_blocks);
 
             // Avoid overlaps in RNG seeding RNG when a seed is manually specified
             seed *= dr::prod(film_size);
@@ -125,6 +126,7 @@ public:
                         sampler->seed(seed * i);
 
                         UInt32 band_id(i / n_passes);
+                        Log(Debug, "Rendering block %u of %u (band %u)", i+1, total_blocks, band_id);
                         block->set_offset(ScalarPoint2u(0, band_id));
 
                         if constexpr (dr::is_array_v<Float>) {
@@ -133,6 +135,7 @@ public:
                             block->clear();
 
                             for (uint32_t j = 0; j < spp_per_pass; ++j) {
+                                Log(Debug, "Rendering sample %u of %u", j+1, spp_per_pass);
                                 render_sample(scene, sensor, sampler, block, band_id);
                                 sampler->advance();
                             }
@@ -317,6 +320,7 @@ public:
         while (loop(active)) {
             /* dr::Loop implicitly masks all code in the loop using the 'active'
                flag, so there is no need to pass it to every function */
+            Log(Debug, "Tracing ray with origin %s, wavelength %f", ray.o, ray.wavelengths);
 
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
@@ -324,6 +328,7 @@ public:
                                      /* coherent = */ dr::eq(depth, 0u));
 
             distance += si.t;
+            Log(Debug, "Intersection found with distance %f m.", si.t);
 
             // ---------------------- Direct emission ----------------------
 
@@ -333,6 +338,7 @@ public:
                dr::any_or<..>() returns the template argument (true) which means
                that the 'if' statement is always conservatively taken. */
             Mask hit_emitter = dr::neq(si.emitter(scene), nullptr);
+            Log(Debug, "Hit emitter? %s", hit_emitter);
             if (dr::any_or<true>(hit_emitter)) {
                 DirectionSample3f ds(scene, si, prev_si);
                 Float em_pdf = 0.f;
@@ -353,7 +359,7 @@ public:
             // Continue tracing the path at this point?
             Bool active_next = (depth + 1 < m_max_depth)
                 && si.is_valid() && distance <= max_distance;
-
+            Log(Debug, "Continue tracing the path at this point? %s", active_next);
             if (dr::none_or<false>(active_next))
                 break; // early exit for scalar mode
 
@@ -363,6 +369,7 @@ public:
 
             // Perform emitter sampling?
             Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
+            Log(Debug, "Perform Emitter sampling? %s", active_em);
 
             DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             Spectrum em_weight = dr::zeros<Spectrum>();
@@ -395,16 +402,24 @@ public:
 
             // --------------- Emitter sampling contribution ----------------
 
+            Log(Debug, "calculating Emitter sampling contribution at wavelength %f",si.wavelengths);
             if (dr::any_or<true>(active_em)) {
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
+                Log(Debug, "bsdf_val: %s", bsdf_val);
 
                 // Compute the MIS weight
                 Float mis_em =
                     dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
+                Log(Debug, "mis_em: %f", mis_em);
                 Float time_frac = ((distance + ds.dist) / max_distance) * block->size().y();
                 Float data[2] = { (throughput * bsdf_val * em_weight * mis_em).x(), Float(1.f) };
                 active_em &= data[0] > 0.f;
+                Log(Debug, "time_frac: %f, data: %f, active_em: %s",
+                time_frac, data, active_em);
+                Log(Debug, "putting data into block at band_id %d, time_frac %f", band_id, time_frac);
+                // TODO: move the put block into render_block to enable spectral post processing?
+                // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
                 block->put({ band_id, time_frac }, data, active_em);
             }
 
@@ -511,7 +526,7 @@ protected:
                        const Sensor *sensor,
                        Sampler *sampler,
                        ImageBlock *block,
-                       /* Float *aovs ,*/
+                    //    Float *aovs,
                        const Vector2f &pos,
                        Mask active = true) const {
 

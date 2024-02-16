@@ -322,8 +322,9 @@ public:
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
                         Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
-        //TODO: check if this is intended behaviour for the spectral tape
-
+        Throw("This method is not yet compatible with the spectral film. \
+            Right now it is moved to acousticpath::sample() to avoid duplicating entire histograms");
+        Log(Debug, "Preparing sample with wavelength %f and weight %f ..", wavelengths, weight);
         aovs[m_channels.size() - 1] = weight;   // Set sample weight
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();

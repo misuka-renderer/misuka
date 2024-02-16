@@ -73,10 +73,13 @@ public:
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
 
-            if (m_count)
+            if (m_count){
                 m_channels = { "V", "W" };
-            else
+                Log(Info, "Tape film will store %i channels (V: values, W: weights/count)", m_channels.size());
+            } else {
                 m_channels = { "V" };
+                Log(Info, "Tape film will store one channel (values only, no counts)");
+            }
 
             m_storage = new ImageBlock(m_crop_size,
                                        m_crop_offset,

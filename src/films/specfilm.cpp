@@ -308,7 +308,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_storage->put_block(block);
     }
-    
+
     void clear() override {
         if (m_storage)
             m_storage->clear();
