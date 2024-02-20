@@ -128,9 +128,9 @@ public:
                     for (uint32_t i = range.begin(); i != range.end(); ++i) {
                         sampler->seed(seed * i);
 
-                        UInt32 band_id(i / n_passes);
-                        Log(Debug, "Rendering block %u of %u (band %u)", i+1, total_blocks, band_id);
-                        block->set_offset(ScalarPoint2u(0, band_id));
+                        Vector2i pos(i / n_passes, 0); /* The first index is the band_id, the second index (time) is unused. */
+
+                        block->set_offset(ScalarPoint2u(pos.x(), 0));
 
                         if constexpr (dr::is_array_v<Float>) {
                             Throw("Not implemented for JIT arrays.");
@@ -139,7 +139,7 @@ public:
 
                             for (uint32_t j = 0; j < spp_per_pass; ++j) {
                                 Log(Debug, "Rendering sample %u of %u", j+1, spp_per_pass);
-                                render_sample(scene, sensor, film, sampler, block, aovs.get(), band_id);
+                                render_sample(scene, sensor, film, sampler, block, aovs.get(), pos);
                                 sampler->advance();
                             }
                         }
