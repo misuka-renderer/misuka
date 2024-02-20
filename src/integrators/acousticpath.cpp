@@ -360,7 +360,7 @@ public:
                 Float time_frac = (distance / max_distance) * block->size().y();
                 Float result = (throughput * ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf).x();
 
-                if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
+                if (likely(has_flag(film->flags(), FilmFlags::Special))) {
                     film->prepare_sample(result, ray.wavelengths-1, aovs,
                                         /*weight*/ 1.f,
                                         /*alpha */ 1.f,
@@ -436,7 +436,7 @@ public:
                 // TODO: move the put block into render_block to enable spectral post processing?
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
 
-                if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
+                if (likely(has_flag(film->flags(), FilmFlags::Special))) {
                     film->prepare_sample(result, ray.wavelengths-1, aovs,
                                         /*weight*/ 1.f,
                                         /*alpha */ dr::select(active_em, Float(1.f), Float(0.f)),
