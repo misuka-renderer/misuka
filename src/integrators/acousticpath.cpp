@@ -277,7 +277,6 @@ public:
                                      Sampler *sampler,
                                      const RayDifferential3f &ray_,
                                      ImageBlock *block,
-                                     const UInt32 band_id,
                                      Float *aovs /* this stores the values that are put into the ImageBlock, see film::prepare_sample() */,
                                      Bool active) const {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
@@ -358,6 +357,10 @@ public:
 
                 Float time_frac = (distance / max_distance) * block->size().y();
                 Float data[2] = { (throughput * ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf).x(), Float(1.f) };
+                Float band_id = ray.wavelengths[0]-1;
+                if (Spectrum::Size > 1) {
+                    Throw("AcousticPathIntegrator does not support multi-wavelength rendering");
+                }
                 block->put({ band_id, time_frac }, data, hit_emitter && data[0] > 0.f);
             }
 
@@ -425,6 +428,10 @@ public:
                 Log(Debug, "putting data into block at band_id %d, time_frac %f", band_id, time_frac);
                 // TODO: move the put block into render_block to enable spectral post processing?
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
+                Float band_id = ray.wavelengths[0]-1;
+                if (Spectrum::Size > 1) {
+                    Throw("AcousticPathIntegrator does not support multi-wavelength rendering");
+                }
                 block->put({ band_id, time_frac }, data, active_em);
             }
 
@@ -557,7 +564,7 @@ protected:
         auto [ray, ray_weight] = sensor->sample_ray_differential(
             0.f, wavelength_sample, adjusted_pos, aperture_sample);
         // Log(Debug, "Ray: %s", ray);
-        sample(scene, sampler, ray, block, UInt32(pos.x()), aovs, active);
+        sample(scene, sampler, ray, block, aovs, active);
     }
 
 protected:
