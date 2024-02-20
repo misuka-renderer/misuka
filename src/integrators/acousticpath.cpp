@@ -139,7 +139,7 @@ public:
 
                             for (uint32_t j = 0; j < spp_per_pass; ++j) {
                                 Log(Debug, "Rendering sample %u of %u", j+1, spp_per_pass);
-                                render_sample(scene, sensor, sampler, block, aovs.get(), band_id);
+                                render_sample(scene, sensor, film, sampler, block, aovs.get(), band_id);
                                 sampler->advance();
                             }
                         }
@@ -215,7 +215,7 @@ public:
             std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
             for (size_t i = 0; i < n_passes; i++) {
-                render_sample(scene, sensor, sampler, block, aovs.get(), pos);
+                render_sample(scene, sensor, film, sampler, block, aovs.get(), pos);
 
                 if (n_passes > 1) {
                     sampler->advance();
@@ -275,6 +275,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
+                                     const Film *film,
                                      const RayDifferential3f &ray_,
                                      ImageBlock *block,
                                      Float *aovs /* this stores the values that are put into the ImageBlock, see film::prepare_sample() */,
@@ -535,6 +536,7 @@ protected:
 
     void render_sample(const Scene *scene,
                        const Sensor *sensor,
+                       const Film *film,
                        Sampler *sampler,
                        ImageBlock *block,
                        Float *aovs, /* just passed through towards sample(), putting data into the block needs to happen inside sample() to avoid storing copies of entire histograms. */
@@ -563,7 +565,7 @@ protected:
         auto [ray, ray_weight] = sensor->sample_ray_differential(
             0.f, wavelength_sample, adjusted_pos, aperture_sample);
         // Log(Debug, "Ray: %s", ray);
-        sample(scene, sampler, ray, block, aovs, active);
+        sample(scene, sampler, film, ray, block, aovs, active);
     }
 
 protected:
