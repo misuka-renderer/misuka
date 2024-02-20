@@ -276,6 +276,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const Film *film,
+                                     const Vector2f &pos,
                                      const RayDifferential3f &ray_,
                                      ImageBlock *block,
                                      Float *aovs /* this stores the values that are put into the ImageBlock, see film::prepare_sample() */,
@@ -432,7 +433,7 @@ public:
                 if (Spectrum::Size > 1) {
                     Throw("AcousticPathIntegrator does not support multi-wavelength rendering");
                 }
-                block->put({ band_id, time_frac }, data, active_em);
+                block->put({ pos.x(), time_frac }, data, active_em);
             }
 
             // ---------------------- BSDF sampling ----------------------
@@ -565,7 +566,7 @@ protected:
         auto [ray, ray_weight] = sensor->sample_ray_differential(
             0.f, wavelength_sample, adjusted_pos, aperture_sample);
         // Log(Debug, "Ray: %s", ray);
-        sample(scene, sampler, film, ray, block, aovs, active);
+        sample(scene, sampler, film, pos, ray, block, aovs, active);
     }
 
 protected:
