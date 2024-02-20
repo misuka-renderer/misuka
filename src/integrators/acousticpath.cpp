@@ -358,12 +358,18 @@ public:
                 Float mis_bsdf = mis_weight(prev_bsdf_pdf, em_pdf);
 
                 Float time_frac = (distance / max_distance) * block->size().y();
-                Float data[2] = { (throughput * ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf).x(), Float(1.f) };
-                Float band_id = ray.wavelengths[0]-1;
-                if (Spectrum::Size > 1) {
-                    Throw("AcousticPathIntegrator does not support multi-wavelength rendering");
+                Float result = (throughput * ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf).x();
+
+                if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
+                    film->prepare_sample(result, ray.wavelengths-1, aovs,
+                                        /*weight*/ 1.f,
+                                        /*alpha */ 1.f,
+                                        /*Mask*/ true);
+                } else {
+                    Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
-                block->put({ band_id, time_frac }, data, hit_emitter && data[0] > 0.f);
+
+                block->put({ pos.x(), time_frac }, aovs, hit_emitter && result > 0.f);
             }
 
             // Continue tracing the path at this point?
@@ -423,17 +429,22 @@ public:
 
                 Log(Debug, "mis_em: %f", mis_em);
                 Float time_frac = ((distance + ds.dist) / max_distance) * block->size().y();
-                Float data[2] = { (throughput * bsdf_val * em_weight * mis_em).x(), Float(1.f) };
-                active_em &= data[0] > 0.f;
+                Float result = (throughput * bsdf_val * em_weight * mis_em).x();
+                active_em &= result > 0.f;
                 Log(Debug, "time_frac: %f, data: %f, active_em: %s",
-                time_frac, data, active_em);
+                time_frac, result, active_em);
                 // TODO: move the put block into render_block to enable spectral post processing?
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
-                Float band_id = ray.wavelengths[0]-1;
-                if (Spectrum::Size > 1) {
-                    Throw("AcousticPathIntegrator does not support multi-wavelength rendering");
+
+                if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
+                    film->prepare_sample(result, ray.wavelengths-1, aovs,
+                                        /*weight*/ 1.f,
+                                        /*alpha */ dr::select(active_em, Float(1.f), Float(0.f)),
+                                        active_em);
+                } else {
+                    Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
-                block->put({ pos.x(), time_frac }, data, active_em);
+                block->put({ pos.x(), time_frac }, aovs, active_em);
             }
 
             // ---------------------- BSDF sampling ----------------------

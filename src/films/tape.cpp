@@ -160,6 +160,34 @@ public:
             m_storage->channel_count(), m_channels, (uint8_t *) storage.data());
     }
 
+
+    /**
+     * Prepares a sample for the tape film.
+     *
+     * @param spec The unpolarized spectrum.
+     * @param band_id The wavelength band ID.
+     * @param aovs An array to store the computed values of the sample.
+     * @param weight The weight of the sample.
+     * @param alpha The alpha value (unused).
+     * @param active The mask indicating active samples (unused).
+     */
+    void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &band_id,
+                        Float* aovs,
+                        Float weight,
+                        Float /* alpha */,
+                        Mask /* active */) const override {
+        Log(Debug, "Preparing sample for band %d, number of channels: %i", band_id, m_channels.size());
+
+        if (Spectrum::Size != 1)
+            Throw("Tape film only supports spectra of length 1.");
+
+        aovs[0] = weight * spec[0];
+
+        if (m_count) {
+            aovs[1] = 1;  // count
+        }
+    }
+
     void write(const fs::path &path) const override {
         fs::path filename = path;
         std::string proper_extension;
