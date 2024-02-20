@@ -79,7 +79,9 @@ public:
 
         uint32_t n_passes = spp / spp_per_pass;
 
-        film->prepare({ });
+        // Determine output channels and prepare the film with this information
+        size_t n_channels = film->prepare({});
+        Log(Debug, "Rendering with %u channel%s", n_channels, n_channels == 1 ? "" : "s");
 
         if (has_flag(sensor->film()->flags(), FilmFlags::Spectral))
             Log(Info, "Spectral film detected, sampling continuous wavelengths.");
@@ -121,6 +123,7 @@ public:
                     // Fork a non-overlapping sampler for the current worker
                     ref<Sampler> sampler = sensor->sampler()->fork();
                     ref<ImageBlock> block = film->create_block(ScalarVector2u(1, film_size.y()));
+                    std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
                     for (uint32_t i = range.begin(); i != range.end(); ++i) {
                         sampler->seed(seed * i);
@@ -136,7 +139,7 @@ public:
 
                             for (uint32_t j = 0; j < spp_per_pass; ++j) {
                                 Log(Debug, "Rendering sample %u of %u", j+1, spp_per_pass);
-                                render_sample(scene, sensor, sampler, block, band_id);
+                                render_sample(scene, sensor, sampler, block, aovs.get(), band_id);
                                 sampler->advance();
                             }
                         }
@@ -209,9 +212,10 @@ public:
             Vector2u pos(idx, 0 * idx);
 
             Timer timer;
+            std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
             for (size_t i = 0; i < n_passes; i++) {
-                render_sample(scene, sensor, sampler, block, pos);
+                render_sample(scene, sensor, sampler, block, aovs.get(), pos);
 
                 if (n_passes > 1) {
                     sampler->advance();
@@ -274,6 +278,7 @@ public:
                                      const RayDifferential3f &ray_,
                                      ImageBlock *block,
                                      const UInt32 band_id,
+                                     Float *aovs /* this stores the values that are put into the ImageBlock, see film::prepare_sample() */,
                                      Bool active) const {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
@@ -526,7 +531,7 @@ protected:
                        const Sensor *sensor,
                        Sampler *sampler,
                        ImageBlock *block,
-                    //    Float *aovs,
+                       Float *aovs, /* just passed through towards sample(), putting data into the block needs to happen inside sample() to avoid storing copies of entire histograms. */
                        const Vector2f &pos,
                        Mask active = true) const {
 
@@ -552,8 +557,7 @@ protected:
         auto [ray, ray_weight] = sensor->sample_ray_differential(
             0.f, wavelength_sample, adjusted_pos, aperture_sample);
         // Log(Debug, "Ray: %s", ray);
-
-        sample(scene, sampler, ray, block, UInt32(pos.x()), active);
+        sample(scene, sampler, ray, block, UInt32(pos.x()), aovs, active);
     }
 
 protected:
