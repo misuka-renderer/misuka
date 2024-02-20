@@ -171,12 +171,12 @@ public:
      * @param alpha The alpha value (unused).
      * @param active The mask indicating active samples (unused).
      */
-    void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &band_id,
+    void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength & /* unused, wavelength given in pos.x() */,
                         Float* aovs,
                         Float weight,
                         Float /* alpha */,
                         Mask /* active */) const override {
-        Log(Debug, "Preparing sample for band %d, number of channels: %i", band_id, m_channels.size());
+        Log(Debug, "Preparing sample %f, number of channels: %i", spec, m_channels.size());
 
         if (Spectrum::Size != 1)
             Throw("Tape film only supports spectra of length 1.");
