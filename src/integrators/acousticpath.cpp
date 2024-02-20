@@ -425,7 +425,6 @@ public:
                 active_em &= data[0] > 0.f;
                 Log(Debug, "time_frac: %f, data: %f, active_em: %s",
                 time_frac, data, active_em);
-                Log(Debug, "putting data into block at band_id %d, time_frac %f", band_id, time_frac);
                 // TODO: move the put block into render_block to enable spectral post processing?
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
                 Float band_id = ray.wavelengths[0]-1;
