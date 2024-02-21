@@ -239,6 +239,9 @@ public:
         size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution + 1);
         FloatStorage mis_data = dr::zeros<FloatStorage>(n_points);
         Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points); /* FIXME: this produces only one float in scalar variants*/
+        if constexpr (!dr::is_jit_v<Float>)
+                Log(Warn, "SRF sampling is buggy in scalar variants because mis_wavelengths collapes to the first wavelength. \
+                    This only affects the importance sampling of wavelengths, not the final image. ");
 
         Log(Debug, "Creating wavelength array mis_wavelengths with %d points between [%f, %f] ..",
             n_points, m_range.x(), m_range.y());
