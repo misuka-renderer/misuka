@@ -361,7 +361,7 @@ public:
                 Float result = (throughput * ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf).x();
 
                 if (likely(has_flag(film->flags(), FilmFlags::Special))) {
-                    film->prepare_sample(result, ray.wavelengths-1, aovs,
+                    film->prepare_sample(result, ray.wavelengths, aovs,
                                         /*weight*/ 1.f,
                                         /*alpha */ 1.f,
                                         /*Mask*/ true);
@@ -437,7 +437,7 @@ public:
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
 
                 if (likely(has_flag(film->flags(), FilmFlags::Special))) {
-                    film->prepare_sample(result, ray.wavelengths-1, aovs,
+                    film->prepare_sample(result, ray.wavelengths, aovs,
                                         /*weight*/ 1.f,
                                         /*alpha */ dr::select(active_em, Float(1.f), Float(0.f)),
                                         active_em);
