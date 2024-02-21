@@ -368,7 +368,7 @@ public:
                 } else {
                     Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
-
+                Log(Debug, "putting values %f into block at position %s", aovs, pos);
                 block->put({ pos.x(), time_frac }, aovs, hit_emitter && result > 0.f);
             }
 
@@ -431,7 +431,7 @@ public:
                 Float time_frac = ((distance + ds.dist) / max_distance) * block->size().y();
                 Float result = (throughput * bsdf_val * em_weight * mis_em).x();
                 active_em &= result > 0.f;
-                Log(Debug, "time_frac: %f, data: %f, active_em: %s",
+                Log(Debug, "time_frac: %f, result: %f, active_em: %s",
                 time_frac, result, active_em);
                 // TODO: move the put block into render_block to enable spectral post processing?
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
@@ -444,6 +444,7 @@ public:
                 } else {
                     Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
+                Log(Debug, "putting values %f into block at position %s", *aovs, pos);
                 block->put({ pos.x(), time_frac }, aovs, active_em);
             }
 
@@ -572,11 +573,10 @@ protected:
             wavelength_sample = pos.x() + 1.f;
 
         }
-        Log(Debug, "Wavelength sample: %f", wavelength_sample);
 
         auto [ray, ray_weight] = sensor->sample_ray_differential(
             0.f, wavelength_sample, adjusted_pos, aperture_sample);
-        // Log(Debug, "Ray: %s", ray);
+        Log(Debug, "Uniform wavelength sample: %f, rendering at wavelength %f", wavelength_sample, ray.wavelengths);
         sample(scene, sampler, film, pos, ray, block, aovs, active);
     }
 

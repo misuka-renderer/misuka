@@ -238,12 +238,13 @@ public:
         // Compute resolution of the discretized PDF used for sampling
         size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution + 1);
         FloatStorage mis_data = dr::zeros<FloatStorage>(n_points);
-        Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points);
+        Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points); /* FIXME: this produces only one float in scalar variants*/
 
         Log(Debug, "Creating wavelength array mis_wavelengths with %d points between [%f, %f] ..",
             n_points, m_range.x(), m_range.y());
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = mis_wavelengths;
+        Log(Debug, "mis_wavelengths array: %s. Type: %s", mis_wavelengths, typeid(mis_wavelengths).name());
 
         for (auto srf : m_srfs) {
             UnpolarizedSpectrum values = srf->eval(si);
@@ -322,27 +323,39 @@ public:
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
                         Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
-        Throw("This method is not yet compatible with the spectral film. \
-            Right now it is moved to acousticpath::sample() to avoid duplicating entire histograms");
-        Log(Debug, "Preparing sample with wavelength %f and weight %f ..", wavelengths, weight);
-        aovs[m_channels.size() - 1] = weight;   // Set sample weight
+        Log(Debug, "Preparing sample %f with wavelength %f and weight %f ..", spec, wavelengths, weight);
+        Log(Debug, "SpecTape has %i channels ..", m_channels.size());
 
+        aovs[m_channels.size() - 1] = weight;   // Set sample weight
+        Log(Debug, "Setting weight channel to %f ..", weight);
+
+        Log(Debug, "Creating SurfaceInteraction3f with wavelengths %s ..", wavelengths);
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
 
         // The SRF is not necessarily normalized, cancel out multiplicative factors
         UnpolarizedSpectrum inv_spec = m_srf->eval(si);
+        Log(Debug, "Evaluating SRF at the given wavelength(s): %s", inv_spec);
         inv_spec = dr::select(dr::neq(inv_spec, 0.f), dr::rcp(inv_spec), 1.f);
+        Log(Debug, "Inverting SRF: %s", inv_spec);
         UnpolarizedSpectrum values = spec * inv_spec;
+        Log(Debug, "Multiplying spectrum %s by inverted SRF. Result: %s", spec, values);
 
+        Log(Debug, "Setting AOVs for each channel SRF. Total: %i SRF(s).", m_srfs.size());
         for (size_t j = 0; j < m_srfs.size(); ++j) {
+            Log(Debug, "Evaluating channel SRF %i at the given wavelengths ..", j+1);
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
+            Log(Debug, "Weights of SRF %i are: %s", j+1, weights);
             aovs[j] = dr::zeros<Float>();
 
-            for (size_t i = 0; i<Spectrum::Size; ++i)
+            Log(Debug, "Iterating through Spectrum size %i ..", Spectrum::Size);
+            for (size_t i = 0; i<Spectrum::Size; ++i){
                 aovs[j] = dr::fmadd(weights[i], values[i], aovs[j]);
-
+                Log(Debug, "Adding value %f with weight %f to channel %i. Result: %f",
+                    values[i], weights[i], j+1, aovs[j]);
+            }
             aovs[j] *= 1.f / Spectrum::Size;
+            Log(Debug, "Dividing channel %i by Spectrum size %i. Result: %f", j, Spectrum::Size, aovs[j]);
         }
     }
 
