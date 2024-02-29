@@ -28,3 +28,5 @@ __pycache__
 /docs/src/quickstart
 /docs/src/generated
 /docs/resources
+
+*.code-workspace
