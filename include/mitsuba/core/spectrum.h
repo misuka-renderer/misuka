@@ -470,11 +470,14 @@ template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
 template <typename Float, typename Spectrum>
 std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     if constexpr (!is_spectral_v<Spectrum>) {
+        Log(Warn, "sample_wavelength(): Spectrum type does not support spectral rendering.");
         DRJIT_MARK_USED(sample);
         // Wavelengths should not be used when rendering in RGB or monochromatic modes.
         return { {}, 1.f };
     } else {
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
+        Log(Debug, "sample_wavelength(): Sampled continuous wavelength(s) %s.",
+            wav_sample);
         return sample_rgb_spectrum(wav_sample);
     }
 }
