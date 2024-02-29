@@ -34,6 +34,9 @@ enum class FilmFlags : uint32_t {
      * a special treatment of the samples before storing them in the Image Block.
      */
     Special              = 0x4,
+
+    // The film uses logarithmic wavelength sampling
+    Logarithmic           = 0x8,
 };
 
 MI_DECLARE_ENUM_OPERATORS(FilmFlags)

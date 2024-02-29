@@ -204,9 +204,11 @@ public:
         // Log(Debug, "Setting compensate to props parameter %s ..", m_compensate);
         m_compensate = props.get<bool>("compensate", false);
 
-        // Log(Debug, "Setting film flags to %s ..", m_flags);
-        m_flags = FilmFlags::Spectral | FilmFlags::Special;
-
+        bool logarithmic_sampling = props.get<bool>("logarithmic_sampling", false);
+        if (logarithmic_sampling)
+            m_flags = FilmFlags::Spectral | FilmFlags::Special | FilmFlags::Logarithmic;
+        else
+            m_flags = FilmFlags::Spectral | FilmFlags::Special;
 
         // m_speed_of_sound = 0.f; // this will be set in compute_srf_sampling()
 
@@ -259,20 +261,34 @@ public:
 
         Log(Debug, "mis_data: %s", mis_data);
 
+        if (has_flag(m_flags, FilmFlags::Logarithmic)) {
+            mis_wavelengths = dr::log2<Float>(mis_wavelengths);
+            Log(Debug, "Using logarithmic wavelength sampling .. mis_wavelengths: %s", mis_wavelengths);
+        }
+
         // Conversion needed because Properties::Float is always double
         using DoubleStorage = dr::float64_array_t<FloatStorage>;
         DoubleStorage mis_data_dbl = DoubleStorage(mis_data);
+        DoubleStorage mis_wavelengths_dbl = DoubleStorage(mis_wavelengths);
 
         auto && storage = dr::migrate(mis_data_dbl, AllocType::Host);
+        auto && storage_wavelengths = dr::migrate(mis_wavelengths_dbl, AllocType::Host);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
-        // Create new spectrum with the sampling information
-        auto props = Properties("regular");
+        // Create new spectrum with the sampling information (irregular spectrum for logarithmic sampling)
+        Properties props;
+
+        if (has_flag(m_flags, FilmFlags::Logarithmic)) {
+            props = Properties("irregular");
+            props.set_pointer("wavelengths", storage_wavelengths.data());
+        } else {
+            props = Properties("regular");
+            props.set_float("wavelength_min", (double) m_range.x());
+            props.set_float("wavelength_max", (double) m_range.y());
+        }
         props.set_pointer("values", storage.data());
         props.set_long("size", n_points);
-        props.set_float("wavelength_min", (double) m_range.x());
-        props.set_float("wavelength_max", (double) m_range.y());
 
         Log(Debug, "Creating SRF ..");
         m_srf = PluginManager::instance()->create_object<Texture>(props);
