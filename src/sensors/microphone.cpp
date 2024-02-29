@@ -60,11 +60,12 @@ public:
                 wavelengths, wav_weight);
             ray.wavelengths = wavelengths;
 
-            if (has_flag(m_film->flags(), FilmFlags::Logarithmic)){
-                Log(Debug, "Logarithmic wavelength sampling detected, converting to linear scale.");
-                ray.wavelengths = dr::pow(2, ray.wavelengths);
-                // TODO: scale wav_weight accordingly
-            }
+            // if (has_flag(m_film->flags(), FilmFlags::Logarithmic)){
+            //     Log(Debug, "Logarithmic wavelength sampling detected, converting to linear scale.");
+            //     ray.wavelengths = dr::pow(2, ray.wavelengths);
+            //     wav_weight = dr::pow(2, wav_weight);
+            //     // TODO: scale wav_weight accordingly
+            // }
         } else {
             Log(Debug, "No spectral film detected, iterating through wavelength bins.");
             Spectrum wav_weight(1.f);

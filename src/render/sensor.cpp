@@ -71,6 +71,19 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
             m_srf = m_film->sensor_response_function();
         }
     }
+
+    // Load logarithmized SRF function for logarithmic wavelength sampling if Film Flag is set accordingly
+    if (has_flag(m_film->flags(), FilmFlags::Logarithmic)) {
+        Log(Debug, "Logarithmic wavelength sampling detected. Setting logarithmic SRF function...");
+        if (m_srf_log != nullptr) {
+            Throw("Sensor(): Logarithmized Spectral response function defined previously in sensor,"
+                  "but another was found in film.");
+        } else {
+            Log(Debug, "setting logarithmic SRF function for sensor...");
+            m_srf_log = m_film->sensor_response_function_log();
+            Log(Debug, "log SRF set : %s", m_srf_log);
+        }
+    }
 }
 
 MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
@@ -108,10 +121,39 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
                                             Mask active) const {
     if constexpr (is_spectral_v<Spectrum>) {
         if (m_srf != nullptr) {
-            return m_srf->sample_spectrum(
+            Log(Debug, "SRF detected.");
+            // Log(Debug, "Film : %s", m_film->to_string());
+            if (has_flag(m_film->flags(), FilmFlags::Logarithmic)) {
+                Log(Warn, "Logarithmic wavelength sampling detected.");
+                Log(Debug, "log SRF: %s", m_srf_log);
+                if (m_srf_log == nullptr) {
+                    Throw("Logarithmic SRF function not defined in sensor.");
+                }
+                auto [wavelengths, _] = m_srf_log->sample_spectrum(
                     dr::zeros<SurfaceInteraction3f>(),
                     math::sample_shifted<Wavelength>(sample),
                     active);
+                Log(Debug, "Sampled wavelengths: %s", wavelengths);
+                wavelengths = dr::pow(2, wavelengths);  // Convert back to linear scale
+                Log(Debug, "wavelengths converted back to linear scale: %s", wavelengths);
+
+                auto [discard, weight] = m_srf->sample_spectrum(
+                    dr::zeros<SurfaceInteraction3f>(),
+                    math::sample_shifted<Wavelength>(sample),
+                    active);
+                Log(Debug, "Sampled weight: %s", weight);
+
+                // clamp wavelengths to wavelength range of m_srf to avoid values slightly out of range
+                wavelengths = dr::clamp(wavelengths, m_srf->wavelength_range().x(), m_srf->wavelength_range().y());
+
+                return { wavelengths, weight };
+            } else {
+                Log(Debug, "No Logarithmic wavelength sampling detected.");
+                return m_srf->sample_spectrum(
+                        dr::zeros<SurfaceInteraction3f>(),
+                        math::sample_shifted<Wavelength>(sample),
+                        active);
+            }
         }
     } else {
         DRJIT_MARK_USED(active);

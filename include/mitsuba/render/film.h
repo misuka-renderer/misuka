@@ -198,6 +198,9 @@ public:
     /// Returns the specific Sensor Response Function (SRF) used by the film
     const Texture *sensor_response_function();
 
+    /// Returns the specific logarithmized Sensor Response Function (SRF) used by the film
+    const Texture *sensor_response_function_log();
+
     /// Flags for all properties combined.
     uint32_t flags() const { return m_flags; }
 
@@ -227,6 +230,7 @@ protected:
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
+    ref<Texture> m_srf_log;
 };
 
 MI_EXTERN_CLASS(Film)

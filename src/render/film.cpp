@@ -88,6 +88,16 @@ Film<Float, Spectrum>::sensor_response_function() {
     return m_srf.get();
 }
 
+MI_VARIANT const typename Film<Float, Spectrum>::Texture *
+Film<Float, Spectrum>::sensor_response_function_log() {
+    Log(Debug, "Logarithmic SRF requested.");
+    if (!has_flag(m_flags, FilmFlags::Logarithmic))
+        Throw("Logarithmized SRF not available for this film.");
+    Log(Debug, "Logarithmic SRF: %s at ", m_srf_log, m_srf_log.get());
+    return m_srf_log.get();
+}
+
+
 MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
                                                         const ScalarVector2u &crop_size) {
     if (dr::any(crop_offset + crop_size > m_size))

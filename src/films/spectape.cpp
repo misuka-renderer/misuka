@@ -147,7 +147,7 @@ template <typename Float, typename Spectrum>
 class SpecTape final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_flags, m_srf, set_crop_window)
+                   m_filter, m_flags, m_srf, m_srf_log, set_crop_window)
     MI_IMPORT_TYPES(ImageBlock, Texture)
     using FloatStorage = DynamicBuffer<Float>;
 
@@ -261,37 +261,43 @@ public:
 
         Log(Debug, "mis_data: %s", mis_data);
 
-        if (has_flag(m_flags, FilmFlags::Logarithmic)) {
-            mis_wavelengths = dr::log2<Float>(mis_wavelengths);
-            Log(Debug, "Using logarithmic wavelength sampling .. mis_wavelengths: %s", mis_wavelengths);
-        }
-
         // Conversion needed because Properties::Float is always double
         using DoubleStorage = dr::float64_array_t<FloatStorage>;
         DoubleStorage mis_data_dbl = DoubleStorage(mis_data);
-        DoubleStorage mis_wavelengths_dbl = DoubleStorage(mis_wavelengths);
 
         auto && storage = dr::migrate(mis_data_dbl, AllocType::Host);
-        auto && storage_wavelengths = dr::migrate(mis_wavelengths_dbl, AllocType::Host);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         // Create new spectrum with the sampling information (irregular spectrum for logarithmic sampling)
-        Properties props;
 
-        if (has_flag(m_flags, FilmFlags::Logarithmic)) {
-            props = Properties("irregular");
-            props.set_pointer("wavelengths", storage_wavelengths.data());
-        } else {
-            props = Properties("regular");
-            props.set_float("wavelength_min", (double) m_range.x());
-            props.set_float("wavelength_max", (double) m_range.y());
-        }
+        auto props = Properties("regular");
+        props.set_float("wavelength_min", (double) m_range.x());
+        props.set_float("wavelength_max", (double) m_range.y());
         props.set_pointer("values", storage.data());
         props.set_long("size", n_points);
 
         Log(Debug, "Creating SRF ..");
         m_srf = PluginManager::instance()->create_object<Texture>(props);
+
+        if (has_flag(m_flags, FilmFlags::Logarithmic)) {
+            // Make a second SRF with logarithmic sampling (this could be refactored in the future)
+            // This is buggy in scalar variants because of the same reason as above
+            mis_wavelengths = dr::log2<Float>(mis_wavelengths);
+            DoubleStorage mis_wavelengths_dbl_log = DoubleStorage(mis_wavelengths);
+            auto && storage_wavelengths_log = dr::migrate(mis_wavelengths_dbl_log, AllocType::Host);
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
+
+            Log(Debug, "Using logarithmic wavelength sampling .. mis_wavelengths: %s", mis_wavelengths);
+            props = Properties("irregular");
+            props.set_pointer("wavelengths", storage_wavelengths_log.data());
+            props.set_pointer("values", storage.data());
+            props.set_long("size", n_points);
+            Log(Debug, "Creating logarithmized SRF ..");
+            m_srf_log = PluginManager::instance()->create_object<Texture>(props);
+
+        }
     }
 
     size_t base_channels_count() const override {
@@ -541,6 +547,7 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  " << (has_flag(m_flags, FilmFlags::Logarithmic) ? "logarithmic" : "linear") << " wavelength sampling," << std::endl
             << "  film_srf = [" << std::endl << "    " << string::indent(m_srf, 4) << std::endl << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
         for (size_t c=0; c<m_srfs.size(); ++c)
