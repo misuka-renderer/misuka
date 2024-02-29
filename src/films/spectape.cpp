@@ -326,39 +326,42 @@ public:
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
                         Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
-        Log(Debug, "Preparing sample %f with wavelength %f and weight %f ..", spec, wavelengths, weight);
-        Log(Debug, "SpecTape has %i channels ..", m_channels.size());
+        if (!dr::is_jit_v<Float>){ /* accessing internal variables outside the recorded loop doesn't work in jit variants*/
+            Log(Debug, "Preparing sample %f with wavelength %f and weight %f ..", spec, wavelengths, weight);
+            Log(Debug, "SpecTape has %i channels ..", m_channels.size());
+        }
 
         aovs[m_channels.size() - 1] = weight;   // Set sample weight
-        Log(Debug, "Setting weight channel to %f ..", weight);
-
-        Log(Debug, "Creating SurfaceInteraction3f with wavelengths %s ..", wavelengths);
+        if (!dr::is_jit_v<Float>) Log(Debug, "Setting weight channel to %f ..", weight);
+        if (!dr::is_jit_v<Float>) Log(Debug, "Creating SurfaceInteraction3f with wavelengths %s ..", wavelengths);
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
 
         // The SRF is not necessarily normalized, cancel out multiplicative factors
         UnpolarizedSpectrum inv_spec = m_srf->eval(si);
-        Log(Debug, "Evaluating SRF at the given wavelength(s): %s", inv_spec);
+        if (!dr::is_jit_v<Float>) Log(Debug, "Evaluating SRF at the given wavelength(s): %s", inv_spec);
         inv_spec = dr::select(dr::neq(inv_spec, 0.f), dr::rcp(inv_spec), 1.f);
-        Log(Debug, "Inverting SRF: %s", inv_spec);
+        if (!dr::is_jit_v<Float>) Log(Debug, "Inverting SRF: %s", inv_spec);
         UnpolarizedSpectrum values = spec * inv_spec;
-        Log(Debug, "Multiplying spectrum %s by inverted SRF. Result: %s", spec, values);
+        if (!dr::is_jit_v<Float>) Log(Debug, "Multiplying spectrum %s by inverted SRF. Result: %s", spec, values);
 
-        Log(Debug, "Setting AOVs for each channel SRF. Total: %i SRF(s).", m_srfs.size());
+        if (!dr::is_jit_v<Float>) Log(Debug, "Setting AOVs for each channel SRF. Total: %i SRF(s).", m_srfs.size());
         for (size_t j = 0; j < m_srfs.size(); ++j) {
-            Log(Debug, "Evaluating channel SRF %i at the given wavelengths ..", j+1);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Evaluating channel SRF %i at the given wavelengths ..", j+1);
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
-            Log(Debug, "Weights of SRF %i are: %s", j+1, weights);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Weights of SRF %i are: %s", j+1, weights);
             aovs[j] = dr::zeros<Float>();
 
-            Log(Debug, "Iterating through Spectrum size %i ..", Spectrum::Size);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Iterating through Spectrum size %i ..", Spectrum::Size);
             for (size_t i = 0; i<Spectrum::Size; ++i){
                 aovs[j] = dr::fmadd(weights[i], values[i], aovs[j]);
-                Log(Debug, "Adding value %f with weight %f to channel %i. Result: %f",
-                    values[i], weights[i], j+1, aovs[j]);
+                if (!dr::is_jit_v<Float>){ /* accessing internal variables outside the recorded loop doesn't work in jit variants*/
+                    Log(Debug, "Adding value %f with weight %f to channel %i. Result: %f",
+                        values[i], weights[i], j+1, aovs[j]);
+                }
             }
             aovs[j] *= 1.f / Spectrum::Size;
-            Log(Debug, "Dividing channel %i by Spectrum size %i. Result: %f", j, Spectrum::Size, aovs[j]);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Dividing channel %i by Spectrum size %i. Result: %f", j, Spectrum::Size, aovs[j]);
         }
     }
 

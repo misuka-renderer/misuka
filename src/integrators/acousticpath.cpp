@@ -326,7 +326,7 @@ public:
         while (loop(active)) {
             /* dr::Loop implicitly masks all code in the loop using the 'active'
                flag, so there is no need to pass it to every function */
-            Log(Debug, "Tracing ray with origin %s, wavelength %f", ray.o, ray.wavelengths);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Tracing ray with origin %s, wavelength %f", ray.o, ray.wavelengths);
 
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
@@ -334,7 +334,8 @@ public:
                                      /* coherent = */ dr::eq(depth, 0u));
 
             distance += si.t;
-            Log(Debug, "Intersection found with distance %f m.", si.t);
+
+            if (!dr::is_jit_v<Float>) Log(Debug, "Intersection found with distance %f m.", si.t);
 
             // ---------------------- Direct emission ----------------------
 
@@ -344,7 +345,9 @@ public:
                dr::any_or<..>() returns the template argument (true) which means
                that the 'if' statement is always conservatively taken. */
             Mask hit_emitter = dr::neq(si.emitter(scene), nullptr);
-            Log(Debug, "Hit emitter? %s", hit_emitter);
+
+            if (!dr::is_jit_v<Float>) Log(Debug, "Hit emitter? %s", hit_emitter);
+
             if (dr::any_or<true>(hit_emitter)) {
                 DirectionSample3f ds(scene, si, prev_si);
                 Float em_pdf = 0.f;
@@ -368,14 +371,17 @@ public:
                 } else {
                     Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
-                Log(Debug, "putting values %f into block at position %s", aovs, pos);
+
+                if (!dr::is_jit_v<Float>) Log(Debug, "putting values %f into block at position %s", aovs, pos);
+
                 block->put({ pos.x(), time_frac }, aovs, hit_emitter && result > 0.f);
             }
 
             // Continue tracing the path at this point?
             Bool active_next = (depth + 1 < m_max_depth)
                 && si.is_valid() && distance <= max_distance;
-            Log(Debug, "Continue tracing the path at this point? %s", active_next);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Continue tracing the path at this point? %s", active_next);
+
             if (dr::none_or<false>(active_next))
                 break; // early exit for scalar mode
 
@@ -385,7 +391,7 @@ public:
 
             // Perform emitter sampling?
             Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
-            Log(Debug, "Perform Emitter sampling? %s", active_em);
+            if (!dr::is_jit_v<Float>) Log(Debug, "Perform Emitter sampling? %s", active_em);
 
             DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             Spectrum em_weight = dr::zeros<Spectrum>();
@@ -418,20 +424,19 @@ public:
 
             // --------------- Emitter sampling contribution ----------------
 
-            Log(Debug, "calculating Emitter sampling contribution at wavelength %f",si.wavelengths);
+            if (!dr::is_jit_v<Float>) Log(Debug, "calculating Emitter sampling contribution at wavelength %f",si.wavelengths);
             if (dr::any_or<true>(active_em)) {
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
-                Log(Debug, "bsdf_val: %s", bsdf_val);
+                if (!dr::is_jit_v<Float>) Log(Debug, "bsdf_val: %s", bsdf_val);
 
                 // Compute the MIS weight
                 Float mis_em =
                     dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
-
-                Log(Debug, "mis_em: %f", mis_em);
+                if (!dr::is_jit_v<Float>) Log(Debug, "mis_em: %f", mis_em);
                 Float time_frac = ((distance + ds.dist) / max_distance) * block->size().y();
                 Float result = (throughput * bsdf_val * em_weight * mis_em).x();
                 active_em &= result > 0.f;
-                Log(Debug, "time_frac: %f, result: %f, active_em: %s",
+                if (!dr::is_jit_v<Float>) Log(Debug, "time_frac: %f, result: %f, active_em: %s",
                 time_frac, result, active_em);
                 // TODO: move the put block into render_block to enable spectral post processing?
                 // TODO: need to call spectape->prepare_sample to distribute the contribution to the correct channels
@@ -444,7 +449,7 @@ public:
                 } else {
                     Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
-                Log(Debug, "putting values %f into block at position %s", *aovs, pos);
+                if (!dr::is_jit_v<Float>) Log(Debug, "putting values %f into block at position %s", *aovs, pos);
                 block->put({ pos.x(), time_frac }, aovs, active_em);
             }
 
