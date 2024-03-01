@@ -242,8 +242,9 @@ public:
         FloatStorage mis_data = dr::zeros<FloatStorage>(n_points);
         Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points); /* FIXME: this produces only one float in scalar variants*/
         if constexpr (!dr::is_jit_v<Float>)
-                Log(Warn, "SRF sampling is buggy in scalar variants because mis_wavelengths collapes to the first wavelength. \
-                    This only affects the importance sampling of wavelengths, not the final image. ");
+                Log(Warn, "SRF computation is buggy in scalar variants because mis_wavelengths collapes to the first  \
+                           wavelength, resulting in a constant SRF. This only affects the importance sampling of \
+                           wavelengths, not the final image. ");
 
         Log(Debug, "Creating wavelength array mis_wavelengths with %d points between [%f, %f] ..",
             n_points, m_range.x(), m_range.y());
@@ -281,6 +282,41 @@ public:
         m_srf = PluginManager::instance()->create_object<Texture>(props);
 
         if (has_flag(m_flags, FilmFlags::Logarithmic)) {
+
+            if constexpr (!dr::is_jit_v<Float>) {
+                Log(Warn,
+                    "Logarithmic wavelength SRF compututation is buggy in scalar variants. Using a hacky workaround \
+                     with a constant SRF, producing an equal number of rays in each octave. This might affect the \
+                     balancing in between channels, but each channel by itself is computed correctly.");
+
+                FloatStorage mis_wavelengths2f = dr::log2(
+                    dr::linspace<FloatStorage>(m_range.x(), m_range.y(), 2));
+                FloatStorage mis_data2f = dr::full<FloatStorage>(1, 2);
+
+                Log(Debug, "Hacked sensor SRF with wavelengths: %s",
+                    mis_wavelengths2f);
+                Log(Debug, "Hacked sensor SRF with values: %s", mis_data2f);
+
+                DoubleStorage mis_wavelengths2f_dbl =
+                    DoubleStorage(mis_wavelengths2f);
+                DoubleStorage mis_data3f_dbl = DoubleStorage(mis_data2f);
+                auto &&storage_wavelengths2f =
+                    dr::migrate(mis_wavelengths2f_dbl, AllocType::Host);
+                auto &&storage_data3f =
+                    dr::migrate(mis_data3f_dbl, AllocType::Host);
+
+                if constexpr (dr::is_jit_v<Float>)
+                    dr::sync_thread();
+
+                props = Properties("irregular");
+                props.set_pointer("wavelengths", storage_wavelengths2f.data());
+                props.set_pointer("values", storage_data3f.data());
+                props.set_long("size", 2);
+                Log(Debug, "Creating logarithmized SRF ..");
+                m_srf_log =
+                    PluginManager::instance()->create_object<Texture>(props);
+
+            } else {
             // Make a second SRF with logarithmic sampling (this could be refactored in the future)
             // This is buggy in scalar variants because of the same reason as above
             mis_wavelengths = dr::log2<Float>(mis_wavelengths);
@@ -296,6 +332,7 @@ public:
             props.set_long("size", n_points);
             Log(Debug, "Creating logarithmized SRF ..");
             m_srf_log = PluginManager::instance()->create_object<Texture>(props);
+            }
 
         }
     }
