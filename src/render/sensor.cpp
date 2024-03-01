@@ -124,7 +124,7 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
             Log(Debug, "SRF detected.");
             // Log(Debug, "Film : %s", m_film->to_string());
             if (has_flag(m_film->flags(), FilmFlags::Logarithmic)) {
-                Log(Warn, "Logarithmic wavelength sampling detected.");
+                Log(Debug, "Logarithmic wavelength sampling detected.");
                 Log(Debug, "log SRF: %s", m_srf_log);
                 if (m_srf_log == nullptr) {
                     Throw("Logarithmic SRF function not defined in sensor.");
