@@ -36,6 +36,9 @@ public:
             }
         }
 
+        if (is_polarized_v<Spectrum>)
+            Throw("Polarized rendering is not supported by the microphone sensor.");
+
         m_cos_cutoff = props.get<ScalarFloat>("cos_cutoff", -1.f),
 
         m_needs_sample_2 = false;
