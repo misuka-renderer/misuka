@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * The OptiX AI denoiser is wrapped in this object such that it can work
  * directly with Mitsuba types and its conventions.
- * 
+ *
  * The denoiser works best when applied to noisy renderings that were produced
  * with a \ref Film which used the `box` \ref ReconstructionFilter. With a
  * filter that spans multiple pixels, the denoiser might identify some local
@@ -93,7 +93,7 @@ public:
      *      With temporal denoising, this parameter is the optical flow between
      *      the previous frame and the current one. It should capture the 2D
      *      motion of each individual pixel.
-     *      When this parameter is unknown, it can been set to a
+     *      When this parameter is unknown, it can be set to a
      *      zero-initialized TensorXf of the correct size and still produce
      *      convincing results.
      *      This parameter is optional unless the OptixDenoiser was built with
@@ -112,7 +112,7 @@ public:
     TensorXf operator()(const TensorXf &noisy,
                         const TensorXf &albedo = TensorXf(),
                         const TensorXf &normals = TensorXf(),
-                        const Transform4f &to_sensor = Transform4f(),
+                        const AffineTransform4f &to_sensor = AffineTransform4f(),
                         const TensorXf &flow = TensorXf(),
                         const TensorXf &previous_denoised = TensorXf()) const;
 
@@ -150,7 +150,7 @@ public:
      *      the \c noisy parameter which contains the optical flow between
      *      the previous frame and the current one. It should capture the 2D
      *      motion of each individual pixel.
-     *      When this parameter is unknown, it can been set to a
+     *      When this parameter is unknown, it can be set to a
      *      zero-initialized TensorXf of the correct size and still produce
      *      convincing results.
      *      This parameter is optional unless the OptixDenoiser was built with
@@ -173,14 +173,14 @@ public:
     ref<Bitmap> operator()(const ref<Bitmap> &noisy,
                            const std::string &albedo_ch = "",
                            const std::string &normals_ch = "",
-                           const Transform4f &to_sensor = Transform4f(),
+                           const AffineTransform4f &to_sensor = AffineTransform4f(),
                            const std::string &flow_ch = "",
                            const std::string &previous_denoised_ch = "",
                            const std::string &noisy_ch = "<root>") const;
 
     virtual std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OptixDenoiser)
 
 private:
     /// Helper function to validate tensor sizes

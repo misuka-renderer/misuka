@@ -76,7 +76,7 @@ install(TARGETS ${nanobind_lib_name}
 )
 
 nanobind_add_module(mitsuba_ext
-  NB_DOMAIN drjit
+  NB_DOMAIN ${MI_NB_DOMAIN}
   NB_SHARED
   ${MI_DIST_FLAGS}
   main.cpp
@@ -85,7 +85,7 @@ nanobind_add_module(mitsuba_ext
 )
 
 nanobind_add_module(mitsuba_alias
-  NB_DOMAIN drjit
+  NB_DOMAIN ${MI_NB_DOMAIN}
   NB_SHARED
   ${MI_DIST_FLAGS}
   alias.cpp
@@ -118,7 +118,7 @@ set_target_properties(mitsuba_alias
 
 target_include_directories(mitsuba_alias
   PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
 
 install(TARGETS mitsuba_alias
@@ -184,6 +184,7 @@ file(WRITE
   "[pytest]\n"
   "minversion = 3.0\n"
   "testpaths = \"${MI_TEST_BASE}\"\n"
+  "norecursedirs = \"${MI_TEST_BASE}/python\"\n"
 )
 
 if (MSVC)
@@ -235,7 +236,7 @@ set(STUB_ARGS
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "python.xml")
+                         "python.ad" "python.chi2" "python.math_py" "python.util" "parser")
 
   nanobind_add_stub(
     mitsuba-stub

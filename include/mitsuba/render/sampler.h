@@ -60,7 +60,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Sampler : public Object {
+class MI_EXPORT_LIB Sampler : public JitObject<Sampler<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES()
 
@@ -130,12 +130,7 @@ public:
     /// dr::schedule() variables that represent the internal sampler state
     virtual void schedule_state();
 
-    /// Traversal callback mechanism for symbolic loops
-    virtual void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const;
-    /// Traversal callback mechanism for symbolic loops
-    virtual void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t));
-
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Sampler)
 
 protected:
     Sampler(const Properties &props);
@@ -160,6 +155,10 @@ protected:
     UInt32 m_dimension_index;
     /// Index of the current sample in the sequence
     UInt32 m_sample_index;
+
+public:
+    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
+    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
 };
 
 /// Interface for sampler plugins based on the PCG32 random number generator
@@ -172,10 +171,8 @@ public:
 
     void seed(UInt32 seed, uint32_t wavefront_size = (uint32_t) -1) override;
     void schedule_state() override;
-    void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override;
-    void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PCG32Sampler)
 protected:
     PCG32Sampler(const Properties &props);
 
@@ -183,6 +180,10 @@ protected:
     PCG32Sampler(const PCG32Sampler &sampler);
 protected:
     PCG32 m_rng;
+
+public:
+    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
+    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
 };
 
 MI_EXTERN_CLASS(Sampler)

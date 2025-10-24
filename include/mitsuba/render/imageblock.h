@@ -333,7 +333,7 @@ public:
 
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ImageBlock)
 
 protected:
     // Implementation detail to atomically accumulate a value into the image block
@@ -353,6 +353,8 @@ protected:
     bool m_warn_negative;
     bool m_warn_invalid;
     bool m_y_only;
+
+    MI_TRAVERSE_CB(Object, m_tensor, m_tensor_compensation)
 };
 
 MI_EXTERN_CLASS(ImageBlock)

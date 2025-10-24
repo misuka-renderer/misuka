@@ -35,7 +35,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -55,7 +55,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -86,6 +86,478 @@
             the film resolution and number of samples.
 
         Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.AffineTransform3d
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f64, arg1: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3d`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3d`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f64, arg1: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3d`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.AffineTransform3d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform3d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3d.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → mitsuba::Transform<mitsuba::Point<drjit::DiffArray<(JitBackend)2, double>, 2ul>, true>:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3d.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3d.inverse()
+
+        Returns → :py:obj:`mitsuba.AffineTransform3d`:
+            *no description available*
+
+    .. py:property:: mitsuba.AffineTransform3d.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix3f64
+
+    .. py:property:: mitsuba.AffineTransform3d.matrix
+
+        (self) -> drjit.llvm.ad.Matrix3f64
+
+    .. py:method:: mitsuba.AffineTransform3d.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3d.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3d.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.AffineTransform3d`:
+            *no description available*
+
+.. py:class:: mitsuba.AffineTransform3f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f, arg1: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3f`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3f`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f, arg1: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3f`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.AffineTransform3f.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform3f`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3f.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → mitsuba::Transform<mitsuba::Point<drjit::DiffArray<(JitBackend)2, float>, 2ul>, true>:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3f.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3f.inverse()
+
+        Returns → :py:obj:`mitsuba.AffineTransform3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.AffineTransform3f.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix3f
+
+    .. py:property:: mitsuba.AffineTransform3f.matrix
+
+        (self) -> drjit.llvm.ad.Matrix3f
+
+    .. py:method:: mitsuba.AffineTransform3f.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2f`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3f.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector2f`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform3f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.AffineTransform3f`:
+            *no description available*
+
+.. py:class:: mitsuba.AffineTransform4d
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f64, arg1: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4d`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4d`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f64, arg1: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4d`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.AffineTransform4d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform4d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4d.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → :py:obj:`mitsuba.AffineTransform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4d.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4d.inverse()
+
+        Returns → :py:obj:`mitsuba.AffineTransform4d`:
+            *no description available*
+
+    .. py:property:: mitsuba.AffineTransform4d.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix4f64
+
+    .. py:property:: mitsuba.AffineTransform4d.matrix
+
+        (self) -> drjit.llvm.ad.Matrix4f64
+
+    .. py:method:: mitsuba.AffineTransform4d.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4d.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4d.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.AffineTransform4d`:
+            *no description available*
+
+.. py:class:: mitsuba.AffineTransform4f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f, arg1: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4f`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4f`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f, arg1: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4f`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.AffineTransform4f.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform4f`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4f.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → :py:obj:`mitsuba.AffineTransform3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4f.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4f.inverse()
+
+        Returns → :py:obj:`mitsuba.AffineTransform4f`:
+            *no description available*
+
+    .. py:property:: mitsuba.AffineTransform4f.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix4f
+
+    .. py:property:: mitsuba.AffineTransform4f.matrix
+
+        (self) -> drjit.llvm.ad.Matrix4f
+
+    .. py:method:: mitsuba.AffineTransform4f.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4f.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.AffineTransform4f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.AffineTransform4f`:
             *no description available*
 
 .. py:class:: mitsuba.Appender
@@ -127,10 +599,9 @@
         Parameter ``eta`` (str):
             Estimated time until 100% is reached.
 
-        Parameter ``ptr`` (types.CapsuleType | None):
+        Parameter ``ptr`` (typing_extensions.CapsuleType | None):
             Custom pointer payload. This is used to express the context of a
-            progress message. When rendering a scene, it will usually contain
-            a pointer to the associated ``RenderJob``.
+            progress message.
 
         Returns → None:
             *no description available*
@@ -206,32 +677,22 @@
 
 .. py:class:: mitsuba.ArrayXf
 
+.. py:class:: mitsuba.ArrayXf16
+
+.. py:class:: mitsuba.ArrayXf64
+
 .. py:class:: mitsuba.ArrayXi
 
 .. py:class:: mitsuba.ArrayXi64
+
+.. py:class:: mitsuba.ArrayXi8
 
 .. py:class:: mitsuba.ArrayXu
 
 .. py:class:: mitsuba.ArrayXu64
 
-.. py:class:: mitsuba.AtomicFloat
+.. py:class:: mitsuba.ArrayXu8
 
-    Atomic floating point data type
-
-    The class implements an an atomic floating point data type (which is
-    not possible with the existing overloads provided by ``std::atomic``).
-    It internally casts floating point values to an integer storage format
-    and uses atomic integer compare and exchange operations to perform
-    changes.
-
-    .. py:method:: __init__(self, arg)
-
-        Initialize the AtomicFloat with a given floating point value
-
-        Parameter ``arg`` (float, /):
-            *no description available*
-
-        
 .. py:class:: mitsuba.BSDF
 
     Base class: :py:obj:`mitsuba.Object`
@@ -286,7 +747,7 @@
 
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
-        components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+        components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
         components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
@@ -420,7 +881,7 @@
 
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
-        components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+        components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
         components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
@@ -460,7 +921,7 @@
 
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
-        components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+        components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
         components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
@@ -530,13 +991,6 @@
             Mask to specify active lanes.
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.BSDF.id()
-
-        Return a string identifier
-
-        Returns → str:
             *no description available*
 
     .. py:property:: mitsuba.BSDF.m_components
@@ -643,8 +1097,8 @@
     BSDF models in Mitsuba can be queried and sampled using a variety of
     different modes -- for instance, a rendering algorithm can indicate
     whether radiance or importance is being transported, and it can also
-    restrict evaluation and sampling to a subset of lobes in a a multi-
-    lobe BSDF model.
+    restrict evaluation and sampling to a subset of lobes in a multi-lobe
+    BSDF model.
 
     The BSDFContext data structure encodes these preferences and is
     supplied to most BSDF methods.
@@ -673,8 +1127,8 @@
 
     .. py:method:: mitsuba.BSDFContext.is_enabled(self, type, component=0)
 
-        Checks whether a given BSDF component type and BSDF component index
-        are enabled in this context.
+        Checks whether a given BSDF component type and index are enabled in
+        this context.
 
         Parameter ``type`` (:py:obj:`mitsuba.BSDFFlags`):
             *no description available*
@@ -806,7 +1260,7 @@
 
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
-        components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+        components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
         components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
@@ -940,7 +1394,7 @@
 
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
-        components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+        components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
         components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
@@ -980,7 +1434,7 @@
 
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
-        components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+        components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
         components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
@@ -1262,11 +1716,11 @@
 
         .. py:data:: Premultiply
 
-            No transformation (default)
+            Premultiply alpha channel
 
         .. py:data:: Unpremultiply
 
-            No transformation (default)
+            Unpremultiply alpha channel
 
     .. py:class:: mitsuba.Bitmap.FileFormat
 
@@ -1480,7 +1934,7 @@
         values, etc.)
 
         Note that the alpha channel is assumed to be linear in both the source
-        and target bitmap, hence it won't be affected by any gamma-related
+        and target bitmap, therefore it won't be affected by any gamma-related
         transformations.
 
         Remark:
@@ -2455,7 +2909,7 @@
 
     .. py:method:: mitsuba.BoundingSphere3f.expand(self, arg)
 
-        Expand the bounding sphere radius to contain another point.
+        Expand the bounding sphere radius to contain another point
 
         Parameter ``arg`` (:py:obj:`mitsuba.Point3f`, /):
             *no description available*
@@ -2477,53 +2931,6 @@
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.Class
-
-    Stores meta-information about Object instances.
-
-    This class provides a thin layer of RTTI (run-time type information),
-    which is useful for doing things like:
-
-    * Checking if an object derives from a certain class
-
-    * Determining the parent of a class at runtime
-
-    * Instantiating a class by name
-
-    * Unserializing a class from a binary data stream
-
-    See also:
-        ref, Object
-
-    .. py:method:: mitsuba.Class.alias()
-
-        Return the scene description-specific alias, if applicable
-
-        Returns → str:
-            *no description available*
-
-    .. py:method:: mitsuba.Class.name()
-
-        Return the name of the class
-
-        Returns → str:
-            *no description available*
-
-    .. py:method:: mitsuba.Class.parent()
-
-        Return the Class object associated with the parent class of nullptr if
-        it does not have one.
-
-        Returns → :py:obj:`mitsuba.Class`:
-            *no description available*
-
-    .. py:method:: mitsuba.Class.variant()
-
-        Return the variant of the class
-
-        Returns → str:
-            *no description available*
-
 .. py:class:: mitsuba.Color0d
 
 .. py:class:: mitsuba.Color0f
@@ -2537,6 +2944,8 @@
 .. py:class:: mitsuba.Color3f
 
 .. py:class:: mitsuba.Complex2f
+
+.. py:class:: mitsuba.Complex2f64
 
 .. py:class:: mitsuba.ContinuousDistribution
 
@@ -2683,7 +3092,7 @@
 
     .. py:method:: mitsuba.ContinuousDistribution.sample(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
@@ -2699,7 +3108,7 @@
 
     .. py:method:: mitsuba.ContinuousDistribution.sample_pdf(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
@@ -3043,7 +3452,7 @@
 
     .. py:method:: mitsuba.DiscreteDistribution.sample(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
@@ -3059,7 +3468,7 @@
 
     .. py:method:: mitsuba.DiscreteDistribution.sample_pmf(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
@@ -3075,7 +3484,7 @@
 
     .. py:method:: mitsuba.DiscreteDistribution.sample_reuse(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         The original sample is value adjusted so that it can be reused as a
         uniform variate.
@@ -3094,7 +3503,7 @@
 
     .. py:method:: mitsuba.DiscreteDistribution.sample_reuse_pmf(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution.
+        Transform a uniformly distributed sample to the stored distribution.
 
         The original sample is value adjusted so that it can be reused as a
         uniform variate.
@@ -3330,7 +3739,7 @@
 
     .. py:method:: mitsuba.EmitterPtr.get_shape()
 
-        Return the shape, to which the emitter is currently attached
+        Return the shape to which the emitter is currently attached
 
         Returns → :py:obj:`mitsuba.ShapePtr`:
             *no description available*
@@ -3644,7 +4053,7 @@
 
     .. py:method:: mitsuba.Endpoint.get_shape()
 
-        Return the shape, to which the emitter is currently attached
+        Return the shape to which the emitter is currently attached
 
         Returns → :py:obj:`mitsuba.Shape`:
             *no description available*
@@ -3882,7 +4291,7 @@
 
         Return the local space to world space transformation
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → :py:obj:`mitsuba.AffineTransform4f`:
             *no description available*
 
 .. py:class:: mitsuba.FileResolver
@@ -3998,7 +4407,7 @@
 
     .. py:method:: mitsuba.Film.base_channels_count()
 
-        Return the number of channels for the developed image (excluding AOVS)
+        Return the number of channels for the developed image (excluding AOVs)
 
         Returns → int:
             *no description available*
@@ -4084,7 +4493,7 @@
     .. py:method:: mitsuba.Film.prepare(self, aovs)
 
         Configure the film for rendering a specified set of extra channels
-        (AOVS). Returns the total number of channels that the film will store
+        (AOVs). Returns the total number of channels that the film will store
 
         Parameter ``aovs`` (collections.abc.Sequence[str]):
             *no description available*
@@ -4246,6 +4655,8 @@
 
 .. py:class:: mitsuba.Float
 
+.. py:class:: mitsuba.Float16
+
 .. py:class:: mitsuba.Float64
 
 .. py:class:: mitsuba.Formatter
@@ -4258,24 +4669,21 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.Formatter.format(self, level, class_, thread, file, line, msg)
+    .. py:method:: mitsuba.Formatter.format(self, level, cname, fname, line, msg)
 
         Turn a log message into a human-readable format
 
         Parameter ``level`` (:py:obj:`mitsuba.LogLevel`):
             The importance of the debug message
 
-        Parameter ``class_`` (:py:obj:`mitsuba.Class`):
-            Originating class or ``nullptr``
+        Parameter ``cname`` (str | None):
+            Name of the class (if present)
 
-        Parameter ``thread`` (:py:obj:`mitsuba.Thread`):
-            Thread, which is responsible for creating the message
-
-        Parameter ``file`` (str):
-            File, which is responsible for creating the message
+        Parameter ``fname`` (str):
+            Source location (file)
 
         Parameter ``line`` (int):
-            Associated line within the source file
+            Source location (line number)
 
         Parameter ``msg`` (str):
             Text content associated with the log message
@@ -5126,6 +5534,8 @@
 
 .. py:class:: mitsuba.Int64
 
+.. py:class:: mitsuba.Int8
+
 .. py:class:: mitsuba.Integrator
 
     Base class: :py:obj:`mitsuba.Object`
@@ -5166,7 +5576,7 @@
 
         Overloaded function.
 
-        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -5174,7 +5584,7 @@
         other parameters are optional and control different aspects of the
         rendering process. In particular:
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             This parameter controls the initialization of the random number
             generator. It is crucial that you specify different seeds (e.g.,
             an increasing sequence) if subsequent ``render``() calls should
@@ -5200,7 +5610,7 @@
             (``develop=true``) or modified film (``develop=false``) represent
             the rendering task as an unevaluated computation graph.
 
-        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -5228,6 +5638,47 @@
 
         Returns → bool:
             *no description available*
+
+    .. py:method:: mitsuba.Integrator.skip_area_emitters(self, arg0, arg1, arg2, arg3)
+
+        Traces a ray in the scene and returns the first intersection that is
+        not an area emitter.
+
+        This is a helper method for when the `hide_emitters` flag is set.
+
+        Parameter ``scene``:
+            The scene that the ray will intersect.
+
+        Parameter ``ray``:
+            The ray that determines the direction in which to trace new rays
+
+        Parameter ``coherent``:
+            Setting this flag to ``True`` can noticeably improve performance
+            when ``ray`` contains a coherent set of rays (e.g. primary camera
+            rays), and when using ``llvm_*`` variants of the renderer along
+            with Embree. It has no effect in scalar or CUDA/OptiX variants.
+            (Default: False)
+
+        Parameter ``active``:
+            A mask that indicates which lanes are active. Typically, this
+            should be set to ``True`` for any lane where the current depth is
+            0 (for ``hide_emitters``). (Default: True)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.Ray3f`):
+            *no description available*
+
+        Parameter ``arg2`` (bool):
+            *no description available*
+
+        Parameter ``arg3`` (drjit.llvm.ad.Bool, /):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+            The first intersection that is not an area emitter anlong the
+            ``ray``.
 
 .. py:class:: mitsuba.Interaction3f
 
@@ -5474,7 +5925,7 @@
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.sample(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
@@ -5490,7 +5941,7 @@
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.sample_pdf(self, value, active=True)
 
-        %Transform a uniformly distributed sample to the stored distribution
+        Transform a uniformly distributed sample to the stored distribution
 
         Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
@@ -5648,10 +6099,9 @@
         Parameter ``eta`` (str):
             Estimated time until 100% is reached.
 
-        Parameter ``ptr`` (types.CapsuleType | None):
+        Parameter ``ptr`` (typing_extensions.CapsuleType | None):
             Custom pointer payload. This is used to express the context of a
-            progress message. When rendering a scene, it will usually contain
-            a pointer to the associated ``RenderJob``.
+            progress message.
 
         Returns → None:
             *no description available*
@@ -5744,7 +6194,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.6.2
+    :value: 3.7.1
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -5752,11 +6202,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 6
+    :value: 7
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 2
+    :value: 1
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -6764,9 +7214,21 @@
 
 .. py:class:: mitsuba.Matrix2f
 
+.. py:class:: mitsuba.Matrix2f16
+
+.. py:class:: mitsuba.Matrix2f64
+
 .. py:class:: mitsuba.Matrix3f
 
+.. py:class:: mitsuba.Matrix3f16
+
+.. py:class:: mitsuba.Matrix3f64
+
 .. py:class:: mitsuba.Matrix4f
+
+.. py:class:: mitsuba.Matrix4f16
+
+.. py:class:: mitsuba.Matrix4f64
 
 .. py:class:: mitsuba.Medium
 
@@ -6804,13 +7266,6 @@
         Returns whether this medium has a spectrally varying extinction
 
         Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Medium.id()
-
-        Return a string identifier
-
-        Returns → str:
             *no description available*
 
     .. py:method:: mitsuba.Medium.intersect_aabb(self, ray)
@@ -6875,16 +7330,6 @@
             This method returns a MediumInteraction. The MediumInteraction
             will always be valid, except if the ray missed the Medium's
             bounding box.
-
-    .. py:method:: mitsuba.Medium.set_id(self, arg)
-
-        Set a string identifier
-
-        Parameter ``arg`` (str, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
 
     .. py:method:: mitsuba.Medium.transmittance_eval_pdf(self, mi, si, active)
 
@@ -7161,7 +7606,7 @@
 
         Return a pointer to the file contents in memory
 
-        Returns → types.CapsuleType:
+        Returns → typing_extensions.CapsuleType:
             *no description available*
 
     .. py:method:: mitsuba.MemoryMappedFile.filename()
@@ -7394,13 +7839,17 @@
         Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
             *no description available*
 
-        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>>>:
+        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
 
         Returns the opposite edge index associated with directed edge
         ``index``
+
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -7431,6 +7880,20 @@
             *no description available*
 
     .. py:method:: mitsuba.Mesh.recompute_vertex_normals()
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Mesh.remove_attribute(self, name)
+
+        Remove an attribute with the given ``name``.
+
+        Affects both mesh and texture attributes.
+
+        Throws an exception if the attribute was not previously registered.
+
+        Parameter ``name`` (str):
+            *no description available*
 
         Returns → None:
             *no description available*
@@ -7576,6 +8039,13 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
+    .. py:method:: mitsuba.MeshPtr.has_flipped_normals()
+
+        Does this shape have flipped normals?
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
     .. py:method:: mitsuba.MeshPtr.has_mesh_attributes()
 
         Does this mesh have additional mesh attributes?
@@ -7601,6 +8071,10 @@
 
         Returns the opposite edge index associated with directed edge
         ``index``
+
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -7886,26 +8360,23 @@
 
     This class (in conjunction with the ``ref`` reference counter)
     constitutes the foundation of an efficient reference-counted object
-    hierarchy. The implementation here is an alternative to standard
-    mechanisms for reference counting such as ``std::shared_ptr`` from the
-    STL.
+    hierarchy.
 
-    Why not simply use ``std::shared_ptr``? To be spec-compliant, such
-    shared pointers must associate a special record with every instance,
-    which stores at least two counters plus a deletion function.
-    Allocating this record naturally incurs further overheads to maintain
-    data structures within the memory allocator. In addition to this, the
-    size of an individual ``shared_ptr`` references is at least two data
-    words. All of this quickly adds up and leads to significant overheads
-    for large collections of instances, hence the need for an alternative
-    in Mitsuba.
+    We use an intrusive reference counting approach to avoid various
+    gnarly issues that arise in combined Python/C++ codebase, see the
+    following page for details:
+    https://nanobind.readthedocs.io/en/latest/ownership_adv.html
 
-    In contrast, the ``Object`` class allows for a highly efficient
-    implementation that only adds 64 bits to the base object (for the
-    counter) and has no overhead for references. In addition, when using
-    Mitsuba in Python, this counter is shared with Python such that the
-    ownerhsip and lifetime of any ``Object`` instance across C++ and
-    Python is managed by it.
+    The counter provided by ``drjit::TraversableBase`` establishes a
+    unified reference count that is consistent across both C++ and Python.
+    It is more efficient than ``std::shared_ptr<T>`` (as no external
+    control block is needed) and works without Python actually being
+    present.
+
+    Object subclasses are *traversable*, that is, they expose methods that
+    Dr.Jit can use to walk through object graphs, discover attributes, and
+    potentially change them. This enables function freezing (@dr.freeze)
+    that must detect and apply changes when executing frozen functions.
 
     .. py:method:: __init__()
 
@@ -7913,22 +8384,16 @@
         
         1. ``__init__(self) -> None``
         
-        Default constructor
+        Import default constructors
         
         2. ``__init__(self, arg: :py:obj:`mitsuba.Object`) -> None``
-        
-        Copy constructor
 
         
-    .. py:method:: mitsuba.Object.class_()
+    .. py:method:: mitsuba.Object.class_name()
 
-        Return a Class instance containing run-time type information about
-        this Object
+        Return the C++ class name of this object (e.g. "SmoothDiffuse")
 
-        See also:
-            Class
-
-        Returns → :py:obj:`mitsuba.Class`:
+        Returns → str:
             *no description available*
 
     .. py:method:: mitsuba.Object.expand()
@@ -7946,7 +8411,7 @@
 
     .. py:method:: mitsuba.Object.id()
 
-        Return an identifier of the current instance (if available)
+        Return an identifier of the current instance (or empty if none)
 
         Returns → str:
             *no description available*
@@ -7982,7 +8447,7 @@
 
     .. py:method:: mitsuba.Object.set_id(self, id)
 
-        Set an identifier to the current instance (if applicable)
+        Set the identifier of the current instance (no-op if not supported)
 
         Parameter ``id`` (str):
             *no description available*
@@ -8010,7 +8475,81 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ObjectPtr
+    .. py:method:: mitsuba.Object.variant_name()
+
+        Return the instance variant (empty if this is not a variant object)
+
+        Returns → str:
+            *no description available*
+
+.. py:class:: mitsuba.ObjectType
+
+    Available scene object types
+
+    This enumeration lists high-level interfaces that can be implemented
+    by Mitsuba scene objects. The scene loader uses these to ensure that a
+    loaded object matches the expected interface.
+
+    Note: This enum is forward-declared at the beginning of the file to
+    allow its usage in macros that appear before the full definition.
+
+    Valid values are as follows:
+
+    .. py:data:: Unknown
+
+        The default returned by Object subclasses
+
+    .. py:data:: Scene
+
+        The top-level scene object. No subclasses exist
+
+    .. py:data:: Sensor
+
+        Carries out radiance measurements, subclasses Sensor
+
+    .. py:data:: Film
+
+        Storage representation of the sensor
+
+    .. py:data:: Emitter
+
+        Emits radiance, subclasses Emitter
+
+    .. py:data:: Sampler
+
+        Generates sample positions and directions, subclasses Sampler
+
+    .. py:data:: Shape
+
+        Denotes an arbitrary shape (including meshes)
+
+    .. py:data:: Texture
+
+        A 2D texture data source
+
+    .. py:data:: Volume
+
+        A 3D volume data source
+
+    .. py:data:: Medium
+
+        A participating medium
+
+    .. py:data:: BSDF
+
+        A bidirectional reflectance distribution function
+
+    .. py:data:: Integrator
+
+        A rendering algorithm aka. Integrator
+
+    .. py:data:: PhaseFunction
+
+        A phase function characterizing scattering in volumes
+
+    .. py:data:: ReconstructionFilter
+
+        A filter used to reconstruct/resample images
 
 .. py:class:: mitsuba.OptixDenoiser
 
@@ -8026,7 +8565,7 @@
     filter that spans multiple pixels, the denoiser might identify some
     local variance as a feature of the scene and will not denoise it.
 
-    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False)
+    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False, denoise_alpha=False)
 
         Constructs an OptiX denoiser
         
@@ -8035,34 +8574,35 @@
         
         Parameter ``albedo`` (bool):
             Whether or not albedo information will also be given to the
-            denoiser.
+            denoiser. This parameter is optional, by default it is false.
         
         Parameter ``normals`` (bool):
             Whether or not shading normals information will also be given to
-            the Denoiser.
+            the denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``temporal`` (bool):
+            Whether or not temporal information will also be given to the
+            denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``denoise_alpha`` (bool):
+            Whether or not the alpha channel (if specified in the noisy input)
+            should be denoised too. This parameter is optional, by default it
+            is false.
         
         Returns:
             A callable object which will apply the OptiX denoiser.
 
-        Parameter ``temporal`` (bool):
-            *no description available*
-
         
-    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, denoise_alpha=True, albedo, normals, to_sensor=None, flow, previous_denoised)
+    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, albedo, normals, to_sensor=None, flow, previous_denoised)
 
         Overloaded function.
 
-        1. ``__call__(self, noisy: drjit.llvm.ad.TensorXf, denoise_alpha: bool = True, albedo: drjit.llvm.ad.TensorXf, normals: drjit.llvm.ad.TensorXf, to_sensor: object | None = None, flow: drjit.llvm.ad.TensorXf, previous_denoised: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf``
+        1. ``__call__(self, noisy: drjit.llvm.ad.TensorXf, albedo: drjit.llvm.ad.TensorXf, normals: drjit.llvm.ad.TensorXf, to_sensor: object | None = None, flow: drjit.llvm.ad.TensorXf, previous_denoised: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf``
 
         Apply denoiser on inputs which are TensorXf objects.
 
         Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
             The noisy input. (tensor shape: (width, height, 3 | 4))
-
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is true.
 
         Parameter ``albedo`` (drjit.llvm.ad.TensorXf):
             Albedo information of the noisy rendering. This parameter is
@@ -8086,7 +8626,7 @@
             With temporal denoising, this parameter is the optical flow
             between the previous frame and the current one. It should capture
             the 2D motion of each individual pixel. When this parameter is
-            unknown, it can been set to a zero-initialized TensorXf of the
+            unknown, it can be set to a zero-initialized TensorXf of the
             correct size and still produce convincing results. This parameter
             is optional unless the OptixDenoiser was built with temporal
             denoising support. (tensor shape: (width, height, 2))
@@ -8101,7 +8641,7 @@
         Returns → drjit.llvm.ad.TensorXf:
             The denoised input.
 
-        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, denoise_alpha: bool = True, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
+        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
 
         Apply denoiser on inputs which are Bitmap objects.
 
@@ -8109,11 +8649,6 @@
             The noisy input. When passing additional information like albedo
             or normals to the denoiser, this Bitmap object must be a
             MultiChannel bitmap.
-
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is true.
 
         Parameter ``albedo_ch``:
             The name of the channel in the ``noisy`` parameter which contains
@@ -8138,7 +8673,7 @@
             the ``noisy`` parameter which contains the optical flow between
             the previous frame and the current one. It should capture the 2D
             motion of each individual pixel. When this parameter is unknown,
-            it can been set to a zero-initialized TensorXf of the correct size
+            it can be set to a zero-initialized TensorXf of the correct size
             and still produce convincing results. This parameter is optional
             unless the OptixDenoiser was built with temporal denoising
             support.
@@ -8160,19 +8695,81 @@
 
 .. py:class:: mitsuba.PCG32
 
-    Implementation of PCG32, a member of the PCG family of random number generators
-    proposed by Melissa O'Neill.
+    Implementation of PCG32, a member of the PCG family of random number
+    generators proposed by Melissa O'Neill.
 
-    PCG combines a Linear Congruential Generator (LCG) with a permutation function
-    that yields high-quality pseudorandom variates while at the same time requiring
-    very low computational cost and internal state (only 128 bit in the case of
-    PCG32).
-
-    More detail on the PCG family of pseudorandom number generators can be found
+    PCG32 is a stateful pseudorandom number generator that combines a linear
+    congruential generator (LCG) with a permutation function. It provides high
+    statistical quality with a remarkably fast and compact implementation.
+    Details on the PCG family of pseudorandom number generators can be found
     `here <https://www.pcg-random.org/index.html>`__.
 
-    The :py:class:`PCG32` class is implemented as a :ref:`PyTree <pytrees>`, which
-    means that it is compatible with symbolic function calls, loops, etc.
+    To create random tensors of different sizes in Python, prefer the
+    higher-level :py:func:`dr.rng() <drjit.rng>` interface, which internally
+    uses the :py:class:`Philox4x32` generator. The properties of PCG32 makes it
+    most suitable for Monte Carlo applications requiring long sequences of
+    random variates.
+
+    Key properties of the PCG variant implemented here include:
+
+    * **Compact**: 128 bits total state (64-bit state + 64-bit increment)
+
+    * **Output**: 32-bit output with a period of 2^64 per stream
+
+    * **Streams**: Multiple independent streams via the increment parameter
+      (with caveats, see below)
+
+    * **Low-cost sample generation**: a single 64 bit integer multiply-add plus
+      a bit permutation applied to the output.
+
+    * **Extra features**: provides fast multi-step advance/rewind functionality.
+
+    **Caveats**: PCG32 produces random high-quality variates within each random
+    number stream. For a given initial state, PCG32 can also produce multiple
+    output streams by specifying a different sequence increment (``initseq``) to the
+    constructor. However, the level of statistical independence *across streams*
+    is generally insufficient when doing so. To obtain a series of high-quality
+    independent parallel streams, it is recommended to use another method (e.g.,
+    the Tiny Encryption Algorithm) to seed the `state` and `inc` parameters. This
+    ensures independence both within and across streams.
+
+    In Python, the :py:class:`PCG32` class is implemented as a :ref:`PyTree
+    <pytrees>`, which means that it is compatible with symbolic function calls,
+    loops, etc.
+
+    .. note::
+
+       Please watch out for the following pitfall when using the PCG32 class in
+       long-running Dr.Jit calculations (e.g., steps of a gradient-based optimizer).
+       Consuming random variates (e.g., through :py:func:`next_float`) changes
+       the internal RNG state. If this state is never explicitly evaluated,
+       the computation graph describing the state transformation keeps growing
+       without bound, causing kernel compilation of increasingly large programs
+       to eventually become a bottleneck. To evaluate the RNG, simply run
+
+       .. code-block:: python
+
+          rng: PCG32 = ....
+          dr.eval(rng)
+
+       For computation involving very large arrays, storing the RNG state (16
+       bytes per entry) can be prohibitive. In this case, it is better to keep
+       the RNG in symbolic form and re-seed it at every optimization iteration.
+
+       In cases where a sampler is repeatedly used in a symbolic loop, it is
+       more efficient to use the PCG32 API directly to seed once and reuse the
+       random number generator throughout the loop.
+
+       The :py:func:`drjit.rng <rng>` API avoids these pitfalls by eagerly
+       evaluating the RNG state.
+
+    Comparison with \ref Philox4x32:
+
+    * :py:class:`PCG32 <drjit.auto.PCG32>`: State-based, better for sequential generation,
+      low per-sample cost.
+
+    * :py:class:`Philox4x32 <drjit.auto.Philox4x32>`: Counter-based, better for
+      parallel generation, higher per-sample cost.
 
     .. py:method:: __init__(self, size=1, initstate=UInt64(0x853c49e6748fea9b), initseq=UInt64(0xda3e39cb94b95bdb))
 
@@ -8210,20 +8807,89 @@
 
         Sequence increment of the PCG32 PRNG (an unsigned 64-bit integer or integer array). Please see the original paper for details on this field.
 
+    .. py:method:: mitsuba.PCG32.next_float(self, dtype, mask=True)
+
+        Generate a uniformly distributed precision floating point number on the
+        interval :math:`[0, 1)`.
+
+        The function analyzes the provided target ``dtype`` and either invokes
+        :py:func:`next_float16`, :py:func:`next_float32` or :py:func:`next_float64`
+        depending on the
+        requested precision.
+
+        A mask can be optionally provided. Masked entries do not advance the PRNG state.
+
+        Parameter ``dtype`` (type):
+            *no description available*
+
+        Parameter ``mask`` (object):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.next_float16()
+
+        Overloaded function.
+
+        1. ``next_float16(self) -> drjit.llvm.ad.Float16``
+
+        Generate a uniformly distributed half precision floating point number on the
+        interval :math:`[0, 1)`.
+
+        Two overloads of this function exist: the masked variant does not advance
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_float16(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float16``
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.next_float16_normal()
+
+        Overloaded function.
+
+        1. ``next_float16_normal(self) -> drjit.llvm.ad.Float16``
+
+        Generate a (standard) normally distributed half precision floating point number.
+
+        Two overloads of this function exist: the masked variant does not advance
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_float16_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float16``
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
     .. py:method:: mitsuba.PCG32.next_float32()
 
         Overloaded function.
 
         1. ``next_float32(self) -> drjit.llvm.ad.Float``
 
-
-        2. ``next_float32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
-
         Generate a uniformly distributed single precision floating point number on the
         interval :math:`[0, 1)`.
 
         Two overloads of this function exist: the masked variant does not advance
         the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_float32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.next_float32_normal()
+
+        Overloaded function.
+
+        1. ``next_float32_normal(self) -> drjit.llvm.ad.Float``
+
+        Generate a (standard) normally distributed single precision floating point number.
+
+        Two overloads of this function exist: the masked variant does not advance
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_float32_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
@@ -8234,16 +8900,50 @@
 
         1. ``next_float64(self) -> drjit.llvm.ad.Float64``
 
-
-        2. ``next_float64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
-
         Generate a uniformly distributed double precision floating point number on the
         interval :math:`[0, 1)`.
 
         Two overloads of this function exist: the masked variant does not advance
         the PRNG state of entries ``i`` where ``mask[i] == False``.
 
+        2. ``next_float64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
+
         Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.next_float64_normal()
+
+        Overloaded function.
+
+        1. ``next_float64_normal(self) -> drjit.llvm.ad.Float64``
+
+        Generate a (standard) normally distributed double precision floating point number.
+
+        Two overloads of this function exist: the masked variant does not advance
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_float64_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.next_float_normal(self, dtype, mask=True)
+
+        Generate a (standard) normally distributed precision floating point number.
+
+        The function analyzes the provided target ``dtype`` and either invokes
+        :py:func:`next_float16_normal`, :py:func:`next_float32_normal` or
+        :py:func:`next_float64_normal` depending on the requested precision.
+
+        A mask can be optionally provided. Masked entries do not advance the PRNG state.
+
+        Parameter ``dtype`` (type):
+            *no description available*
+
+        Parameter ``mask`` (object):
+            *no description available*
+
+        Returns → object:
             *no description available*
 
     .. py:method:: mitsuba.PCG32.next_uint32()
@@ -8314,6 +9014,185 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
+    .. py:method:: mitsuba.PCG32.prev_float(self, dtype, mask=True)
+
+        Generate the previous uniformly distributed precision floating point number
+        on the half-open interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        The function analyzes the provided target ``dtype`` and either invokes
+        :py:func:`prev_float16`, :py:func:`prev_float32` or :py:func:`prev_float64`
+        depending on the
+        requested precision.
+
+        A mask can be optionally provided. Masked entries do not regress the PRNG state.
+
+        Parameter ``dtype`` (type):
+            *no description available*
+
+        Parameter ``mask`` (object):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float16()
+
+        Overloaded function.
+
+        1. ``prev_float16(self) -> drjit.llvm.ad.Float16``
+
+        Generate the previous uniformly distributed half precision floating point number
+        on the half-open interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float16(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float16``
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float16_normal()
+
+        Overloaded function.
+
+        1. ``prev_float16_normal(self) -> drjit.llvm.ad.Float16``
+
+        Generate the previous (standard) normally distributed half precision floating
+        point number by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float16_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float16``
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float32()
+
+        Overloaded function.
+
+        1. ``prev_float32(self) -> drjit.llvm.ad.Float``
+
+        Generate the previous uniformly distributed single precision floating point number
+        on the half-open interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float32_normal()
+
+        Overloaded function.
+
+        1. ``prev_float32_normal(self) -> drjit.llvm.ad.Float``
+
+        Generate the previous (standard) normally distributed single precision floating
+        point number by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float32_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float64()
+
+        Overloaded function.
+
+        1. ``prev_float64(self) -> drjit.llvm.ad.Float64``
+
+        Generate the previous uniformly distributed double precision floating point number
+        on the half-open interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float64_normal()
+
+        Overloaded function.
+
+        1. ``prev_float64_normal(self) -> drjit.llvm.ad.Float64``
+
+        Generate the previous (standard) normally distributed double precision floating
+        point number by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float64_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float_normal(self, dtype, mask=True)
+
+        Generate the previous (standard) normally distributed precision floating point number
+        by stepping the PCG32 state backwards.
+
+        The function analyzes the provided target ``dtype`` and either invokes
+        :py:func:`prev_float16_normal`, :py:func:`prev_float32_normal` or
+        :py:func:`prev_float64_normal` depending on the requested precision.
+
+        A mask can be optionally provided. Masked entries do not regress the PRNG state.
+
+        Parameter ``dtype`` (type):
+            *no description available*
+
+        Parameter ``mask`` (object):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_uint32()
+
+        Overloaded function.
+
+        1. ``prev_uint32(self) -> drjit.llvm.ad.UInt``
+
+        Generate the previous uniformly distributed unsigned 32-bit random number
+        by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not
+        regress the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_uint32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.UInt``
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_uint64()
+
+        Overloaded function.
+
+        1. ``prev_uint64(self) -> drjit.llvm.ad.UInt64``
+
+        Generate the previous uniformly distributed unsigned 64-bit random number
+        by stepping the PCG32 state backwards.
+
+        Internally, the function calls :py:func:`prev_uint32` twice.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_uint64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.UInt64``
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
     .. py:method:: mitsuba.PCG32.seed(self, initstate=UInt64(0x853c49e6748fea9b), initseq=UInt64(0xda3e39cb94b95bdb))
 
         Seed the random number generator with the given initial state and sequence ID.
@@ -8358,9 +9237,25 @@
 
         Tracking gradients w.r.t. this parameter will introduce discontinuities
 
+    .. py:data:: ReadOnly
+
+        This parameter is read-only
+
 .. py:class:: mitsuba.PhaseFunction
 
     Base class: :py:obj:`mitsuba.Object`
+
+    Abstract phase function base-class.
+
+    This class provides an abstract interface to all Phase function
+    plugins in Mitsuba. It exposes functions for evaluating and sampling
+    the model.
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
 
     .. py:method:: mitsuba.PhaseFunction.component_count(self, active=True)
 
@@ -8417,13 +9312,6 @@
             Mask to specify active lanes.
 
         Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.PhaseFunction.id()
-
-        Return a string identifier
-
-        Returns → str:
             *no description available*
 
     .. py:property:: mitsuba.PhaseFunction.m_flags
@@ -8647,45 +9535,46 @@
 
 .. py:class:: mitsuba.PluginManager
 
-    The object factory is responsible for loading plugin modules and
-    instantiating object instances.
+    Plugin manager
 
-    Ordinarily, this class will be used by making repeated calls to the
-    create_object() methods. The generated instances are then assembled
-    into a final object graph, such as a scene. One such examples is the
-    SceneHandler class, which parses an XML scene file by essentially
-    translating the XML elements into calls to create_object().
+    The plugin manager's main feature is the create_object() function that
+    instantiates scene objects. To do its job, it loads external Mitsuba
+    plugins as needed.
 
-    .. py:method:: mitsuba.PluginManager.create_object(self, arg)
+    When used from Python, it is also possible to register external
+    plugins so that they can be instantiated analogously.
 
-        Instantiate a plugin, verify its type, and return the newly created
-        object instance.
+    .. py:method:: mitsuba.PluginManager.create_object(self, props)
 
-        Parameter ``props``:
+        Create a plugin object with the provided information
+
+        This function potentially loads an external plugin module (if not
+        already present), creates an instance, verifies its type, and finally
+        returns the newly created object instance.
+
+        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
             A Properties instance containing all information required to find
             and construct the plugin.
 
-        Parameter ``class_type``:
-            Expected type of the instance. An exception will be thrown if it
-            turns out not to derive from this class.
+        Parameter ``variant``:
+            The variant (e.g. 'scalar_rgb') of the plugin to instantiate
 
-        Parameter ``arg`` (:py:obj:`mitsuba._Properties`, /):
-            *no description available*
+        Parameter ``type``:
+            The expected interface of the instantiated plugin. Mismatches here
+            will produce an error message. Pass `ObjectType::Unknown` to
+            disable this check.
 
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.PluginManager.get_plugin_class(self, name, variant)
+    .. py:method:: mitsuba.PluginManager.plugin_type(self, name)
 
-        Return the class corresponding to a plugin for a specific variant
+        Get the ObjectType of a plugin by name
 
         Parameter ``name`` (str):
             *no description available*
 
-        Parameter ``variant`` (str):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Class`:
+        Returns → :py:obj:`mitsuba.ObjectType`:
             *no description available*
 
 .. py:class:: mitsuba.Point0d
@@ -8809,8 +9698,8 @@
     preliminary information about the intersection if that is the case.
 
     If the intersection is deemed relevant, detailed intersection
-    information can later be obtained via the create_surface_interaction()
-    method.
+    information can later be obtained via the
+    compute_surface_interaction() method.
 
     .. py:method:: __init__()
 
@@ -8932,54 +9821,575 @@
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.Properties
+    .. py:method:: mitsuba.ProjectiveCamera.projection_transform()
 
-    Base class: :py:obj:`mitsuba._Properties`
-
-    Overloaded function.
-
-    1. ``__init__(self) -> None``
-
-    Construct an empty property container
-
-    2. ``__init__(self, arg: str, /) -> None``
-
-    Construct an empty property container with a specific plugin name
-
-    3. ``__init__(self, arg: :py:obj:`mitsuba.Properties`) -> None``
-
-    Copy constructor
-
-    .. py:method:: mitsuba.Properties.as_string(self, arg)
-
-        Return one of the parameters (converting it to a string if necessary)
-
-        Parameter ``arg`` (str, /):
+        Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
             *no description available*
 
-        Returns → str:
-            *no description available*
+.. py:class:: mitsuba.ProjectiveTransform3d
 
-    .. py:method:: mitsuba.Properties.copy_attribute(self, arg0, arg1, arg2)
+    Unified homogeneous coordinate transformation
 
-        Copy a single attribute from another Properties object and potentially
-        rename it
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
 
-        Parameter ``arg0`` (:py:obj:`mitsuba._Properties`):
-            *no description available*
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
 
-        Parameter ``arg1`` (str):
-            *no description available*
+    .. py:method:: __init__()
 
-        Parameter ``arg2`` (str, /):
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f64, arg1: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3d`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3d`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f64, arg1: drjit.llvm.ad.Matrix3f64, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3d`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.ProjectiveTransform3d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform3d`, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.ProjectiveTransform3d.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3d.inverse()
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform3d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ProjectiveTransform3d.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix3f64
+
+    .. py:property:: mitsuba.ProjectiveTransform3d.matrix
+
+        (self) -> drjit.llvm.ad.Matrix3f64
+
+    .. py:method:: mitsuba.ProjectiveTransform3d.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3d.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3d.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform3d`:
+            *no description available*
+
+.. py:class:: mitsuba.ProjectiveTransform3f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f, arg1: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3f`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3f`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f, arg1: drjit.llvm.ad.Matrix3f, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3f`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.ProjectiveTransform3f.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform3f`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3f.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3f.inverse()
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ProjectiveTransform3f.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix3f
+
+    .. py:property:: mitsuba.ProjectiveTransform3f.matrix
+
+        (self) -> drjit.llvm.ad.Matrix3f
+
+    .. py:method:: mitsuba.ProjectiveTransform3f.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3f.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector2f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform3f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform3f`:
+            *no description available*
+
+.. py:class:: mitsuba.ProjectiveTransform4d
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f64, arg1: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4d`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4d`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f64, arg1: drjit.llvm.ad.Matrix4f64, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4d`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.ProjectiveTransform4d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform4d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4d.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4d.inverse()
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform4d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ProjectiveTransform4d.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix4f64
+
+    .. py:property:: mitsuba.ProjectiveTransform4d.matrix
+
+        (self) -> drjit.llvm.ad.Matrix4f64
+
+    .. py:method:: mitsuba.ProjectiveTransform4d.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4d.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4d.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform4d`:
+            *no description available*
+
+.. py:class:: mitsuba.ProjectiveTransform4f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f, arg1: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4f`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4f`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f, arg1: drjit.llvm.ad.Matrix4f, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+        
+        
+        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4f`, /) -> None``
+        
+        Broadcast constructor
+
+        
+    .. py:method:: mitsuba.ProjectiveTransform4f.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform4f`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4f.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4f.inverse()
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ProjectiveTransform4f.inverse_transpose
+
+        (self) -> drjit.llvm.ad.Matrix4f
+
+    .. py:property:: mitsuba.ProjectiveTransform4f.matrix
+
+        (self) -> drjit.llvm.ad.Matrix4f
+
+    .. py:method:: mitsuba.ProjectiveTransform4f.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4f.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ProjectiveTransform4f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
+            *no description available*
+
+.. py:class:: mitsuba.Properties
+
+
+    .. py:method:: ``__init__()
+
+        Construct an empty and unnamed properties object
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
+        Construct an empty properties object with a specific plugin name
+
+        Parameter ``arg`` (str, /):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
+        Copy constructor
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:class:: mitsuba.Properties.Type
+
+        Valid values are as follows:
+
+        .. py:data:: Bool
+
+            Boolean value (true/false)
+
+        .. py:data:: Integer
+
+            64-bit signed integer
+
+        .. py:data:: Float
+
+            Floating point value
+
+        .. py:data:: Vector
+
+            3D array
+
+        .. py:data:: Transform
+
+            3x3 or 4x4 homogeneous coordinate transform
+
+        .. py:data:: Color
+
+            Tristimulus color value
+
+        .. py:data:: Spectrum
+
+            Spectrum data (uniform value or wavelength-value pairs)
+
+        .. py:data:: String
+
+            String
+
+        .. py:data:: Reference
+
+            Indirect reference to another scene object (by name)
+
+        .. py:data:: ResolvedReference
+
+            Indirect reference to another scene object (by index)
+
+        .. py:data:: Object
+
+            An arbitrary Mitsuba scene object
+
+        .. py:data:: Any
+
+            Generic type wrapper for arbitrary data exchange between plugins
+
+    .. py:method:: mitsuba.Properties.as_string(self, key)
+
+        Return one of the parameters (converting it to a string if necessary)
+
+        Parameter ``key`` (str):
+            *no description available*
+
+        Returns → str:
+            *no description available*
+
     .. py:method:: mitsuba.Properties.get(self, key, def_value=None)
 
-        Return the value for the specified key it exists, otherwise return default value
+        Retrieve a scalar parameter by name
+
+        Look up the property ``name``. Raises an exception if the property
+        cannot be found, or when it has an incompatible type. Accessing the
+        parameter automatically marks it as queried (see was_queried).
+
+        The template parameter ``T`` may refer to:
+
+        - Strings (``std::string``)
+
+        - Arithmetic types (``bool``, ``float``, ``double``, ``uint32_t``,
+        ``int32_t``, ``uint64_t``, ``int64_t``, ``size_t``).
+
+        - Points/vectors (``ScalarPoint2f``, ``ScalarPoint3f``,
+        `ScalarVector2f``, or ``ScalarVector3f``).
+
+        - Tri-stimulus color values (``ScalarColor3f``).
+
+        - Affine transformations (``ScalarTransform3f``,
+        ``ScalarTransform4f``)
+
+        - Mitsuba object classes (``ref<BSDF>``, ``BSDF *``, etc.)
+
+        Both single/double precision versions of arithmetic types are
+        supported; the function will convert them as needed. The function
+        *cannot* be used to obtain vectorized (e.g. JIT-compiled) arrays.
 
         Parameter ``key`` (str):
             *no description available*
@@ -8990,11 +10400,65 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.has_property(self, arg)
+    .. py:method:: mitsuba.Properties.get_emissive_texture(self, name)
 
-        Verify if a value with the specified name exists
+        Overloaded function.
 
-        Parameter ``arg`` (str, /):
+        1. ``get_emissive_texture(self, name: str) -> object``
+
+        Retrieve an emissive texture parameter
+
+        2. ``get_emissive_texture(self, name: str, default: float) -> object``
+
+        Retrieve an emissive texture parameter with default value
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.get_texture(self, name)
+
+        Overloaded function.
+
+        1. ``get_texture(self, name: str) -> object``
+
+        Retrieve a texture parameter
+
+        2. ``get_texture(self, name: str, default: float) -> object``
+
+        Retrieve a texture parameter with default value
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.get_unbounded_texture(self, name)
+
+        Overloaded function.
+
+        1. ``get_unbounded_texture(self, name: str) -> object``
+
+        Retrieve an unbounded texture parameter
+
+        2. ``get_unbounded_texture(self, name: str, default: float) -> object``
+
+        Retrieve an unbounded texture parameter with default value
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.has_property(self, key)
+
+        Deprecated: use 'key in props' instead
+
+        Parameter ``key`` (str):
             *no description available*
 
         Returns → bool:
@@ -9005,14 +10469,36 @@
         Returns a unique identifier associated with this instance (or an empty
         string)
 
+        The ID is used to enable named references by other plugins
+
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.mark_queried(self, arg)
+    .. py:method:: mitsuba.Properties.items()
+
+        Return a list of (key, value) tuples
+
+        Returns → list:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.keys()
+
+        Return a list of property names
+
+        Returns → list:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.mark_queried(self, key, value=True)
 
         Manually mark a certain property as queried
 
-        Parameter ``arg`` (str, /):
+        Parameter ``name``:
+            The property name
+
+        Parameter ``value`` (bool):
+            Whether to mark as queried (true) or unqueried (false)
+
+        Parameter ``key`` (str):
             *no description available*
 
         Returns → bool:
@@ -9025,40 +10511,52 @@
         Existing properties will be overwritten with the values from ``props``
         if they have the same name.
 
-        Parameter ``arg`` (:py:obj:`mitsuba._Properties`, /):
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.named_references()
+    .. py:method:: mitsuba.Properties.objects(self, mark_queried=True)
 
-        Returns → list[tuple[str, str]]:
+        Return all object properties
+
+        Parameter ``mark_queried`` (bool):
+            *no description available*
+
+        Returns → list[tuple[str, :py:obj:`mitsuba.Object`]]:
             *no description available*
 
     .. py:method:: mitsuba.Properties.plugin_name()
 
-        Get the associated plugin name
+        Get the plugin name
 
         Returns → str:
             *no description available*
 
     .. py:method:: mitsuba.Properties.property_names()
 
-        Return an array containing the names of all stored properties
+        Deprecated: use 'props.keys()' instead
 
         Returns → list[str]:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.remove_property(self, arg)
+    .. py:method:: mitsuba.Properties.references()
 
-        Remove a property with the specified name
+        Return all reference properties
 
-        Parameter ``arg`` (str, /):
+        Returns → list[tuple[str, str]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.remove_property(self, key)
+
+        Deprecated: use 'del props[key]' instead
+
+        Parameter ``key`` (str):
             *no description available*
 
         Returns → bool:
-            ``True`` upon success
+            *no description available*
 
     .. py:method:: mitsuba.Properties.set_id(self, arg)
 
@@ -9072,7 +10570,7 @@
 
     .. py:method:: mitsuba.Properties.set_plugin_name(self, arg)
 
-        Set the associated plugin name
+        Set the plugin name
 
         Parameter ``arg`` (str, /):
             *no description available*
@@ -9080,33 +10578,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.string(self, arg0, arg1)
-
-        Retrieve a string value (use default value if no entry exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (str, /):
-            *no description available*
-
-        Returns → object:
-            *no description available*
-
     .. py:method:: mitsuba.Properties.type(self, arg)
 
-        Returns the type of an existing property. If no property exists under
-        that name, an error is logged and type ``void`` is returned.
+        Returns the type of an existing property.
+
+        Raises an exception if the property does not exist.
 
         Parameter ``arg`` (str, /):
             *no description available*
 
-        Returns → mitsuba::Properties::Type:
+        Returns → :py:obj:`mitsuba.Properties.Type`:
             *no description available*
 
     .. py:method:: mitsuba.Properties.unqueried()
 
-        Return the list of un-queried attributed
+        Return the list of unqueried attributed
 
         Returns → list[str]:
             *no description available*
@@ -9115,6 +10601,10 @@
 
         Check if a certain property was queried
 
+        Mitsuba assigns a queried bit with every parameter. Unqueried
+        parameters are detected to issue warnings, since this is usually
+        indicative of typos.
+
         Parameter ``arg`` (str, /):
             *no description available*
 
@@ -9122,6 +10612,10 @@
             *no description available*
 
 .. py:class:: mitsuba.Quaternion4f
+
+.. py:class:: mitsuba.Quaternion4f16
+
+.. py:class:: mitsuba.Quaternion4f64
 
 .. py:class:: mitsuba.RadicalInverse
 
@@ -9165,7 +10659,7 @@
 
     .. py:method:: mitsuba.RadicalInverse.eval(self, base_index, index)
 
-        Calculate the radical inverse function
+        Calculate the value of the radical inverse function
 
         This function is used as a building block to construct Halton and
         Hammersley sequences. Roughly, it computes a b-ary representation of
@@ -9233,7 +10727,7 @@
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point2f`, d: :py:obj:`mitsuba.Vector2f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
+        3. ``__init__(self, o: :py:obj:`mitsuba.Point2f`, d: :py:obj:`mitsuba.Vector2f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
@@ -9304,7 +10798,7 @@
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
+        3. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
@@ -9375,7 +10869,7 @@
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point3f`, d: :py:obj:`mitsuba.Vector3f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
+        3. ``__init__(self, o: :py:obj:`mitsuba.Point3f`, d: :py:obj:`mitsuba.Vector3f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
@@ -9625,8 +11119,8 @@
         
         This constructor precomputes all information needed to efficiently
         perform the desired resampling operation. For that reason, it is most
-        efficient if it can be used over and over again (e.g. to resample the
-        equal-sized rows of a bitmap)
+        efficient if it can be used repeatedly (e.g. to resample the equal-
+        sized rows of a bitmap)
         
         Parameter ``source_res`` (int):
             Source resolution
@@ -9730,7 +11224,7 @@
     .. py:method:: ``__init__(self, arg0, arg1)
 
         Construct from a pair of 3D vectors [S_xx, S_yy, S_zz] and [S_xy,
-        S_xz, S_yz] that correspond to the entries of a symmetric positive
+        S_xz, S_yz] that correspond to the entries of a symmetric positive-
         definite 3x3 matrix.
 
         Parameter ``arg0`` (drjit.llvm.ad.Array3f):
@@ -9988,7 +11482,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -10008,7 +11502,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -10048,7 +11542,7 @@
         Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Bool, list[drjit.llvm.ad.Float]]:
             A pair containing a spectrum and a mask specifying whether a
             surface or medium interaction was sampled. False mask entries
-            indicate that the ray "escaped" the scene, in which case the the
+            indicate that the ray "escaped" the scene, in which case the
             returned spectrum contains the contribution of environment maps,
             if present. The mask can be used to estimate a suitable alpha
             channel of a rendered image.
@@ -10061,6 +11555,458 @@
 
             (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
 
+
+.. py:class:: mitsuba.ScalarAffineTransform3d
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.scalar.Matrix3f64, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.scalar.Matrix3f64, arg1: drjit.scalar.Matrix3f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3d`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3d`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.scalar.Matrix3f64, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.scalar.Matrix3f64, arg1: drjit.scalar.Matrix3f64, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+
+        
+    .. py:method:: mitsuba.ScalarAffineTransform3d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform3d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3d.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → :py:obj:`mitsuba.Transform`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3d.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3d.inverse()
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform3d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarAffineTransform3d.inverse_transpose
+
+        (self) -> drjit.scalar.Matrix3f64
+
+    .. py:property:: mitsuba.ScalarAffineTransform3d.matrix
+
+        (self) -> drjit.scalar.Matrix3f64
+
+    .. py:method:: mitsuba.ScalarAffineTransform3d.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3d.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.ScalarVector2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3d.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform3d`:
+            *no description available*
+
+.. py:class:: mitsuba.ScalarAffineTransform3f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.scalar.Matrix3f, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.scalar.Matrix3f, arg1: drjit.scalar.Matrix3f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3f`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3f`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.scalar.Matrix3f, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.scalar.Matrix3f, arg1: drjit.scalar.Matrix3f, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+
+        
+    .. py:method:: mitsuba.ScalarAffineTransform3f.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform3f`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3f.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → :py:obj:`mitsuba.Transform`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3f.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3f.inverse()
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarAffineTransform3f.inverse_transpose
+
+        (self) -> drjit.scalar.Matrix3f
+
+    .. py:property:: mitsuba.ScalarAffineTransform3f.matrix
+
+        (self) -> drjit.scalar.Matrix3f
+
+    .. py:method:: mitsuba.ScalarAffineTransform3f.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3f.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.ScalarVector2f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform3f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform3f`:
+            *no description available*
+
+.. py:class:: mitsuba.ScalarAffineTransform4d
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.scalar.Matrix4f64, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.scalar.Matrix4f64, arg1: drjit.scalar.Matrix4f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4d`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4d`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.scalar.Matrix4f64, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.scalar.Matrix4f64, arg1: drjit.scalar.Matrix4f64, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+
+        
+    .. py:method:: mitsuba.ScalarAffineTransform4d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform4d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4d.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4d.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4d.inverse()
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform4d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarAffineTransform4d.inverse_transpose
+
+        (self) -> drjit.scalar.Matrix4f64
+
+    .. py:property:: mitsuba.ScalarAffineTransform4d.matrix
+
+        (self) -> drjit.scalar.Matrix4f64
+
+    .. py:method:: mitsuba.ScalarAffineTransform4d.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4d.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.ScalarVector3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4d.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform4d`:
+            *no description available*
+
+.. py:class:: mitsuba.ScalarAffineTransform4f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Initialize with the identity matrix
+        
+        2. ``__init__(self, arg: drjit.scalar.Matrix4f, /) -> None``
+        
+        Construct from a matrix
+        
+        3. ``__init__(self, arg0: drjit.scalar.Matrix4f, arg1: drjit.scalar.Matrix4f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4f`) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4f`, /) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        7. ``__init__(self, arg: drjit.scalar.Matrix4f, /) -> None``
+        
+        Initialize the transformation from the given matrix
+        
+        8. ``__init__(self, arg0: drjit.scalar.Matrix4f, arg1: drjit.scalar.Matrix4f, /) -> None``
+        
+        Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
+
+        
+    .. py:method:: mitsuba.ScalarAffineTransform4f.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform4f`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4f.extract()
+
+        Extract a lower-dimensional submatrix (only for affine transforms)
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4f.has_scale()
+
+        Test for a scale component in each transform matrix by checking
+        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+        ``I`` is the identity).
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4f.inverse()
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform4f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarAffineTransform4f.inverse_transpose
+
+        (self) -> drjit.scalar.Matrix4f
+
+    .. py:property:: mitsuba.ScalarAffineTransform4f.matrix
+
+        (self) -> drjit.scalar.Matrix4f
+
+    .. py:method:: mitsuba.ScalarAffineTransform4f.transform_affine(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4f.translation()
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.ScalarVector3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarAffineTransform4f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ScalarAffineTransform4f`:
+            *no description available*
 
 .. py:class:: mitsuba.ScalarBoundingBox2f
 
@@ -10678,7 +12624,7 @@
 
     .. py:method:: mitsuba.ScalarBoundingSphere3f.expand(self, arg)
 
-        Expand the bounding sphere radius to contain another point.
+        Expand the bounding sphere radius to contain another point
 
         Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint3f`, /):
             *no description available*
@@ -10756,15 +12702,21 @@
 
 .. py:class:: mitsuba.ScalarPoint4u
 
-.. py:class:: mitsuba.ScalarTransform3d
+.. py:class:: mitsuba.ScalarProjectiveTransform3d
 
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
+    Unified homogeneous coordinate transformation
 
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
 
     .. py:method:: __init__()
 
@@ -10774,35 +12726,45 @@
         
         Initialize with the identity matrix
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform3d`) -> None``
+        2. ``__init__(self, arg: drjit.scalar.Matrix3f64, /) -> None``
         
-        Copy constructor
+        Construct from a matrix
         
-        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        3. ``__init__(self, arg0: drjit.scalar.Matrix3f64, arg1: drjit.scalar.Matrix3f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3d`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3d`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
         
         
-        4. ``__init__(self) -> None``
+        7. ``__init__(self, arg: drjit.scalar.Matrix3f64, /) -> None``
         
+        Initialize the transformation from the given matrix
         
-        5. ``__init__(self, arg: drjit.scalar.Matrix3f64, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.scalar.Matrix3f64, arg1: drjit.scalar.Matrix3f64, /) -> None``
+        8. ``__init__(self, arg0: drjit.scalar.Matrix3f64, arg1: drjit.scalar.Matrix3f64, /) -> None``
         
         Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarTransform3d.assign(self, arg)
+    .. py:method:: mitsuba.ScalarProjectiveTransform3d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarTransform3d`, /):
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform3d`, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3d.has_scale()
+    .. py:method:: mitsuba.ScalarProjectiveTransform3d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -10811,47 +12773,20 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3d.inverse()
+    .. py:method:: mitsuba.ScalarProjectiveTransform3d.inverse()
 
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3d`:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarTransform3d.inverse_transpose
+    .. py:property:: mitsuba.ScalarProjectiveTransform3d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:property:: mitsuba.ScalarTransform3d.matrix
+    .. py:property:: mitsuba.ScalarProjectiveTransform3d.matrix
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:method:: mitsuba.ScalarTransform3d.rotate(self, angle)
-
-        Create a rotation transformation in 2D. The angle is specified in
-        degrees
-
-        Parameter ``angle`` (float):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform3d.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform3d.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
+    .. py:method:: mitsuba.ScalarProjectiveTransform3d.transform_affine(self, p)
 
         Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2d`):
             *no description available*
@@ -10859,32 +12794,35 @@
         Returns → :py:obj:`mitsuba.ScalarPoint2d`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3d.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform3d.translation()
+    .. py:method:: mitsuba.ScalarProjectiveTransform3d.translation()
 
         Get the translation part of a matrix
 
         Returns → :py:obj:`mitsuba.ScalarVector2d`:
             *no description available*
 
-.. py:class:: mitsuba.ScalarTransform3f
+    .. py:method:: mitsuba.ScalarProjectiveTransform3d.update()
 
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
+        Update the inverse transpose part following a modification to 'matrix'
 
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3d`:
+            *no description available*
+
+.. py:class:: mitsuba.ScalarProjectiveTransform3f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
 
     .. py:method:: __init__()
 
@@ -10894,35 +12832,45 @@
         
         Initialize with the identity matrix
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform3f`) -> None``
+        2. ``__init__(self, arg: drjit.scalar.Matrix3f, /) -> None``
         
-        Copy constructor
+        Construct from a matrix
         
-        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        3. ``__init__(self, arg0: drjit.scalar.Matrix3f, arg1: drjit.scalar.Matrix3f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3f`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3f`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
         
         
-        4. ``__init__(self) -> None``
+        7. ``__init__(self, arg: drjit.scalar.Matrix3f, /) -> None``
         
+        Initialize the transformation from the given matrix
         
-        5. ``__init__(self, arg: drjit.scalar.Matrix3f, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.scalar.Matrix3f, arg1: drjit.scalar.Matrix3f, /) -> None``
+        8. ``__init__(self, arg0: drjit.scalar.Matrix3f, arg1: drjit.scalar.Matrix3f, /) -> None``
         
         Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarTransform3f.assign(self, arg)
+    .. py:method:: mitsuba.ScalarProjectiveTransform3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarTransform3f`, /):
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform3f`, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3f.has_scale()
+    .. py:method:: mitsuba.ScalarProjectiveTransform3f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -10931,47 +12879,20 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3f.inverse()
+    .. py:method:: mitsuba.ScalarProjectiveTransform3f.inverse()
 
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3f`:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarTransform3f.inverse_transpose
+    .. py:property:: mitsuba.ScalarProjectiveTransform3f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:property:: mitsuba.ScalarTransform3f.matrix
+    .. py:property:: mitsuba.ScalarProjectiveTransform3f.matrix
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:method:: mitsuba.ScalarTransform3f.rotate(self, angle)
-
-        Create a rotation transformation in 2D. The angle is specified in
-        degrees
-
-        Parameter ``angle`` (float):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform3f.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform3f.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
+    .. py:method:: mitsuba.ScalarProjectiveTransform3f.transform_affine(self, p)
 
         Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2f`):
             *no description available*
@@ -10979,32 +12900,35 @@
         Returns → :py:obj:`mitsuba.ScalarPoint2f`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3f.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform3f.translation()
+    .. py:method:: mitsuba.ScalarProjectiveTransform3f.translation()
 
         Get the translation part of a matrix
 
         Returns → :py:obj:`mitsuba.ScalarVector2f`:
             *no description available*
 
-.. py:class:: mitsuba.ScalarTransform4d
+    .. py:method:: mitsuba.ScalarProjectiveTransform3f.update()
 
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
+        Update the inverse transpose part following a modification to 'matrix'
 
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3f`:
+            *no description available*
+
+.. py:class:: mitsuba.ScalarProjectiveTransform4d
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
 
     .. py:method:: __init__()
 
@@ -11014,53 +12938,45 @@
         
         Initialize with the identity matrix
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform4d`) -> None``
+        2. ``__init__(self, arg: drjit.scalar.Matrix4f64, /) -> None``
         
-        Copy constructor
+        Construct from a matrix
         
-        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        3. ``__init__(self, arg0: drjit.scalar.Matrix4f64, arg1: drjit.scalar.Matrix4f64, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4d`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4d`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
         
         
-        4. ``__init__(self, arg: list, /) -> None``
+        7. ``__init__(self, arg: drjit.scalar.Matrix4f64, /) -> None``
         
+        Initialize the transformation from the given matrix
         
-        5. ``__init__(self, arg: drjit.scalar.Matrix4f64, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.scalar.Matrix4f64, arg1: drjit.scalar.Matrix4f64, /) -> None``
+        8. ``__init__(self, arg0: drjit.scalar.Matrix4f64, arg1: drjit.scalar.Matrix4f64, /) -> None``
         
         Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarTransform4d.assign(self, arg)
+    .. py:method:: mitsuba.ScalarProjectiveTransform4d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarTransform4d`, /):
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform4d`, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4d.extract()
-
-        Extract a lower-dimensional submatrix
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.from_frame(self, frame)
-
-        Creates a transformation that converts from 'frame' to the standard
-        basis
-
-        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.has_scale()
+    .. py:method:: mitsuba.ScalarProjectiveTransform4d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -11069,114 +12985,20 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4d.inverse()
+    .. py:method:: mitsuba.ScalarProjectiveTransform4d.inverse()
 
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4d`:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarTransform4d.inverse_transpose
+    .. py:property:: mitsuba.ScalarProjectiveTransform4d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f64
 
-    .. py:method:: mitsuba.ScalarTransform4d.look_at(self, origin, target, up)
-
-        Create a look-at camera transformation
-
-        Parameter ``origin`` (:py:obj:`mitsuba.ScalarPoint3d`):
-            Camera position
-
-        Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3d`):
-            Target vector
-
-        Parameter ``up`` (:py:obj:`mitsuba.ScalarPoint3d`):
-            Up vector
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:property:: mitsuba.ScalarTransform4d.matrix
+    .. py:property:: mitsuba.ScalarProjectiveTransform4d.matrix
 
         (self) -> drjit.scalar.Matrix4f64
 
-    .. py:method:: mitsuba.ScalarTransform4d.orthographic(self, near, far)
-
-        Create an orthographic transformation, which maps Z to [0,1] and
-        leaves the X and Y coordinates untouched.
-
-        Parameter ``near`` (float):
-            Near clipping plane
-
-        Parameter ``far`` (float):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.perspective(self, fov, near, far)
-
-        Create a perspective transformation. (Maps [near, far] to [0, 1])
-
-        Projects vectors in camera space onto a plane at z=1:
-
-        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
-        near))
-
-        Camera-space depths are not mapped linearly!
-
-        Parameter ``fov`` (float):
-            Field of view in degrees
-
-        Parameter ``near`` (float):
-            Near clipping plane
-
-        Parameter ``far`` (float):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.rotate(self, axis, angle)
-
-        Create a rotation transformation around an arbitrary axis in 3D. The
-        angle is specified in degrees
-
-        Parameter ``axis`` (:py:obj:`mitsuba.ScalarPoint3d`):
-            *no description available*
-
-        Parameter ``angle`` (float):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.to_frame(self, frame)
-
-        Creates a transformation that converts from the standard basis to
-        'frame'
-
-        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
+    .. py:method:: mitsuba.ScalarProjectiveTransform4d.transform_affine(self, p)
 
         Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3d`):
             *no description available*
@@ -11184,32 +13006,35 @@
         Returns → :py:obj:`mitsuba.ScalarPoint3d`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4d.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4d.translation()
+    .. py:method:: mitsuba.ScalarProjectiveTransform4d.translation()
 
         Get the translation part of a matrix
 
         Returns → :py:obj:`mitsuba.ScalarVector3d`:
             *no description available*
 
-.. py:class:: mitsuba.ScalarTransform4f
+    .. py:method:: mitsuba.ScalarProjectiveTransform4d.update()
 
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
+        Update the inverse transpose part following a modification to 'matrix'
 
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4d`:
+            *no description available*
+
+.. py:class:: mitsuba.ScalarProjectiveTransform4f
+
+    Unified homogeneous coordinate transformation
+
+    This class represents homogeneous coordinate transformations, i.e.,
+    composable mappings that include rotations, scaling, translations, and
+    perspective transformation. As a special case, the implementation can
+    also be specialized to *affine* (non-perspective) transformations,
+    which imposes a simpler structure that can be exploited to simplify
+    certain operations (e.g., transformation of points, compsition,
+    initialization from a matrix).
+
+    The class internally stores the matrix and its inverse transpose. The
+    latter is precomputed so that the class admits efficient
+    transformation of surface normals.
 
     .. py:method:: __init__()
 
@@ -11219,53 +13044,45 @@
         
         Initialize with the identity matrix
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform4f`) -> None``
+        2. ``__init__(self, arg: drjit.scalar.Matrix4f, /) -> None``
         
-        Copy constructor
+        Construct from a matrix
         
-        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        3. ``__init__(self, arg0: drjit.scalar.Matrix4f, arg1: drjit.scalar.Matrix4f, /) -> None``
+        
+        Construct from a matrix and its inverse transpose
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4f`, /) -> None``
+        
+        Construct from an affine transformation
+        
+        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4f`) -> None``
+        
+        Construct from an projective transformation
+        
+        6. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
         
         
-        4. ``__init__(self, arg: list, /) -> None``
+        7. ``__init__(self, arg: drjit.scalar.Matrix4f, /) -> None``
         
+        Initialize the transformation from the given matrix
         
-        5. ``__init__(self, arg: drjit.scalar.Matrix4f, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.scalar.Matrix4f, arg1: drjit.scalar.Matrix4f, /) -> None``
+        8. ``__init__(self, arg0: drjit.scalar.Matrix4f, arg1: drjit.scalar.Matrix4f, /) -> None``
         
         Initialize from a matrix and its inverse transpose
+        
+        9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarTransform4f.assign(self, arg)
+    .. py:method:: mitsuba.ScalarProjectiveTransform4f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarTransform4f`, /):
+        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform4f`, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4f.extract()
-
-        Extract a lower-dimensional submatrix
-
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.from_frame(self, frame)
-
-        Creates a transformation that converts from 'frame' to the standard
-        basis
-
-        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.has_scale()
+    .. py:method:: mitsuba.ScalarProjectiveTransform4f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -11274,114 +13091,20 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4f.inverse()
+    .. py:method:: mitsuba.ScalarProjectiveTransform4f.inverse()
 
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4f`:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarTransform4f.inverse_transpose
+    .. py:property:: mitsuba.ScalarProjectiveTransform4f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f
 
-    .. py:method:: mitsuba.ScalarTransform4f.look_at(self, origin, target, up)
-
-        Create a look-at camera transformation
-
-        Parameter ``origin`` (:py:obj:`mitsuba.ScalarPoint3f`):
-            Camera position
-
-        Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3f`):
-            Target vector
-
-        Parameter ``up`` (:py:obj:`mitsuba.ScalarPoint3f`):
-            Up vector
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:property:: mitsuba.ScalarTransform4f.matrix
+    .. py:property:: mitsuba.ScalarProjectiveTransform4f.matrix
 
         (self) -> drjit.scalar.Matrix4f
 
-    .. py:method:: mitsuba.ScalarTransform4f.orthographic(self, near, far)
-
-        Create an orthographic transformation, which maps Z to [0,1] and
-        leaves the X and Y coordinates untouched.
-
-        Parameter ``near`` (float):
-            Near clipping plane
-
-        Parameter ``far`` (float):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.perspective(self, fov, near, far)
-
-        Create a perspective transformation. (Maps [near, far] to [0, 1])
-
-        Projects vectors in camera space onto a plane at z=1:
-
-        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
-        near))
-
-        Camera-space depths are not mapped linearly!
-
-        Parameter ``fov`` (float):
-            Field of view in degrees
-
-        Parameter ``near`` (float):
-            Near clipping plane
-
-        Parameter ``far`` (float):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.rotate(self, axis, angle)
-
-        Create a rotation transformation around an arbitrary axis in 3D. The
-        angle is specified in degrees
-
-        Parameter ``axis`` (:py:obj:`mitsuba.ScalarPoint3f`):
-            *no description available*
-
-        Parameter ``angle`` (float):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.to_frame(self, frame)
-
-        Creates a transformation that converts from the standard basis to
-        'frame'
-
-        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
+    .. py:method:: mitsuba.ScalarProjectiveTransform4f.transform_affine(self, p)
 
         Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3f`):
             *no description available*
@@ -11389,21 +13112,18 @@
         Returns → :py:obj:`mitsuba.ScalarPoint3f`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4f.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.ScalarTransform4f.translation()
+    .. py:method:: mitsuba.ScalarProjectiveTransform4f.translation()
 
         Get the translation part of a matrix
 
         Returns → :py:obj:`mitsuba.ScalarVector3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ScalarProjectiveTransform4f.update()
+
+        Update the inverse transpose part following a modification to 'matrix'
+
+        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4f`:
             *no description available*
 
 .. py:class:: mitsuba.ScalarVector0d
@@ -11473,7 +13193,7 @@
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba._Properties`, /):
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
             *no description available*
 
 
@@ -11614,10 +13334,11 @@
 
         This method is a convenience wrapper of the generalized version of
         ``ray_intersect``() below. It assumes that incoherent rays are being
-        traced, and that the user desires access to all fields of the
-        SurfaceInteraction. In other words, it simply invokes the general
-        ``ray_intersect``() overload with ``coherent=false`` and ``ray_flags``
-        equal to RayFlags::All.
+        traced, that the user desires access to all fields of the
+        SurfaceInteraction, and that no thread reordering is requested. In
+        other words, it simply invokes the general ``ray_intersect``()
+        overload with ``coherent=false``, ``ray_flags`` equal to
+        RayFlags::All, and ``reorder=false``.
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
@@ -11631,6 +13352,75 @@
             should be queried to check if an intersection was actually found.
 
         2. ``ray_intersect(self, ray: :py:obj:`mitsuba.Ray3f`, ray_flags: int, coherent: drjit.llvm.ad.Bool, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.SurfaceInteraction3f```
+
+        Intersect a ray with the shapes comprising the scene and return a
+        detailed data structure describing the intersection, if one is found
+
+        In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+        function processes arrays of rays and returns arrays of surface
+        interactions following the usual conventions.
+
+        This ray intersection method exposes two additional flags to control
+        the intersection process. Internally, it is split into two steps:
+
+        <ol>
+
+        * Finding a PreliminaryInteraction using the ray tracing backend
+        underlying the current variant (i.e., Mitsuba's builtin kd-tree,
+        Embree, or OptiX). This is done using the ray_intersect_preliminary()
+        function that is also available directly below (and preferable if a
+        full SurfaceInteraction is not needed.).
+
+        * Expanding the PreliminaryInteraction into a full SurfaceInteraction
+        (this part happens within Mitsuba/Dr.Jit and tracks derivative
+        information in AD variants of the system).
+
+        </ol>
+
+        The SurfaceInteraction data structure is large, and computing its
+        contents in the second step requires a non-trivial amount of
+        computation and sequence of memory accesses. The ``ray_flags``
+        parameter can be used to specify that only a sub-set of the full
+        intersection data structure actually needs to be computed, which can
+        improve performance.
+
+        In the context of differentiable rendering, the ``ray_flags``
+        parameter also influences how derivatives propagate between the input
+        ray, the shape parameters, and the computed intersection (see
+        RayFlags::FollowShape and RayFlags::DetachShape for details on this).
+        The default, RayFlags::All, propagates derivatives through all steps
+        of the intersection computation.
+
+        The ``coherent`` flag is a hint that can improve performance in the
+        first step of finding the PreliminaryInteraction if the input set of
+        rays is coherent (e.g., when they are generated by
+        Sensor::sample_ray(), which means that adjacent rays will traverse
+        essentially the same region of space). This flag is currently only
+        used by the combination of ``llvm_*`` variants and the Embree ray
+        tracing backend.
+
+        This method is a convenience wrapper of the generalized
+        ``ray_intersect``() method below. It assumes that ``reorder=false``.
+
+        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+            A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
+            information, which matters when the shapes are in motion
+
+        Parameter ``ray_flags``:
+            An integer combining flag bits from RayFlags (merged using binary
+            or).
+
+        Parameter ``coherent``:
+            Setting this flag to ``True`` can noticeably improve performance
+            when ``ray`` contains a coherent set of rays (e.g. primary camera
+            rays), and when using ``llvm_*`` variants of the renderer along
+            with Embree. It has no effect in scalar or CUDA/OptiX variants.
+
+        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+            A detailed surface interaction record. Its ``is_valid()`` method
+            should be queried to check if an intersection was actually found.
+
+        3. ``ray_intersect(self, ray: :py:obj:`mitsuba.Ray3f`, ray_flags: int, coherent: drjit.llvm.ad.Bool, reorder: bool = False, reorder_hint: drjit.llvm.ad.UInt = 0, reorder_hint_bits: int = 0, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.SurfaceInteraction3f```
 
         Intersect a ray with the shapes comprising the scene and return a
         detailed data structure describing the intersection, if one is found
@@ -11679,6 +13469,12 @@
         used by the combination of ``llvm_*`` variants and the Embree ray
         tracing backend.
 
+        The ``reorder`` flag is a trigger for the Shader Execution Reordering
+        (SER) feature on NVIDIA GPUs. It can improve performance in highly
+        divergent workloads by shuffling threads into coherent warps. This
+        shuffling operation uses the result of the intersection (the shape ID)
+        as a sorting key to group threads into coherent warps.
+
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
@@ -11693,11 +13489,95 @@
             rays), and when using ``llvm_*`` variants of the renderer along
             with Embree. It has no effect in scalar or CUDA/OptiX variants.
 
+        Parameter ``reorder``:
+            Setting this flag to ``True`` will trigger a reordering of the
+            threads using the GPU's Shader Execution Reordering (SER)
+            functionality if the scene's ``allow_thread_reordering`` flag was
+            also set. This flag has no effect in scalar or LLVM variants.
+
+        Parameter ``reorder_hint``:
+            The reordering will always shuffle the threads based on the shape
+            the thread's ray intersected. However, additional granularity can
+            be achieved by providing an extra sorting key with this parameter.
+            This flag has no effect in scalar or LLVM variants, or if the
+            ``reorder`` parameter is ``False``.
+
+        Parameter ``reorder_hint_bits``:
+            Number of bits from the ``reorder_hint`` to use (starting from the
+            least significant bit). It is recommended to use as few as
+            possible. At most, 16 bits can be used. This flag has no effect in
+            scalar or LLVM variants, or if the ``reorder`` parameter is
+            ``False``.
+
         Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
             A detailed surface interaction record. Its ``is_valid()`` method
             should be queried to check if an intersection was actually found.
 
     .. py:method:: mitsuba.Scene.ray_intersect_preliminary(self, ray, coherent=False, active=True)
+
+        Overloaded function.
+
+        1. ``ray_intersect_preliminary(self, ray: :py:obj:`mitsuba.Ray3f`, coherent: drjit.llvm.ad.Bool = False, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.PreliminaryIntersection3f```
+
+        Intersect a ray with the shapes comprising the scene and return
+        preliminary information, if one is found
+
+        This function invokes the ray tracing backend underlying the current
+        variant (i.e., Mitsuba's builtin kd-tree, Embree, or OptiX) and
+        returns preliminary intersection information consisting of
+
+        * the ray distance up to the intersection (if one is found).
+
+        * the intersected shape and primitive index.
+
+        * local UV coordinates of the intersection within the primitive.
+
+        * A pointer to the intersected shape or instance.
+
+        The information is only preliminary at this point, because it lacks
+        various other information (geometric and shading frame, texture
+        coordinates, curvature, etc.) that is generally needed by shading
+        models. In variants of Mitsuba that perform automatic differentiation,
+        it is important to know that computation done by the ray tracing
+        backend is not reflected in Dr.Jit's computation graph. The
+        ray_intersect() method will re-evaluate certain parts of the
+        computation with derivative tracking to rectify this.
+
+        In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+        function processes arrays of rays and returns arrays of preliminary
+        intersection records following the usual conventions.
+
+        This method is a convenience wrapper of the generalized version of
+        ``ray_intersect_preliminary``() below, which assumes that no
+        reordering is requested. In other words, it simply invokes the general
+        ``ray_intersect_preliminary``() overload with ``reorder=false``.
+
+        The ``coherent`` flag is a hint that can improve performance if the
+        input set of rays is coherent (e.g., when they are generated by
+        Sensor::sample_ray(), which means that adjacent rays will traverse
+        essentially the same region of space). This flag is currently only
+        used by the combination of ``llvm_*`` variants and the Embree ray
+        intersector.
+
+        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+            A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
+            information, which matters when the shapes are in motion
+
+        Parameter ``coherent`` (drjit.llvm.ad.Bool):
+            Setting this flag to ``True`` can noticeably improve performance
+            when ``ray`` contains a coherent set of rays (e.g. primary camera
+            rays), and when using ``llvm_*`` variants of the renderer along
+            with Embree. It has no effect in scalar or CUDA/OptiX variants.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+            A preliminary surface interaction record. Its ``is_valid()``
+            method should be queried to check if an intersection was actually
+            found.
+
+        2. ``ray_intersect_preliminary(self, ray: :py:obj:`mitsuba.Ray3f`, coherent: drjit.llvm.ad.Bool, reorder: bool = False, reorder_hint: drjit.llvm.ad.UInt = 0, reorder_hint_bits: int = 0, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.PreliminaryIntersection3f```
 
         Intersect a ray with the shapes comprising the scene and return
         preliminary information, if one is found
@@ -11734,6 +13614,12 @@
         used by the combination of ``llvm_*`` variants and the Embree ray
         intersector.
 
+        The ``reorder`` flag is a trigger for the Shader Execution Reordering
+        (SER) feature on NVIDIA GPUs. It can improve performance in highly
+        divergent workloads by shuffling threads into coherent warps. This
+        shuffling operation uses the result of the intersection (the shape ID)
+        as a sorting key to group threads into coherent warps.
+
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
@@ -11744,8 +13630,25 @@
             rays), and when using ``llvm_*`` variants of the renderer along
             with Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask to specify active lanes.
+        Parameter ``reorder``:
+            Setting this flag to ``True`` will trigger a reordering of the
+            threads using the GPU's Shader Execution Reordering (SER)
+            functionality if the scene's ``allow_thread_reordering`` flag was
+            also set. This flag has no effect in scalar or LLVM variants.
+
+        Parameter ``reorder_hint``:
+            The reordering will always shuffle the threads based on the shape
+            the thread's ray intersected. However, additional granularity can
+            be achieved by providing an extra sorting key with this parameter.
+            This flag has no effect in scalar or LLVM variants, or if the
+            ``reorder`` parameter is ``False``.
+
+        Parameter ``reorder_hint_bits``:
+            Number of bits from the ``reorder_hint`` to use (starting from the
+            least significant bit). It is recommended to use as few as
+            possible. At most, 16 bits can be used. This flag has no effect in
+            scalar or LLVM variants, or if the ``reorder`` parameter is
+            ``False``.
 
         Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
             A preliminary surface interaction record. Its ``is_valid()``
@@ -11878,8 +13781,6 @@
         surface normal, solid angle density, whether Dirac delta distributions
         were involved, etc.)
 
-        *
-
         * ``spec`` is a Monte Carlo sampling weight specifying the ratio of
         the radiance incident from the emitter and the sample probability per
         unit solid angle.
@@ -11963,6 +13864,14 @@
         Returns → :py:obj:`mitsuba.SensorPtr`:
             *no description available*
 
+    .. py:method:: mitsuba.Scene.shape_types()
+
+        Returns a union of ShapeType flags denoting what is present in the
+        ShapeGroup
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Scene.shapes()
 
         Return the list of shapes
@@ -11997,8 +13906,7 @@
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~:py:obj:`mitsuba.SceneParameters.torch`()`,
-    :py:meth:`~:py:obj:`mitsuba.SceneParameters.update`()`, and
+    specifically :py:meth:`~:py:obj:`mitsuba.SceneParameters.update`()`, and
     :py:meth:`~:py:obj:`mitsuba.SceneParameters.keep`()`.
 
     .. py:method:: __init__()
@@ -12057,10 +13965,10 @@
             to be used to overwrite scene parameters. This operation will happen
             before propagating the update further into the scene internal state.
 
-        Parameter ``values`` (dict):
+        Parameter ``values`` (~collections.abc.Mapping | None):
             *no description available*
 
-        Returns → list[tuple[Any, set]]:
+        Returns → list[tuple[~typing.Any, set]]:
             *no description available*
 
     .. py:method:: mitsuba.SceneParameters.keep(keys)
@@ -12078,17 +13986,6 @@
 
         Returns → None:
             *no description available*
-
-.. py:class:: mitsuba.ScopedSetThreadEnvironment
-
-    RAII-style class to temporarily switch to another thread's logger/file
-    resolver
-
-    .. py:method:: __init__(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.ThreadEnvironment`, /):
-            *no description available*
-
 
 .. py:class:: mitsuba.Sensor
 
@@ -12161,7 +14058,7 @@
 
     .. py:method:: mitsuba.Sensor.get_shape()
 
-        Return the shape, to which the emitter is currently attached
+        Return the shape to which the emitter is currently attached
 
         Returns → :py:obj:`mitsuba.Shape`:
             *no description available*
@@ -12177,6 +14074,10 @@
     .. py:property:: mitsuba.Sensor.m_needs_sample_3
 
         (self) -> bool
+
+    .. py:property:: mitsuba.Sensor.m_to_world
+
+        (self) -> :py:obj:`mitsuba.AffineTransform4f`
 
     .. py:method:: mitsuba.Sensor.needs_aperture_sample()
 
@@ -12330,7 +14231,7 @@
         wavelength, surface position, and direction. This function takes a
         given time value and five uniformly distributed samples on the
         interval [0, 1] and warps them so that the returned ray the profile.
-        Any discrepancies between ideal and actual sampled profile are
+        Any discrepancies between ideal and actual sampled profiles are
         absorbed into a spectral importance weight that is returned along with
         the ray.
 
@@ -12488,7 +14389,7 @@
 
     .. py:method:: mitsuba.SensorPtr.get_shape()
 
-        Return the shape, to which the emitter is currently attached
+        Return the shape to which the emitter is currently attached
 
         Returns → :py:obj:`mitsuba.ShapePtr`:
             *no description available*
@@ -12637,7 +14538,7 @@
         wavelength, surface position, and direction. This function takes a
         given time value and five uniformly distributed samples on the
         interval [0, 1] and warps them so that the returned ray the profile.
-        Any discrepancies between ideal and actual sampled profile are
+        Any discrepancies between ideal and actual sampled profiles are
         absorbed into a spectral importance weight that is returned along with
         the ray.
 
@@ -12712,6 +14613,25 @@
     Base class: :py:obj:`mitsuba.Object`
 
     Forward declaration for `SilhouetteSample`
+
+    .. py:method:: mitsuba.Shape.add_texture_attribute(self, name, texture)
+
+        Add a texture attribute with the given ``name``.
+
+        If an attribute with the same name already exists, it is replaced.
+
+        Note that ``Mesh`` shapes can additionally handle per-vertex and per-
+        face attributes via the ``Mesh::add_attribute`` method.
+
+        Parameter ``name`` (str):
+            Name of the attribute
+
+        Parameter ``texture`` (:py:obj:`mitsuba.Texture`):
+            Texture to store. The dimensionality of the attribute is simply
+            the channel count of the texture.
+
+        Returns → None:
+            *no description available*
 
     .. py:method:: mitsuba.Shape.bbox()
 
@@ -12894,7 +14814,24 @@
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
-            An trichromatic intensity or reflectance value
+            A trichromatic intensity or reflectance value
+
+    .. py:method:: mitsuba.Shape.eval_attribute_x(self, name, si, active=True)
+
+        Evaluate a dynamically sized shape attribute at the given surface
+        interaction.
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.ArrayXf:
+            A dynamic array of attribute values
 
     .. py:method:: mitsuba.Shape.eval_parameterization(self, uv, ray_flags=14, active=True)
 
@@ -12936,11 +14873,11 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.id()
+    .. py:method:: mitsuba.Shape.has_flipped_normals()
 
-        Return a string identifier
+        Does this shape have flipped normals?
 
-        Returns → str:
+        Returns → bool:
             *no description available*
 
     .. py:method:: mitsuba.Shape.interior_medium()
@@ -12968,6 +14905,13 @@
 
         Returns → :py:obj:`mitsuba.Point3f`:
             The corresponding boundary sample space point
+
+    .. py:method:: mitsuba.Shape.is_ellipsoids()
+
+        Is this shape a ShapeType::Ellipsoids or ShapeType::EllipsoidsMesh
+
+        Returns → bool:
+            *no description available*
 
     .. py:method:: mitsuba.Shape.is_emitter()
 
@@ -13145,7 +15089,7 @@
 
         If the intersection is deemed relevant (e.g. the closest to the ray
         origin), detailed intersection information can later be obtained via
-        the create_surface_interaction() method.
+        the compute_surface_interaction() method.
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             The ray to be tested for an intersection
@@ -13184,6 +15128,18 @@
             Mask to specify active lanes.
 
         Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Shape.remove_attribute(self, name)
+
+        Remove a texture texture with the given ``name``.
+
+        Throws an exception if the attribute was not registered.
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Shape.sample_direction(self, it, sample, active=True)
@@ -13240,8 +15196,8 @@
 
     .. py:method:: mitsuba.Shape.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
 
-        Samples a boundary segement on the shape's silhouette using
-        precomputed information computed in precompute_silhouette.
+        Samples a boundary segment on the shape's silhouette using precomputed
+        information computed in precompute_silhouette.
 
         This method is meant to be used for silhouettes that are shared
         between all threads, as is the case for primarily visible derivatives.
@@ -13294,6 +15250,16 @@
         Returns → :py:obj:`mitsuba.Sensor`:
             *no description available*
 
+    .. py:method:: mitsuba.Shape.set_bsdf(self, bsdf)
+
+        Set the shape's BSDF
+
+        Parameter ``bsdf`` (:py:obj:`mitsuba.BSDF`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Shape.shape_type()
 
         Returns the shape type ShapeType of this shape
@@ -13325,6 +15291,16 @@
         The default implementation throws an exception.
 
         Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Shape.texture_attribute(self, name)
+
+        Return the texture attribute associated with ``name``.
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Texture`:
             *no description available*
 
 .. py:class:: mitsuba.ShapePtr
@@ -13470,7 +15446,24 @@
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
-            An trichromatic intensity or reflectance value
+            A trichromatic intensity or reflectance value
+
+    .. py:method:: mitsuba.ShapePtr.eval_attribute_x(self, name, si, active=True)
+
+        Evaluate a dynamically sized shape attribute at the given surface
+        interaction.
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.ArrayXf:
+            A dynamic array of attribute values
 
     .. py:method:: mitsuba.ShapePtr.eval_parameterization(self, uv, ray_flags=14, active=True)
 
@@ -13512,6 +15505,13 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
+    .. py:method:: mitsuba.ShapePtr.has_flipped_normals()
+
+        Does this shape have flipped normals?
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
     .. py:method:: mitsuba.ShapePtr.interior_medium()
 
         Return the medium that lies on the interior of this shape
@@ -13537,6 +15537,13 @@
 
         Returns → :py:obj:`mitsuba.Point3f`:
             The corresponding boundary sample space point
+
+    .. py:method:: mitsuba.ShapePtr.is_ellipsoids()
+
+        Is this shape a ShapeType::Ellipsoids or ShapeType::EllipsoidsMesh
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
 
     .. py:method:: mitsuba.ShapePtr.is_emitter()
 
@@ -13671,7 +15678,7 @@
 
         If the intersection is deemed relevant (e.g. the closest to the ray
         origin), detailed intersection information can later be obtained via
-        the create_surface_interaction() method.
+        the compute_surface_interaction() method.
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             The ray to be tested for an intersection
@@ -13766,8 +15773,8 @@
 
     .. py:method:: mitsuba.ShapePtr.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
 
-        Samples a boundary segement on the shape's silhouette using
-        precomputed information computed in precompute_silhouette.
+        Samples a boundary segment on the shape's silhouette using precomputed
+        information computed in precompute_silhouette.
 
         This method is meant to be used for silhouettes that are shared
         between all threads, as is the case for primarily visible derivatives.
@@ -13863,6 +15870,10 @@
 
         Meshes (`ply`, `obj`, `serialized`)
 
+    .. py:data:: Rectangle
+
+        Rectangle: a particular type of mesh
+
     .. py:data:: BSplineCurve
 
         B-Spline curves (`bsplinecurve`)
@@ -13879,10 +15890,6 @@
 
         Linear curves (`linearcurve`)
 
-    .. py:data:: Rectangle
-
-        Rectangles (`rectangle`)
-
     .. py:data:: SDFGrid
 
         SDF Grids (`sdfgrid`)
@@ -13891,9 +15898,17 @@
 
         Spheres (`sphere`)
 
-    .. py:data:: Other
+    .. py:data:: Ellipsoids
 
-        Other shapes
+        Ellipsoids (`ellipsoids`)
+
+    .. py:data:: EllipsoidsMesh
+
+        Ellipsoids (`ellipsoidsmesh`)
+
+    .. py:data:: Invalid
+
+        Invalid for default initialization
 
 .. py:class:: mitsuba.SilhouetteSample3f
 
@@ -13945,7 +15960,7 @@
 
     .. py:method:: mitsuba.SilhouetteSample3f.is_valid()
 
-        Is the current boundary segment valid=
+        Is the current boundary segment valid?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
@@ -13984,15 +15999,18 @@
 
         Direction of the silhouette curve at the boundary point
 
-    .. py:method:: mitsuba.SilhouetteSample3f.spawn_ray()
+    .. py:method:: mitsuba.SilhouetteSample3f.spawn_ray(self, wavelengths=None)
 
         Spawn a ray on the silhouette point in the direction of d
 
-        The ray origin is offset in the direction of the segment (d) aswell as
-        in the in the direction of the silhouette normal (n). Without this
+        The ray origin is offset in the direction of the segment (d) as well
+        as in the direction of the silhouette normal (n). Without this
         offsetting, during a ray intersection, the ray could potentially find
         an intersection point at its origin due to numerical instabilities in
         the intersection routines.
+
+        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f` | None):
+            *no description available*
 
         Returns → :py:obj:`mitsuba.Ray3f`:
             *no description available*
@@ -15191,17 +17209,49 @@
 
         Incident direction in the local shading frame
 
+.. py:class:: mitsuba.TensorFile
+
+    Base class: :py:obj:`mitsuba.MemoryMappedFile`
+
+    Simple exchange format for tensor data of arbitrary rank and size
+
+    This class provides convenient memory-mapped read-only access to
+    tensor data, usually exported from NumPy.
+
+    The Python functions :python:func:`mi.tensor_io.write(filename,
+    tensor_1=.., tensor_2=.., ...) <:py:obj:`mitsuba.tensor_io.write`>` and
+    :py:func:`tensor_file = mi.tensor_io.read(filename)
+    <:py:obj:`mitsuba.tensor_io.read`>` can be used to create and modify these files
+    within Python.
+
+    On the C++ end, use ``tensor_file.field("field_name").as<TensorXf>()``
+    to upload the data and obtain a device tensor handle.
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+            *no description available*
+
+
 .. py:class:: mitsuba.TensorXb
 
 .. py:class:: mitsuba.TensorXf
+
+.. py:class:: mitsuba.TensorXf16
+
+.. py:class:: mitsuba.TensorXf64
 
 .. py:class:: mitsuba.TensorXi
 
 .. py:class:: mitsuba.TensorXi64
 
+.. py:class:: mitsuba.TensorXi8
+
 .. py:class:: mitsuba.TensorXu
 
 .. py:class:: mitsuba.TensorXu64
+
+.. py:class:: mitsuba.TensorXu8
 
 .. py:class:: mitsuba.Texture
 
@@ -15691,6 +17741,27 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f.use_accel()
 
         Return whether texture uses the GPU for storage and evaluation
@@ -15706,6 +17777,608 @@
             *no description available*
 
     .. py:method:: mitsuba.Texture1f.wrap_mode()
+
+        Return the wrap mode
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture1f16
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Create a new texture with the specified size and channel count
+
+        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
+        texture objects should be reused/updated via :py:func:`set_value()` and
+        :py:func:`set_tensor()` as much as possible.
+
+        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
+        use hardware acceleration (allocation and evaluation). In other modes
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. In CUDA mode, this is done using a
+        series of linear lookups to optimally use the hardware (hence, linear
+        filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Construct a new texture from a given tensor.
+
+        This constructor allocates texture memory with the shape information
+        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
+        to fill the texture memory with the provided tensor.
+
+        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
+        exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage. Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval(self, pos, active=Bool(True))
+
+        Evaluate the linear interpolant represented by this texture.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. In CUDA mode, this can
+        then be accelerated by hardware texture units, which runs faster than
+        a naive implementation. More information can be found in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval_cubic_grad(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval_cubic_helper(self, pos, active=Bool(True))
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval_cubic_hessian(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval_fetch(self, pos, active=Bool(True))
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[list[drjit.llvm.ad.Float]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.filter_mode()
+
+        Return the filter mode
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.migrated()
+
+        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
+        the data as a hardware-accelerated CUDA texture.
+
+        If ``False`` then a copy of the array data will additionally be retained .
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.set_tensor(self, tensor, migrate=False)
+
+        Override the texture contents with the provided tensor.
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on CUDA,
+        such operations have a significantly larger overhead (the GPU pipeline
+        needs to be synchronized for new texture objects to be created).
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.set_value(self, value, migrate=False)
+
+        Override the texture contents with the provided linearized 1D array.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Texture1f16.shape
+
+        Return the texture shape
+
+    .. py:method:: mitsuba.Texture1f16.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXf16:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.use_accel()
+
+        Return whether texture uses the GPU for storage and evaluation
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.wrap_mode()
+
+        Return the wrap mode
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture1f64
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Create a new texture with the specified size and channel count
+
+        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
+        texture objects should be reused/updated via :py:func:`set_value()` and
+        :py:func:`set_tensor()` as much as possible.
+
+        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
+        use hardware acceleration (allocation and evaluation). In other modes
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. In CUDA mode, this is done using a
+        series of linear lookups to optimally use the hardware (hence, linear
+        filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Construct a new texture from a given tensor.
+
+        This constructor allocates texture memory with the shape information
+        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
+        to fill the texture memory with the provided tensor.
+
+        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
+        exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage. Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval(self, pos, active=Bool(True))
+
+        Evaluate the linear interpolant represented by this texture.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. In CUDA mode, this can
+        then be accelerated by hardware texture units, which runs faster than
+        a naive implementation. More information can be found in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval_cubic_grad(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval_cubic_helper(self, pos, active=Bool(True))
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval_cubic_hessian(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval_fetch(self, pos, active=Bool(True))
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[list[drjit.llvm.ad.Float]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.filter_mode()
+
+        Return the filter mode
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.migrated()
+
+        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
+        the data as a hardware-accelerated CUDA texture.
+
+        If ``False`` then a copy of the array data will additionally be retained .
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.set_tensor(self, tensor, migrate=False)
+
+        Override the texture contents with the provided tensor.
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on CUDA,
+        such operations have a significantly larger overhead (the GPU pipeline
+        needs to be synchronized for new texture objects to be created).
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.set_value(self, value, migrate=False)
+
+        Override the texture contents with the provided linearized 1D array.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Texture1f64.shape
+
+        Return the texture shape
+
+    .. py:method:: mitsuba.Texture1f64.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXf64:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.use_accel()
+
+        Return whether texture uses the GPU for storage and evaluation
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.wrap_mode()
 
         Return the wrap mode
 
@@ -15971,6 +18644,27 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f.use_accel()
 
         Return whether texture uses the GPU for storage and evaluation
@@ -15986,6 +18680,608 @@
             *no description available*
 
     .. py:method:: mitsuba.Texture2f.wrap_mode()
+
+        Return the wrap mode
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture2f16
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Create a new texture with the specified size and channel count
+
+        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
+        texture objects should be reused/updated via :py:func:`set_value()` and
+        :py:func:`set_tensor()` as much as possible.
+
+        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
+        use hardware acceleration (allocation and evaluation). In other modes
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. In CUDA mode, this is done using a
+        series of linear lookups to optimally use the hardware (hence, linear
+        filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Construct a new texture from a given tensor.
+
+        This constructor allocates texture memory with the shape information
+        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
+        to fill the texture memory with the provided tensor.
+
+        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
+        exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage. Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval(self, pos, active=Bool(True))
+
+        Evaluate the linear interpolant represented by this texture.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. In CUDA mode, this can
+        then be accelerated by hardware texture units, which runs faster than
+        a naive implementation. More information can be found in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval_cubic_grad(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval_cubic_helper(self, pos, active=Bool(True))
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval_cubic_hessian(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval_fetch(self, pos, active=Bool(True))
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[list[drjit.llvm.ad.Float]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.filter_mode()
+
+        Return the filter mode
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.migrated()
+
+        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
+        the data as a hardware-accelerated CUDA texture.
+
+        If ``False`` then a copy of the array data will additionally be retained .
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.set_tensor(self, tensor, migrate=False)
+
+        Override the texture contents with the provided tensor.
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on CUDA,
+        such operations have a significantly larger overhead (the GPU pipeline
+        needs to be synchronized for new texture objects to be created).
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.set_value(self, value, migrate=False)
+
+        Override the texture contents with the provided linearized 1D array.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Texture2f16.shape
+
+        Return the texture shape
+
+    .. py:method:: mitsuba.Texture2f16.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXf16:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.use_accel()
+
+        Return whether texture uses the GPU for storage and evaluation
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.wrap_mode()
+
+        Return the wrap mode
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture2f64
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Create a new texture with the specified size and channel count
+
+        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
+        texture objects should be reused/updated via :py:func:`set_value()` and
+        :py:func:`set_tensor()` as much as possible.
+
+        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
+        use hardware acceleration (allocation and evaluation). In other modes
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. In CUDA mode, this is done using a
+        series of linear lookups to optimally use the hardware (hence, linear
+        filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Construct a new texture from a given tensor.
+
+        This constructor allocates texture memory with the shape information
+        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
+        to fill the texture memory with the provided tensor.
+
+        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
+        exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage. Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval(self, pos, active=Bool(True))
+
+        Evaluate the linear interpolant represented by this texture.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. In CUDA mode, this can
+        then be accelerated by hardware texture units, which runs faster than
+        a naive implementation. More information can be found in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval_cubic_grad(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval_cubic_helper(self, pos, active=Bool(True))
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval_cubic_hessian(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval_fetch(self, pos, active=Bool(True))
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[list[drjit.llvm.ad.Float]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.filter_mode()
+
+        Return the filter mode
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.migrated()
+
+        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
+        the data as a hardware-accelerated CUDA texture.
+
+        If ``False`` then a copy of the array data will additionally be retained .
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.set_tensor(self, tensor, migrate=False)
+
+        Override the texture contents with the provided tensor.
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on CUDA,
+        such operations have a significantly larger overhead (the GPU pipeline
+        needs to be synchronized for new texture objects to be created).
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.set_value(self, value, migrate=False)
+
+        Override the texture contents with the provided linearized 1D array.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Texture2f64.shape
+
+        Return the texture shape
+
+    .. py:method:: mitsuba.Texture2f64.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXf64:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.use_accel()
+
+        Return whether texture uses the GPU for storage and evaluation
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.wrap_mode()
 
         Return the wrap mode
 
@@ -16251,6 +19547,27 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f.use_accel()
 
         Return whether texture uses the GPU for storage and evaluation
@@ -16272,213 +19589,798 @@
         Returns → drjit.WrapMode:
             *no description available*
 
+.. py:class:: mitsuba.Texture3f16
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Create a new texture with the specified size and channel count
+
+        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
+        texture objects should be reused/updated via :py:func:`set_value()` and
+        :py:func:`set_tensor()` as much as possible.
+
+        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
+        use hardware acceleration (allocation and evaluation). In other modes
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. In CUDA mode, this is done using a
+        series of linear lookups to optimally use the hardware (hence, linear
+        filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Construct a new texture from a given tensor.
+
+        This constructor allocates texture memory with the shape information
+        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
+        to fill the texture memory with the provided tensor.
+
+        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
+        exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage. Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval(self, pos, active=Bool(True))
+
+        Evaluate the linear interpolant represented by this texture.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. In CUDA mode, this can
+        then be accelerated by hardware texture units, which runs faster than
+        a naive implementation. More information can be found in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval_cubic_grad(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval_cubic_helper(self, pos, active=Bool(True))
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval_cubic_hessian(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval_fetch(self, pos, active=Bool(True))
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[list[drjit.llvm.ad.Float]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.filter_mode()
+
+        Return the filter mode
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.migrated()
+
+        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
+        the data as a hardware-accelerated CUDA texture.
+
+        If ``False`` then a copy of the array data will additionally be retained .
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.set_tensor(self, tensor, migrate=False)
+
+        Override the texture contents with the provided tensor.
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on CUDA,
+        such operations have a significantly larger overhead (the GPU pipeline
+        needs to be synchronized for new texture objects to be created).
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.set_value(self, value, migrate=False)
+
+        Override the texture contents with the provided linearized 1D array.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Texture3f16.shape
+
+        Return the texture shape
+
+    .. py:method:: mitsuba.Texture3f16.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXf16:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.use_accel()
+
+        Return whether texture uses the GPU for storage and evaluation
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.wrap_mode()
+
+        Return the wrap mode
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture3f64
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Create a new texture with the specified size and channel count
+
+        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
+        texture objects should be reused/updated via :py:func:`set_value()` and
+        :py:func:`set_tensor()` as much as possible.
+
+        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
+        use hardware acceleration (allocation and evaluation). In other modes
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. In CUDA mode, this is done using a
+        series of linear lookups to optimally use the hardware (hence, linear
+        filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+
+        Construct a new texture from a given tensor.
+
+        This constructor allocates texture memory with the shape information
+        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
+        to fill the texture memory with the provided tensor.
+
+        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
+        exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage. Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval(self, pos, active=Bool(True))
+
+        Evaluate the linear interpolant represented by this texture.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. In CUDA mode, this can
+        then be accelerated by hardware texture units, which runs faster than
+        a naive implementation. More information can be found in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval_cubic_grad(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval_cubic_helper(self, pos, active=Bool(True))
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval_cubic_hessian(self, pos, active=Bool(True))
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → tuple:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval_fetch(self, pos, active=Bool(True))
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → list[list[drjit.llvm.ad.Float]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.filter_mode()
+
+        Return the filter mode
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.migrated()
+
+        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
+        the data as a hardware-accelerated CUDA texture.
+
+        If ``False`` then a copy of the array data will additionally be retained .
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.set_tensor(self, tensor, migrate=False)
+
+        Override the texture contents with the provided tensor.
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on CUDA,
+        such operations have a significantly larger overhead (the GPU pipeline
+        needs to be synchronized for new texture objects to be created).
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.set_value(self, value, migrate=False)
+
+        Override the texture contents with the provided linearized 1D array.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.Note that the texture is still differentiable even when migrated.
+
+        Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Texture3f64.shape
+
+        Return the texture shape
+
+    .. py:method:: mitsuba.Texture3f64.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXf64:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrived with
+        py:func:`tensor()`. That representation can be modified, but in order to apply
+        it succesfuly to the texture, this method must also be called. In short,
+        this method will use the tensor representation to update the texture's
+        internal state.
+
+        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
+        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
+        redundant storage.)
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.use_accel()
+
+        Return whether texture uses the GPU for storage and evaluation
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.wrap_mode()
+
+        Return the wrap mode
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.TexturePtr
+
+    .. py:method:: mitsuba.TexturePtr.eval(self, si, active=True)
+
+        Evaluate the texture at the given surface interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An unpolarized spectral power distribution or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1(self, si, active=True)
+
+        Monochromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        scalar intensity/reflectance values without any color processing (e.g.
+        spectral upsampling). This is useful in parts of the renderer that
+        encode scalar quantities using textures, e.g. a height field.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            An scalar intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1_grad(self, si, active=True)
+
+        Monochromatic evaluation of the texture gradient at the given surface
+        interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Vector2f`:
+            A (u,v) pair of intensity or reflectance value gradients
+
+    .. py:method:: mitsuba.TexturePtr.eval_3(self, si, active=True)
+
+        Trichromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        RGB intensity/reflectance values without any additional color
+        processing (e.g. RGB-to-spectral upsampling). This is useful in parts
+        of the renderer that encode 3D quantities using textures, e.g. a
+        normal map.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An trichromatic intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.is_spatially_varying()
+
+        Does this texture evaluation depend on the UV coordinates
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.max()
+
+        Return the maximum value of the spectrum
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.mean()
+
+        Return the mean value of the spectrum over the support
+        (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_position(self, p, active=True)
+
+        Returns the probability per unit area of sample_position()
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_spectrum(self, si, active=True)
+
+        Evaluate the density function of the sample_spectrum() method as a
+        probability per unit wavelength (in units of 1/nm).
+
+        Not every implementation necessarily overrides this function. The
+        default implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color0f`:
+            A density value for each wavelength in ``si.wavelengths`` (hence
+            the Wavelength type).
+
+    .. py:method:: mitsuba.TexturePtr.sample_position(self, sample, active=True)
+
+        Importance sample a surface position proportional to the overall
+        spectral reflectance or intensity of the texture
+
+        This function assumes that the texture is implemented as a mapping
+        from 2D UV positions to texture values, which is not necessarily true
+        for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
+        this reason, not every will plugin provide a specialized
+        implementation, and the default implementation simply return the input
+        sample (i.e. uniform sampling is used).
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A 2D vector of uniform variates
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+            1. A texture-space position in the range :math:`[0, 1]^2`
+
+        2. The associated probability per unit area in UV space
+
+    .. py:method:: mitsuba.TexturePtr.sample_spectrum(self, si, sample, active=True)
+
+        Importance sample a set of wavelengths proportional to the spectrum
+        defined at the given surface position
+
+        Not every implementation necessarily provides this function, and it is
+        a no-op when compiling non-spectral variants of Mitsuba. The default
+        implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
+            A uniform variate for each desired wavelength.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+            1. Set of sampled wavelengths specified in nanometers
+
+        2. The Monte Carlo importance weight (Spectral power distribution
+        value divided by the sampling density)
+
 .. py:class:: mitsuba.Thread
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Cross-platform thread implementation
-
-    Mitsuba threads are internally implemented via the ``std::thread``
-    class defined in C++11. This wrapper class is needed to attach
-    additional state (Loggers, Path resolvers, etc.) that is inherited
-    when a thread launches another thread.
-
-    .. py:method:: __init__(self, name)
-
-        Parameter ``name`` (str):
-            *no description available*
-
-
-    .. py:class:: mitsuba.Thread.EPriority
-
-        Possible priority values for Thread::set_priority()
-
-        Valid values are as follows:
-
-        .. py:data:: EIdlePriority
-
-            
-
-        .. py:data:: ELowestPriority
-
-            
-
-        .. py:data:: ELowPriority
-
-            
-
-        .. py:data:: ENormalPriority
-
-            
-
-        .. py:data:: EHighPriority
-
-            
-
-        .. py:data:: EHighestPriority
-
-            
-
-        .. py:data:: ERealtimePriority
-
-            
-
-    .. py:method:: mitsuba.Thread.core_affinity()
-
-        Return the core affinity
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.detach()
-
-        Detach the thread and release resources
-
-        After a call to this function, join() cannot be used anymore. This
-        releases resources, which would otherwise be held until a call to
-        join().
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.file_resolver()
-
-        Return the file resolver associated with the current thread
-
-        Returns → :py:obj:`mitsuba.FileResolver`:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.is_critical()
-
-        Return the value of the critical flag
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.is_running()
-
-        Is this thread still running?
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.join()
-
-        Wait until the thread finishes
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.logger()
-
-        Return the thread's logger instance
-
-        Returns → :py:obj:`mitsuba.Logger`:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.name()
-
-        Return the name of this thread
-
-        Returns → str:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.parent()
-
-        Return the parent thread
-
-        Returns → :py:obj:`mitsuba.Thread`:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.priority()
-
-        Return the thread priority
-
-        Returns → :py:obj:`mitsuba.Thread.EPriority`:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.set_core_affinity(self, arg)
-
-        Set the core affinity
-
-        This function provides a hint to the operating system scheduler that
-        the thread should preferably run on the specified processor core. By
-        default, the parameter is set to -1, which means that there is no
-        affinity.
-
-        Parameter ``arg`` (int, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.set_critical(self, arg)
-
-        Specify whether or not this thread is critical
-
-        When an thread marked critical crashes from an uncaught exception, the
-        whole process is brought down. The default is ``False``.
-
-        Parameter ``arg`` (bool, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.set_file_resolver(self, arg)
-
-        Set the file resolver associated with the current thread
-
-        Parameter ``arg`` (:py:obj:`mitsuba.FileResolver`, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.set_logger(self, arg)
-
-        Set the logger instance used to process log messages from this thread
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Logger`, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.set_name(self, arg)
-
-        Set the name of this thread
-
-        Parameter ``arg`` (str, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Thread.set_priority(self, arg)
-
-        Set the thread priority
-
-        This does not always work -- for instance, Linux requires root
-        privileges for this operation.
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Thread.EPriority`, /):
-            *no description available*
-
-        Returns → bool:
-            ``True`` upon success.
-
-    .. py:method:: mitsuba.Thread.start()
-
-        Start the thread
-
-        Returns → None:
-            *no description available*
-
-.. py:class:: mitsuba.ThreadEnvironment
-
-    Captures a thread environment (logger and file resolver). Used with
-    ScopedSetThreadEnvironment
+    Dummy thread class for backward compatibility
+
+    This class has been largely stripped down and only maintains essential
+    methods for file resolver and logger access, plus static
+    initialization. Use std::thread or the nanothread-based thread pool
+    for actual threading needs.
 
     .. py:method:: __init__()
 
@@ -16511,672 +20413,6 @@
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.Transform3d
-
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
-
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
-
-    .. py:method:: __init__()
-
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Initialize with the identity matrix
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Transform3d`) -> None``
-        
-        Copy constructor
-        
-        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
-        
-        
-        4. ``__init__(self) -> None``
-        
-        
-        5. ``__init__(self, arg: drjit.llvm.ad.Matrix3f64, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f64, arg1: drjit.llvm.ad.Matrix3f64, /) -> None``
-        
-        Initialize from a matrix and its inverse transpose
-        
-        7. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform3d`, /) -> None``
-        
-        Broadcast constructor
-
-        
-    .. py:method:: mitsuba.Transform3d.assign(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Transform3d`, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3d.has_scale()
-
-        Test for a scale component in each transform matrix by checking
-        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
-        ``I`` is the identity).
-
-        Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3d.inverse()
-
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.Transform3d`:
-            *no description available*
-
-    .. py:property:: mitsuba.Transform3d.inverse_transpose
-
-        (self) -> drjit.llvm.ad.Matrix3f64
-
-    .. py:property:: mitsuba.Transform3d.matrix
-
-        (self) -> drjit.llvm.ad.Matrix3f64
-
-    .. py:method:: mitsuba.Transform3d.rotate(self, angle)
-
-        Create a rotation transformation in 2D. The angle is specified in
-        degrees
-
-        Parameter ``angle`` (drjit.llvm.ad.Float64):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3d.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3d.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point2d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Point2d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3d.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3d.translation()
-
-        Get the translation part of a matrix
-
-        Returns → :py:obj:`mitsuba.Vector2d`:
-            *no description available*
-
-.. py:class:: mitsuba.Transform3f
-
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
-
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
-
-    .. py:method:: __init__()
-
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Initialize with the identity matrix
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Transform3f`) -> None``
-        
-        Copy constructor
-        
-        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
-        
-        
-        4. ``__init__(self) -> None``
-        
-        
-        5. ``__init__(self, arg: drjit.llvm.ad.Matrix3f, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.llvm.ad.Matrix3f, arg1: drjit.llvm.ad.Matrix3f, /) -> None``
-        
-        Initialize from a matrix and its inverse transpose
-        
-        7. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform3f`, /) -> None``
-        
-        Broadcast constructor
-
-        
-    .. py:method:: mitsuba.Transform3f.assign(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Transform3f`, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3f.has_scale()
-
-        Test for a scale component in each transform matrix by checking
-        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
-        ``I`` is the identity).
-
-        Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3f.inverse()
-
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.Transform3f`:
-            *no description available*
-
-    .. py:property:: mitsuba.Transform3f.inverse_transpose
-
-        (self) -> drjit.llvm.ad.Matrix3f
-
-    .. py:property:: mitsuba.Transform3f.matrix
-
-        (self) -> drjit.llvm.ad.Matrix3f
-
-    .. py:method:: mitsuba.Transform3f.rotate(self, angle)
-
-        Create a rotation transformation in 2D. The angle is specified in
-        degrees
-
-        Parameter ``angle`` (drjit.llvm.ad.Float):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3f.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3f.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Point2f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3f.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform3f.translation()
-
-        Get the translation part of a matrix
-
-        Returns → :py:obj:`mitsuba.Vector2f`:
-            *no description available*
-
-.. py:class:: mitsuba.Transform4d
-
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
-
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
-
-    .. py:method:: __init__()
-
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Initialize with the identity matrix
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Transform4d`) -> None``
-        
-        Copy constructor
-        
-        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
-        
-        
-        4. ``__init__(self, arg: list, /) -> None``
-        
-        
-        5. ``__init__(self, arg: drjit.llvm.ad.Matrix4f64, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f64, arg1: drjit.llvm.ad.Matrix4f64, /) -> None``
-        
-        Initialize from a matrix and its inverse transpose
-        
-        7. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform4d`, /) -> None``
-        
-        Broadcast constructor
-
-        
-    .. py:method:: mitsuba.Transform4d.assign(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Transform4d`, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.extract()
-
-        Extract a lower-dimensional submatrix
-
-        Returns → :py:obj:`mitsuba.Transform3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.from_frame(self, frame)
-
-        Creates a transformation that converts from 'frame' to the standard
-        basis
-
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.has_scale()
-
-        Test for a scale component in each transform matrix by checking
-        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
-        ``I`` is the identity).
-
-        Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.inverse()
-
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:property:: mitsuba.Transform4d.inverse_transpose
-
-        (self) -> drjit.llvm.ad.Matrix4f64
-
-    .. py:method:: mitsuba.Transform4d.look_at(self, origin, target, up)
-
-        Create a look-at camera transformation
-
-        Parameter ``origin`` (:py:obj:`mitsuba.Point3d`):
-            Camera position
-
-        Parameter ``target`` (:py:obj:`mitsuba.Point3d`):
-            Target vector
-
-        Parameter ``up`` (:py:obj:`mitsuba.Point3d`):
-            Up vector
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:property:: mitsuba.Transform4d.matrix
-
-        (self) -> drjit.llvm.ad.Matrix4f64
-
-    .. py:method:: mitsuba.Transform4d.orthographic(self, near, far)
-
-        Create an orthographic transformation, which maps Z to [0,1] and
-        leaves the X and Y coordinates untouched.
-
-        Parameter ``near`` (drjit.llvm.ad.Float64):
-            Near clipping plane
-
-        Parameter ``far`` (drjit.llvm.ad.Float64):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.perspective(self, fov, near, far)
-
-        Create a perspective transformation. (Maps [near, far] to [0, 1])
-
-        Projects vectors in camera space onto a plane at z=1:
-
-        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
-        near))
-
-        Camera-space depths are not mapped linearly!
-
-        Parameter ``fov`` (drjit.llvm.ad.Float64):
-            Field of view in degrees
-
-        Parameter ``near`` (drjit.llvm.ad.Float64):
-            Near clipping plane
-
-        Parameter ``far`` (drjit.llvm.ad.Float64):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.rotate(self, axis, angle)
-
-        Create a rotation transformation around an arbitrary axis in 3D. The
-        angle is specified in degrees
-
-        Parameter ``axis`` (:py:obj:`mitsuba.Point3d`):
-            *no description available*
-
-        Parameter ``angle`` (drjit.llvm.ad.Float64):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.to_frame(self, frame)
-
-        Creates a transformation that converts from the standard basis to
-        'frame'
-
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point3d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Point3d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4d`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4d.translation()
-
-        Get the translation part of a matrix
-
-        Returns → :py:obj:`mitsuba.Vector3d`:
-            *no description available*
-
-.. py:class:: mitsuba.Transform4f
-
-    Encapsulates a 4x4 homogeneous coordinate transformation along with
-    its inverse transpose
-
-    The Transform class provides a set of overloaded matrix-vector
-    multiplication operators for vectors, points, and normals (all of them
-    behave differently under homogeneous coordinate transformations, hence
-    the need to represent them using separate types)
-
-    .. py:method:: __init__()
-
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Initialize with the identity matrix
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Transform4f`) -> None``
-        
-        Copy constructor
-        
-        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
-        
-        
-        4. ``__init__(self, arg: list, /) -> None``
-        
-        
-        5. ``__init__(self, arg: drjit.llvm.ad.Matrix4f, /) -> None``
-        
-        Initialize the transformation from the given matrix (and compute its
-        inverse transpose)
-        
-        6. ``__init__(self, arg0: drjit.llvm.ad.Matrix4f, arg1: drjit.llvm.ad.Matrix4f, /) -> None``
-        
-        Initialize from a matrix and its inverse transpose
-        
-        7. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform4f`, /) -> None``
-        
-        Broadcast constructor
-
-        
-    .. py:method:: mitsuba.Transform4f.assign(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Transform4f`, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.extract()
-
-        Extract a lower-dimensional submatrix
-
-        Returns → :py:obj:`mitsuba.Transform3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.from_frame(self, frame)
-
-        Creates a transformation that converts from 'frame' to the standard
-        basis
-
-        Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.has_scale()
-
-        Test for a scale component in each transform matrix by checking
-        whether ``M . M^T == I`` (where ``M`` is the matrix in question and
-        ``I`` is the identity).
-
-        Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.inverse()
-
-        Compute the inverse of this transformation (involves just shuffles, no
-        arithmetic)
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:property:: mitsuba.Transform4f.inverse_transpose
-
-        (self) -> drjit.llvm.ad.Matrix4f
-
-    .. py:method:: mitsuba.Transform4f.look_at(self, origin, target, up)
-
-        Create a look-at camera transformation
-
-        Parameter ``origin`` (:py:obj:`mitsuba.Point3f`):
-            Camera position
-
-        Parameter ``target`` (:py:obj:`mitsuba.Point3f`):
-            Target vector
-
-        Parameter ``up`` (:py:obj:`mitsuba.Point3f`):
-            Up vector
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:property:: mitsuba.Transform4f.matrix
-
-        (self) -> drjit.llvm.ad.Matrix4f
-
-    .. py:method:: mitsuba.Transform4f.orthographic(self, near, far)
-
-        Create an orthographic transformation, which maps Z to [0,1] and
-        leaves the X and Y coordinates untouched.
-
-        Parameter ``near`` (drjit.llvm.ad.Float):
-            Near clipping plane
-
-        Parameter ``far`` (drjit.llvm.ad.Float):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.perspective(self, fov, near, far)
-
-        Create a perspective transformation. (Maps [near, far] to [0, 1])
-
-        Projects vectors in camera space onto a plane at z=1:
-
-        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
-        near))
-
-        Camera-space depths are not mapped linearly!
-
-        Parameter ``fov`` (drjit.llvm.ad.Float):
-            Field of view in degrees
-
-        Parameter ``near`` (drjit.llvm.ad.Float):
-            Near clipping plane
-
-        Parameter ``far`` (drjit.llvm.ad.Float):
-            Far clipping plane
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.rotate(self, axis, angle)
-
-        Create a rotation transformation around an arbitrary axis in 3D. The
-        angle is specified in degrees
-
-        Parameter ``axis`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Parameter ``angle`` (drjit.llvm.ad.Float):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.scale(self, v)
-
-        Create a scale transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.to_frame(self, frame)
-
-        Creates a transformation that converts from the standard basis to
-        'frame'
-
-        Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.transform_affine(self, p)
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Point3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.translate(self, v)
-
-        Create a translation transformation
-
-        Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Transform4f.translation()
-
-        Get the translation part of a matrix
-
-        Returns → :py:obj:`mitsuba.Vector3f`:
-            *no description available*
-
 .. py:class:: mitsuba.TransportMode
 
     Specifies the transport mode when sampling or evaluating a scattering
@@ -17198,16 +20434,51 @@
 
     This interface can be implemented either in C++ or in Python, to be
     used in conjunction with Object::traverse() to traverse a scene graph.
-    Mitsuba currently uses this mechanism to determine a scene's
-    differentiable parameters.
+    Mitsuba uses this mechanism for two primary purposes:
+
+    1. **Dynamic scene modification**: After a scene is loaded, the
+    traversal mechanism allows programmatic access to modify scene
+    parameters without rebuilding the entire scene. This enables workflows
+    where parameters are adjusted and the scene is re-rendered with
+    different settings.
+
+    2. **Differentiable parameter discovery**: The traversal callback can
+    discover all differentiable parameters in a scene (e.g., material
+    properties, transformation matrices, emission values). These
+    parameters can then be exposed to gradient-based optimizers for
+    inverse rendering tasks, which in practice involves the
+    ``SceneParameters`` Python class.
+
+    The callback receives information about each traversed object's
+    parameters through the put() methods, which distinguish between
+    regular parameters and references to other scene objects that are
+    handled recursively.
 
     .. py:method:: __init__()
 
 
+    .. py:method:: mitsuba.TraversalCallback.put(self, name, value, flags)
+
+        Unified method to register both objects and values with the traversal callback
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Parameter ``value`` (object):
+            *no description available*
+
+        Parameter ``flags`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.TraversalCallback.put_object(self, name, obj, flags)
 
-        Inform the traversal callback that the instance references another
-        Mitsuba object
+        Register an object with the traversal callback.
+
+        .. deprecated:: 3.7.0
+           Use :py:meth:`~:py:obj:`mitsuba.TraversalCallback.put`` instead.
 
         Parameter ``name`` (str):
             *no description available*
@@ -17221,9 +20492,12 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.TraversalCallback.put_parameter(self, name, value, flags)
+    .. py:method:: mitsuba.TraversalCallback.put_value(self, name, value, flags)
 
-        Inform the traversal callback about an attribute of an instance
+        Register a value with the traversal callback.
+
+        .. deprecated:: 3.7.0
+           Use :py:meth:`~:py:obj:`mitsuba.TraversalCallback.put`` instead.
 
         Parameter ``name`` (str):
             *no description available*
@@ -17240,6 +20514,8 @@
 .. py:class:: mitsuba.UInt
 
 .. py:class:: mitsuba.UInt64
+
+.. py:class:: mitsuba.UInt8
 
 .. py:class:: mitsuba.Vector0d
 
@@ -17280,6 +20556,20 @@
 .. py:class:: mitsuba.Vector4i
 
 .. py:class:: mitsuba.Vector4u
+
+.. py:class:: mitsuba.Version
+
+    .. py:property:: mitsuba.Version.major_version
+
+        (self) -> int
+
+    .. py:property:: mitsuba.Version.minor_version
+
+        (self) -> int
+
+    .. py:property:: mitsuba.Version.patch_version
+
+        (self) -> int
 
 .. py:class:: mitsuba.Volume
 
@@ -17428,22 +20718,34 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Overloaded function.
+    Class to read and write 3D volume grids
 
-    1. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
+    This class handles loading of volumes in the Mitsuba volume file
+    format Please see the documentation of gridvolume (grid3d.cpp) for the
+    file format specification.
 
+    .. py:method:: __init__(self, path)
 
-    2. ``__init__(self, stream: :py:obj:`mitsuba.Stream`) -> None``
+        Overloaded function.
+        
+        1. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
+        
+        
+        2. ``__init__(self, stream: :py:obj:`mitsuba.Stream`) -> None``
+        
+        
+        3. ``__init__(self, array: ndarray[dtype=float32, order='C', device='cpu'], compute_max: bool = True) -> None``
+        
+        Initialize a VolumeGrid from a CPU-visible ndarray
+        
+        4. ``__init__(self, array: drjit.llvm.ad.TensorXf, compute_max: bool = True) -> None``
+        
+        Initialize a VolumeGrid from a drjit tensor
 
+        Parameter ``path`` (:py:obj:`mitsuba.filesystem.path`):
+            *no description available*
 
-    3. ``__init__(self, array: ndarray[dtype=float32, order='C', device='cpu'], compute_max: bool = True) -> None``
-
-    Initialize a VolumeGrid from a CPU-visible ndarray
-
-    4. ``__init__(self, array: drjit.llvm.ad.TensorXf, compute_max: bool = True) -> None``
-
-    Initialize a VolumeGrid from a drjit tensor
-
+        
     .. py:method:: mitsuba.VolumeGrid.buffer_size()
 
         Return the volume grid size in bytes (excluding metadata)
@@ -17563,67 +20865,6 @@
         Returns → object:
             *no description available*
 
-.. py:class:: mitsuba.ad.Adam
-
-    Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
-
-    Implements the Adam optimizer presented in the paper *Adam: A Method for
-    Stochastic Optimization* by Kingman and Ba, ICLR 2015.
-
-    When optimizing many variables (e.g. a high resolution texture) with
-    momentum enabled, it may be beneficial to restrict state and variable
-    updates to the entries that received nonzero gradients in the current
-    iteration (``mask_updates=True``).
-    In the context of differentiable Monte Carlo simulations, many of those
-    variables may not be observed at each iteration, e.g. when a surface is
-    not visible from the current camera. Gradients for unobserved variables
-    will remain at zero by default.
-    If we do not take special care, at each new iteration:
-
-    1. Momentum accumulated at previous iterations (potentially very noisy)
-       will keep being applied to the variable.
-    2. The optimizer's state will be updated to incorporate ``gradient = 0``,
-       even though it is not an actual gradient value but rather lack of one.
-
-    Enabling ``mask_updates`` avoids these two issues. This is similar to
-    `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
-
-    .. py:method:: __init__(params=None)
-
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``beta_1``:
-            controls the exponential averaging of first order gradient moments
-        
-        Parameter ``beta_2``:
-            controls the exponential averaging of second order gradient moments
-        
-        Parameter ``mask_updates``:
-            if enabled, parameters and state variables will only be updated in a
-            given iteration if it received nonzero gradients in that iteration
-        
-        Parameter ``uniform``:
-            if enabled, the optimizer will use the 'UniformAdam' variant of Adam
-            [Nicolet et al. 2021], where the update rule uses the *maximum* of
-            the second moment estimates at the current step instead of the
-            per-element second moments.
-        
-        Parameter ``params`` (:py:class:`dict`):
-            Optional dictionary-like object containing parameters to optimize.
-
-        Parameter ``params`` (dict | None):
-            *no description available*
-
-        
-    .. py:method:: mitsuba.ad.Adam.step()
-
-        Take a gradient step
-
-    .. py:method:: mitsuba.ad.Adam.reset()
-
-        Zero-initializes the internal state associated with a parameter
-
 .. py:class:: mitsuba.ad.BaseGuidingDistr
 
     .. py:method:: mitsuba.ad.BaseGuidingDistr.sample()
@@ -17735,6 +20976,9 @@
         Returns ``mitsuba.Float`:
             Vertex coordinates of the mesh.
 
+.. py:function:: mitsuba.ad.Mapping(overloaded)
+
+
 .. py:class:: mitsuba.ad.OcSpaceDistr
 
     Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
@@ -17796,37 +21040,6 @@
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
 
-.. py:class:: mitsuba.ad.Optimizer
-
-    Base class of all gradient-based optimizers.
-
-    .. py:method:: __init__(params)
-
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``params`` (:py:class:`dict`):
-            Dictionary-like object containing parameters to optimize.
-
-        Parameter ``params`` (dict):
-            *no description available*
-
-        
-    .. py:method:: mitsuba.ad.Optimizer.set_learning_rate()
-
-        Set the learning rate.
-
-        Parameter ``lr`` (``float``, ``dict``):
-            The new learning rate. A ``dict`` can be provided instead to
-            specify the learning rate for specific parameters.
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.Optimizer.reset()
-
-        Resets the internal state associated with a parameter, if any (e.g. momentum).
-
 .. py:class:: mitsuba.ad.ProjectiveDetail
 
     Class holding implementation details of various operations needed by
@@ -17863,7 +21076,7 @@
         Returns → ~:py:obj:`mitsuba.SilhouetteSample3f`:
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.perspective_sensor_jacobian(sensor, ss)
+    .. py:method:: mitsuba.ad.ProjectiveDetail.sensor_jacobian(sensor, ss)
 
         The silhouette sample `ss` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
@@ -17873,6 +21086,9 @@
             *no description available*
 
         Parameter ``ss`` (~:py:obj:`mitsuba.SilhouetteSample3f`):
+            *no description available*
+
+        Returns → ~drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ad.ProjectiveDetail.eval_primary_silhouette_radiance_difference()
@@ -17936,6 +21152,10 @@
         Output ``result`` (``mi.Spectrum``):
             The integrand of the indirect discontinuous derivatives.
 
+        Output ``wavelengths`` (``mi.Wavelength``):
+            Set of wavelength used by this sample. (Only relevant in spectral
+            variants)
+
         Output ``sensor_uv`` (``mi.Point2f``):
             The UV coordinates on the sensor film to splat the result to. If
             ``preprocess`` is false, this coordinate is not used.
@@ -17969,56 +21189,6 @@
 
         Dispatches the seed surface interaction object to the appropriate
         shape's projection algorithm.
-
-.. py:class:: mitsuba.ad.SGD
-
-    Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
-
-    Implements basic stochastic gradient descent with a fixed learning rate
-    and, optionally, momentum :cite:`Sutskever2013Importance` (0.9 is a typical
-    parameter value for the ``momentum`` parameter).
-
-    The momentum-based SGD uses the update equation
-
-    .. math::
-
-        v_{i+1} = \mu \cdot v_i +  g_{i+1}
-
-    .. math::
-        p_{i+1} = p_i + \varepsilon \cdot v_{i+1},
-
-    where :math:`v` is the velocity, :math:`p` are the positions,
-    :math:`\varepsilon` is the learning rate, and :math:`\mu` is
-    the momentum parameter.
-
-    .. py:method:: __init__(params=None)
-
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``momentum``:
-            momentum factor
-        
-        Parameter ``mask_updates``:
-            if enabled, parameters and state variables will only be updated
-            in a given iteration if it received nonzero gradients in that iteration.
-            This only has an effect if momentum is enabled.
-            See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
-        
-        Parameter ``params`` (:py:class:`dict`):
-            Optional dictionary-like object containing parameters to optimize.
-
-        Parameter ``params`` (dict | None):
-            *no description available*
-
-        
-    .. py:method:: mitsuba.ad.SGD.step()
-
-        Take a gradient step
-
-    .. py:method:: mitsuba.ad.SGD.reset()
-
-        Zero-initializes the internal state associated with a parameter
 
 .. py:class:: mitsuba.ad.UniformDistr
 
@@ -18060,7 +21230,7 @@
 
         Overloaded function.
 
-        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -18068,7 +21238,7 @@
         other parameters are optional and control different aspects of the
         rendering process. In particular:
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             This parameter controls the initialization of the random number
             generator. It is crucial that you specify different seeds (e.g.,
             an increasing sequence) if subsequent ``render``() calls should
@@ -18094,7 +21264,7 @@
             (``develop=true``) or modified film (``develop=false``) represent
             the rendering task as an unevaluated computation graph.
 
-        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -18122,7 +21292,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18145,7 +21315,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18336,11 +21506,15 @@
         Utility method to override the intergrator's spp value with the one
         received at runtime in `render`/`render_backward`/`render_forward`.
 
-        The runtime value is overriden only if it is 0 and if the integrator
-        has defined a spp value. If the integrator hasn't defined a value, the
-        sampler's spp is used.
+        Priority order:
+        1. If the integrator's spp is explicitly disabled (set to 0), use 0
+           regardless of runtime_spp.
+        2. Otherwise, prefer the runtime_spp value.
+        3. If runtime_spp is 0:
+            - Use integrator_spp if it is defined (not None).
+            - Otherwise, fall back to sampler_spp.
 
-        Parameter ``integrator_spp`` (int):
+        Parameter ``integrator_spp`` (Optional[int]):
             *no description available*
 
         Parameter ``runtime_spp`` (int):
@@ -18390,7 +21564,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18413,7 +21587,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18449,9 +21623,22 @@
         Sample the radiance difference of two rays that hit and miss the
         silhouette point `ss.p` with direction `ss.d`.
 
-        Parameters ``curr_depth`` (``mi.UInt32``):
+        Parameter ``scene`` (``mi.Scene``)
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``ss`` (``mi.SilhouetteSample3f``)
+            Reference to the silhouette sample from which to built out the
+            boundary path.
+
+        Parameter ``curr_depth`` (``mi.UInt32``):
             The current depth of the boundary segment, including the boundary
             segment itself.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator.
+
+        Parameter ``wavelengths`` (``mi.Wavelength``):
+            Set of sampled wavelengths to be used for the boundary path.
 
         This function returns a tuple ``(ΔL, active)`` where
 
@@ -18467,8 +21654,21 @@
         direction `-ss.d`. If multiple connections to the sensor are valid, this
         method uses reservoir sampling to pick one.
 
+        Parameter ``scene`` (``mi.Scene``)
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``ss`` (``mi.SilhouetteSample3f``)
+            Reference to the silhouette sample from which to built out the
+            boundary path.
+
         Parameters ``max_depth`` (``mi.UInt32``):
             The maximum number of ray segments to reach the sensor.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator.
+
+        Parameter ``wavelengths`` (``mi.Wavelength``):
+            Set of sampled wavelengths to be used for the boundary path.
 
         The function returns a tuple ``(importance, uv, depth, boundary_p,
         valid)`` where
@@ -18727,6 +21927,154 @@
 
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
+
+.. py:function:: mitsuba.ad.integrators.common.solid_angle_to_area_jacobian(o, p, n, active=True)
+
+    Computes the Jacobian determinant of the change of variables from solid
+    angle (dω) to surface area (dA) when reparameterizing the integration over
+    a surface.
+
+    Parameter ``o`` (``mi.Point3f``)
+        Origin point (e.g., shading point).
+
+    Parameter ``p`` (``mi.Point3f``)
+        Sampled point on the surface.
+
+    Parameter ``n`` (``mi.Normal3f``)
+        Normal at the sampled point.
+
+    Output:
+        The Jacobian determinant |∂A/∂ω| = (|dot(n, wi)| / ||p - o||^2)
+
+    Parameter ``o`` (~:py:obj:`mitsuba.Point3f`):
+        *no description available*
+
+    Parameter ``p`` (~:py:obj:`mitsuba.Point3f`):
+        *no description available*
+
+    Parameter ``n`` (~:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Parameter ``active`` (~drjit.llvm.ad.Bool):
+        Mask to specify active lanes.
+
+.. py:class:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.RBIntegrator`
+
+    .. _integrator-volprim_rf_basic:
+
+    Basic Volumetric Primitive Radiance Field Integrator (:monosp:`volprim_rf_basic`)
+    ------------------------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - max_depth
+         - |int|
+         - Specifies the longest path depth in the generated output image (where -1
+           corresponds to :math:`\infty`). (Default: 64)
+
+     * - srgb_primitives
+         - |bool|
+         - Specifies whether the SH coefficients of the primitives are defined in
+           sRGB color space. (Default: True)
+
+    This plugin implements a simple radiance field integrator for ellipsoids shapes.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'volprim_rf_basic',
+            'max_depth': 8
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.eval_transmission()
+
+        Evaluate the transmission model on intersected volumetric primitives
+
+    .. py:method:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.eval_sh_emission()
+
+        Evaluate the SH directionally emission on intersected volumetric primitives
+
+    .. py:method:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
 
 .. py:class:: mitsuba.ad.largesteps.SolveCholesky
 
@@ -19040,6 +22388,14 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
+.. py:class:: mitsuba.detail.TransformWrapper
+
+    Helper functor that wraps Transform3f/Transform4f methods so that the following two
+    calling conventions are equivalent:
+
+     - Transform4f().translate().scale()...
+     - Transform4f.translate().scale()...
+
 .. py:function:: mitsuba.detail.add_variant_callback(arg)
 
     Parameter ``arg`` (collections.abc.Callable, /):
@@ -19053,6 +22409,8 @@
     Returns → None:
         *no description available*
 
+.. py:function:: mitsuba.detail.patch_transform()
+
 .. py:function:: mitsuba.detail.remove_variant_callback(arg)
 
     Parameter ``arg`` (collections.abc.Callable, /):
@@ -19060,6 +22418,16 @@
 
     Returns → None:
         *no description available*
+
+.. py:function:: mitsuba.dir_to_sph(v)
+
+    Converts a unit vector to its spherical coordinates parameterization
+
+    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Vector to convert
+
+    Returns → :py:obj:`mitsuba.Point2f`:
+        The polar and azimuthal angles respectively.
 
 .. py:function:: mitsuba.eval_reflectance(type, alpha_u, alpha_v, wi, eta)
 
@@ -19081,6 +22449,11 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
+.. py:function:: mitsuba.file_resolver()
+
+    Returns → :py:obj:`mitsuba.FileResolver`:
+        *no description available*
+
 .. py:function:: mitsuba.filesystem.absolute(arg)
 
     Returns an absolute path to the same location pointed by ``p``,
@@ -19093,6 +22466,19 @@
         *no description available*
 
     Returns → :py:obj:`mitsuba.filesystem.path`:
+        *no description available*
+
+.. py:function:: mitsuba.filesystem.copy_file(arg0, arg1)
+
+    Copy a file from source to destination
+
+    Parameter ``arg0`` (:py:obj:`mitsuba.filesystem.path`):
+        *no description available*
+
+    Parameter ``arg1`` (:py:obj:`mitsuba.filesystem.path`, /):
+        *no description available*
+
+    Returns → bool:
         *no description available*
 
 .. py:function:: mitsuba.filesystem.create_directory(arg)
@@ -19195,8 +22581,8 @@
         
         3. ``__init__(self, arg: str, /) -> None``
         
-        Construct a path from a string with native type. On Windows, the path
-        can use both '/' or '\\' as a delimiter.
+        Construct a path from a string view with native type. On Windows, the
+        path can use both '/' or '\\' as a delimiter.
 
         
     .. py:method:: mitsuba.filesystem.path.clear()
@@ -19447,7 +22833,7 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
-.. py:function:: mitsuba.load_dict(dict, parallel=True)
+.. py:function:: mitsuba.load_dict(dict, parallel=True, optimize=True)
 
     Load a Mitsuba scene or object from an Python dictionary
 
@@ -19457,44 +22843,49 @@
     Parameter ``parallel`` (bool):
         Whether the loading should be executed on multiple threads in parallel
 
+    Parameter ``optimize`` (bool):
+        Whether to enable optimizations like merging identical objects (default: True)
+
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.load_file(path, update_scene=False, parallel=True, **kwargs)
+.. py:function:: mitsuba.load_file(path, parallel=True, optimize=True, **kwargs)
 
-    Load a Mitsuba scene from an XML file
+    Load a Mitsuba scene or object from an XML file
+
+    Parameter ``name``:
+        The XML scene description's filename
+
+    Parameter ``parallel`` (bool):
+        Whether the loading should be executed on multiple threads in parallel
+
+    Parameter ``optimize`` (bool):
+        Whether to enable optimizations like merging identical objects (default: True)
+
+    Parameter ``kwargs``:
+        A dictionary of key value pairs that will replace any default parameters declared in the XML.
 
     Parameter ``path`` (str):
-        Filename of the scene XML file
-
-    Parameter ``parameters``:
-        Optional list of parameters that can be referenced as ``$varname``
-        in the scene.
-
-    Parameter ``variant``:
-        Specifies the variant of plugins to instantiate (e.g.
-        "scalar_rgb")
-
-    Parameter ``update_scene`` (bool):
-        When Mitsuba updates scene to a newer version, should the updated
-        XML file be written back to disk?
-
-    Parameter ``parallel`` (bool):
-        Whether the loading should be executed on multiple threads in
-        parallel
+        *no description available*
 
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.load_string(string, parallel=True, **kwargs)
+.. py:function:: mitsuba.load_string(value, parallel=True, optimize=True, **kwargs)
 
-    Load a Mitsuba scene from an XML string
+    Load a Mitsuba scene or object from an XML string
 
-    Parameter ``string`` (str):
-        *no description available*
+    Parameter ``value`` (str):
+        The XML scene description as a string
 
     Parameter ``parallel`` (bool):
-        *no description available*
+        Whether the loading should be executed on multiple threads in parallel
+
+    Parameter ``optimize`` (bool):
+        Whether to enable optimizations like merging identical objects (default: True)
+
+    Parameter ``kwargs``:
+        A dictionary of key value pairs that will replace any default parameters declared in the XML.
 
     Returns → object:
         *no description available*
@@ -19506,11 +22897,16 @@
     Returns → :py:obj:`mitsuba.LogLevel`:
         *no description available*
 
+.. py:function:: mitsuba.logger()
+
+    Returns → :py:obj:`mitsuba.Logger`:
+        *no description available*
+
 .. py:function:: mitsuba.lookup_ior(properties, name, default)
 
     Lookup IOR value in table.
 
-    Parameter ``properties`` (:py:obj:`mitsuba._Properties`):
+    Parameter ``properties`` (:py:obj:`mitsuba.Properties`):
         *no description available*
 
     Parameter ``name`` (str):
@@ -19678,10 +23074,10 @@
 
     Applies the sRGB gamma curve to the given argument.
 
-    Parameter ``arg`` (drjit.llvm.ad.Float, /):
+    Parameter ``arg`` (float, /):
         *no description available*
 
-    Returns → drjit.llvm.ad.Float:
+    Returns → float:
         *no description available*
 
 .. py:function:: mitsuba.math.morton_decode2(m)
@@ -19746,10 +23142,10 @@
 
     Applies the inverse sRGB gamma curve to the given argument.
 
-    Parameter ``arg`` (drjit.llvm.ad.Float, /):
+    Parameter ``arg`` (float, /):
         *no description available*
 
-    Returns → drjit.llvm.ad.Float:
+    Returns → float:
         *no description available*
 
 .. py:function:: mitsuba.math.ulpdiff(arg0, arg1)
@@ -20145,20 +23541,431 @@
     Parameter ``far_clip`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Transform4f`:
+    Returns → :py:obj:`mitsuba.AffineTransform4f`:
         *no description available*
 
 .. py:function:: mitsuba.parse_fov(props, aspect)
 
     Helper function to parse the field of view field of a camera
 
-    Parameter ``props`` (:py:obj:`mitsuba._Properties`):
+    Parameter ``props`` (:py:obj:`mitsuba.Properties`):
         *no description available*
 
     Parameter ``aspect`` (float):
         *no description available*
 
     Returns → float:
+        *no description available*
+
+.. py:class:: mitsuba.parser.ParserConfig
+
+    Constructor that takes variant name
+
+    .. py:property:: mitsuba.parser.ParserConfig.max_include_depth
+
+        Maximum include depth to prevent infinite recursion (default: 15)
+
+    .. py:property:: mitsuba.parser.ParserConfig.merge_equivalent
+
+        Enable merging of equivalent nodes (deduplication) (default: true)
+
+    .. py:property:: mitsuba.parser.ParserConfig.merge_meshes
+
+        Enable merging of meshes into a single merge shape (default: true)
+
+    .. py:property:: mitsuba.parser.ParserConfig.parallel
+
+        Enable parallel instantiation for better performance (default: true)
+
+    .. py:property:: mitsuba.parser.ParserConfig.unused_parameters
+
+        How to handle unused "$key" -> "value" substitution parameters: Error (default), Warn, or Debug
+
+    .. py:property:: mitsuba.parser.ParserConfig.unused_properties
+
+        How to handle unused properties during instantiation: Error (default), Warn, or Debug
+
+    .. py:property:: mitsuba.parser.ParserConfig.variant
+
+        Target variant for instantiation (e.g., "scalar_rgb", "cuda_spectral")
+
+.. py:class:: mitsuba.parser.ParserState
+
+
+    .. py:method:: ``__init__()
+
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
+        Copy constructor
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.ParserState`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.parser.ParserState.files
+
+        List of parsed files
+
+    .. py:property:: mitsuba.parser.ParserState.id_to_index
+
+        Map from IDs to node indices
+
+    .. py:property:: mitsuba.parser.ParserState.node_paths
+
+        Node paths for dictionary parsing
+
+    .. py:property:: mitsuba.parser.ParserState.nodes
+
+        List of all scene nodes
+
+    .. py:property:: mitsuba.parser.ParserState.root
+
+        Access the root node
+
+    .. py:property:: mitsuba.parser.ParserState.versions
+
+        Version number for each file
+
+.. py:class:: mitsuba.parser.SceneNode
+
+
+    .. py:method:: ``__init__()
+
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
+        Copy constructor
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.parser.SceneNode.file_index
+
+        File index in ParserState::files
+
+    .. py:property:: mitsuba.parser.SceneNode.offset
+
+        Byte offset of the node within the parsed file/string
+
+    .. py:property:: mitsuba.parser.SceneNode.props
+
+        Properties of this node
+
+    .. py:property:: mitsuba.parser.SceneNode.type
+
+        Object type
+
+.. py:class:: mitsuba.parser.SceneNodeList
+
+
+    .. py:method:: ``__init__()
+
+        Default constructor
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
+        Copy constructor
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNodeList`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
+        Construct from an iterable object
+
+        Parameter ``arg`` (collections.abc.Iterable[:py:obj:`mitsuba.parser.SceneNode`], /):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.append(self, arg)
+
+        Append `arg` to the end of the list.
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.clear()
+
+        Remove all items from list.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.count(self, arg)
+
+        Return number of occurrences of `arg`.
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.extend(self, arg)
+
+        Extend `self` by appending elements from `arg`.
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNodeList`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.insert(self, arg0, arg1)
+
+        Insert object `arg1` before index `arg0`.
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.pop(self, index=-1)
+
+        Remove and return item at `index` (default last).
+
+        Parameter ``index`` (int):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.parser.SceneNode`:
+            *no description available*
+
+    .. py:method:: mitsuba.parser.SceneNodeList.remove(self, arg)
+
+        Remove first occurrence of `arg`.
+
+        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:function:: mitsuba.parser.file_location(state, node)
+
+    Get human-readable file location for a node
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Parameter ``node`` (:py:obj:`mitsuba.parser.SceneNode`):
+        *no description available*
+
+    Returns → str:
+        *no description available*
+
+.. py:function:: mitsuba.parser.instantiate(config, state)
+
+    Instantiate the parsed representation into concrete Mitsuba objects
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → object:
+        *no description available*
+
+.. py:function:: mitsuba.parser.parse_dict(config, dict)
+
+    Parse a scene from a Python dictionary
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``dict`` (dict):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.parser.ParserState`:
+        *no description available*
+
+.. py:function:: mitsuba.parser.parse_file(config, filename)
+
+    Parse a scene from an XML file
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``filename`` (str, **kwargs):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.parser.ParserState`:
+        *no description available*
+
+.. py:function:: mitsuba.parser.parse_string(config, string)
+
+    Parse a scene from an XML string
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``string`` (str, **kwargs):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.parser.ParserState`:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_all(config, state)
+
+    Apply all transformations in the correct order
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_merge_equivalent(config, state)
+
+    Merge equivalent nodes to reduce memory usage and improve performance
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_merge_meshes(config, state)
+
+    Combine meshes with identical materials
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_relocate(config, state, output_directory)
+
+    Relocate scene files to organized subfolders
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Parameter ``output_directory`` (:py:obj:`mitsuba.filesystem.path`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_reorder(config, state)
+
+    Reorder immediate children of scene nodes for better readability
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_resolve(config, state)
+
+    Resolve named references and raise an error when detecting broken links
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_resolve_references(config, state)
+
+    Resolve named references and raise an error when detecting broken links
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.transform_upgrade(config, state)
+
+    Upgrade scene data to latest version
+
+    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+        *no description available*
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.write_file(state, filename, add_section_headers=False)
+
+    Write scene data to an XML file
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Parameter ``filename`` (:py:obj:`mitsuba.filesystem.path`):
+        *no description available*
+
+    Parameter ``add_section_headers`` (bool):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.parser.write_string(state, add_section_headers=False)
+
+    Convert scene data to an XML string
+
+    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+        *no description available*
+
+    Parameter ``add_section_headers`` (bool):
+        *no description available*
+
+    Returns → str:
         *no description available*
 
 .. py:function:: mitsuba.pdf_rgb_spectrum(wavelengths)
@@ -20262,7 +24069,7 @@
     Parameter ``far_clip`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Transform4f`:
+    Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
         *no description available*
 
 .. py:function:: mitsuba.quad.chebyshev(n)
@@ -20422,122 +24229,144 @@
     Returns → :py:obj:`mitsuba.Vector3f`:
         *no description available*
 
-.. py:function:: mitsuba.register_bsdf(arg0, arg1)
+.. py:function:: mitsuba.register_bsdf(name, constructor)
 
-    Parameter ``arg0`` (str):
+    Register a Python BSDF plugin
+
+    Parameter ``name`` (str):
         *no description available*
 
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.register_emitter(arg0, arg1)
-
-    Parameter ``arg0`` (str):
-        *no description available*
-
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
+    Parameter ``constructor`` (object):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_film(arg0, arg1)
+.. py:function:: mitsuba.register_emitter(name, constructor)
 
-    Parameter ``arg0`` (str):
+    Register a Python emitter plugin
+
+    Parameter ``name`` (str):
         *no description available*
 
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.register_integrator(arg0, arg1)
-
-    Parameter ``arg0`` (str):
-        *no description available*
-
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
+    Parameter ``constructor`` (object):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_medium(arg0, arg1)
+.. py:function:: mitsuba.register_film(name, constructor)
 
-    Parameter ``arg0`` (str):
+    Register a Python film plugin
+
+    Parameter ``name`` (str):
         *no description available*
 
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.register_mesh(arg0, arg1)
-
-    Parameter ``arg0`` (str):
-        *no description available*
-
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
+    Parameter ``constructor`` (object):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_phasefunction(arg0, arg1)
+.. py:function:: mitsuba.register_integrator(name, constructor)
 
-    Parameter ``arg0`` (str):
+    Register a Python integrator plugin
+
+    Parameter ``name`` (str):
         *no description available*
 
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.register_sampler(arg0, arg1)
-
-    Parameter ``arg0`` (str):
-        *no description available*
-
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
+    Parameter ``constructor`` (object):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_sensor(arg0, arg1)
+.. py:function:: mitsuba.register_medium(name, constructor)
 
-    Parameter ``arg0`` (str):
+    Register a Python medium plugin
+
+    Parameter ``name`` (str):
         *no description available*
 
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.register_texture(arg0, arg1)
-
-    Parameter ``arg0`` (str):
-        *no description available*
-
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
+    Parameter ``constructor`` (object):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_volume(arg0, arg1)
+.. py:function:: mitsuba.register_phase(name, constructor)
 
-    Parameter ``arg0`` (str):
+    Register a Python phase function plugin
+
+    Parameter ``name`` (str):
         *no description available*
 
-    Parameter ``arg1`` (collections.abc.Callable[[:py:obj:`mitsuba.Properties`], object], /):
+    Parameter ``constructor`` (object):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.register_rfilter(name, constructor)
+
+    Register a Python reconstruction filter plugin
+
+    Parameter ``name`` (str):
+        *no description available*
+
+    Parameter ``constructor`` (object):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.register_sampler(name, constructor)
+
+    Register a Python sampler plugin
+
+    Parameter ``name`` (str):
+        *no description available*
+
+    Parameter ``constructor`` (object):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.register_sensor(name, constructor)
+
+    Register a Python sensor plugin
+
+    Parameter ``name`` (str):
+        *no description available*
+
+    Parameter ``constructor`` (object):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.register_shape(name, constructor)
+
+    Register a Python shape plugin
+
+    Parameter ``name`` (str):
+        *no description available*
+
+    Parameter ``constructor`` (object):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.register_texture(name, constructor)
+
+    Register a Python texture plugin
+
+    Parameter ``name`` (str):
+        *no description available*
+
+    Parameter ``constructor`` (object):
         *no description available*
 
     Returns → None:
@@ -20570,7 +24399,7 @@
     Parameter ``scene`` (``mi.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
-    Parameter ``params`` (Any):
+    Parameter ``params`` (~typing.Any):
        An optional container of scene parameters that should receive gradients.
        This argument isn't optional when computing forward mode derivatives. It
        should be an instance of type ``mi.SceneParameters`` obtained via
@@ -20616,16 +24445,16 @@
         differential simulation phase. If not specified, the implementation will
         copy the value from ``spp``.
 
-    Parameter ``scene`` (mi.Scene):
+    Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
         *no description available*
 
-    Parameter ``sensor`` (Union[int, mi.Sensor]):
+    Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
         *no description available*
 
-    Parameter ``integrator`` (mi.Integrator):
+    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator`):
         *no description available*
 
-    Parameter ``seed`` (mi.UInt32):
+    Parameter ``seed`` (~drjit.llvm.ad.UInt):
         *no description available*
 
     Parameter ``seed_grad`` (int):
@@ -20637,7 +24466,7 @@
     Parameter ``spp_grad`` (int):
         *no description available*
 
-    Returns → mi.TensorXf:
+    Returns → ~drjit.llvm.ad.TensorXf:
         *no description available*
 
 .. py:function:: mitsuba.sample_rgb_spectrum(sample)
@@ -20700,9 +24529,8 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float
+.. py:function:: mitsuba.sample_tea_float(overloaded)
 
-    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
@@ -20780,6 +24608,14 @@
     Returns → None:
         *no description available*
 
+.. py:function:: mitsuba.set_file_resolver(arg)
+
+    Parameter ``arg`` (:py:obj:`mitsuba.FileResolver`, /):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
 .. py:function:: mitsuba.set_log_level(arg)
 
     Sets the log level.
@@ -20790,7 +24626,18 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.set_variant()
+.. py:function:: mitsuba.set_logger(logger)
+
+    Parameter ``logger`` (:py:obj:`mitsuba.Logger`):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.set_variant(args)
+
+    Parameter ``args`` (str):
+        *no description available*
 
     Returns → None:
         *no description available*
@@ -20929,6 +24776,19 @@
 
     Returns → None:
         *no description available*
+
+.. py:function:: mitsuba.sph_to_dir(theta, phi)
+
+    Converts spherical coordinates to a cartesian vector
+
+    Parameter ``theta`` (drjit.llvm.ad.Float):
+        The polar angle
+
+    Parameter ``phi`` (drjit.llvm.ad.Float):
+        The azimuth angle
+
+    Returns → :py:obj:`mitsuba.Vector3f`:
+        Unit vector corresponding to the input angles
 
 .. py:function:: mitsuba.spline.eval_1d(min, max, values, x)
 
@@ -21461,6 +25321,63 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
+.. py:function:: mitsuba.tensor_io.read()
+
+.. py:function:: mitsuba.tensor_io.size_fmt()
+
+.. py:function:: mitsuba.tensor_io.write()
+
+.. py:class:: mitsuba.testing.RenderingRegressionTest
+
+    A rendering regression test is a test case that compares a rendered image
+    against a reference image. The test is based on the Z-test, using the `moment`
+    integrator to compute the first and second moments of the image. The test
+    is successful if the null hypothesis (that the images are identical) cannot
+    be rejected at the given significance level.
+
+    Reference images can be generated by running pytest with the argument `--generate_ref`
+
+    .. py:method:: __init__(name, scene, sensor=0, test_spp=512, ref_spp=8192, significance_level=0.01, pixel_success_rate=0.975, references_folder=None, generate_ref=False)
+
+        Create a rendering regression test.
+        
+        Arguments:
+            name: Name of the test case
+            scene: Scene dictionary
+            sensor: Sensor to use for rendering
+            test_spp: Number of samples per pixel to use for the test
+            ref_spp:  Number of samples per pixel to use for the reference image
+            significance_level: Significance level of the test
+            pixel_success_rate: Minimum pixel success rate
+            references_folder: Path to where to store the generated reference images. If not specified, put in 'references' folder next to the test script.
+            options: Options dictionary
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``generate_ref`` (bool):
+            *no description available*
+
+        
+    .. py:method:: mitsuba.testing.RenderingRegressionTest.render_reference()
+
+        Render a reference image for the test case
+
+    .. py:method:: mitsuba.testing.RenderingRegressionTest.run()
+
+        Run the test case
+
+        Returns → bool:
+            *no description available*
+
+.. py:function:: mitsuba.testing.annotations
+
 .. py:function:: mitsuba.traverse(node)
 
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
@@ -21482,6 +25399,41 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
+.. py:function:: mitsuba.util.Optional()
+
+    Optional[X] is equivalent to Union[X, None].
+
+.. py:function:: mitsuba.util.Union()
+
+    Union type; Union[X, Y] means either X or Y.
+
+    On Python 3.10 and higher, the | operator
+    can also be used to denote unions;
+    X | Y means the same thing to the type checker as Union[X, Y].
+
+    To define a union, use e.g. Union[int, str]. Details:
+    - The arguments must be types and there must be at least one.
+    - None as an argument is a special case and is replaced by
+      type(None).
+    - Unions of unions are flattened, e.g.::
+
+        assert Union[Union[int, str], float] == Union[int, str, float]
+
+    - Unions of a single argument vanish, e.g.::
+
+        assert Union[int] == int  # The constructor actually returns int
+
+    - Redundant arguments are skipped, e.g.::
+
+        assert Union[int, str, int] == Union[int, str]
+
+    - When comparing unions, the argument order is ignored, e.g.::
+
+        assert Union[int, str] == Union[str, int]
+
+    - You cannot subclass or instantiate a union.
+    - You can use Optional[X] as a shorthand for Union[X, None].
+
 .. py:function:: mitsuba.util.convert_to_bitmap()
 
     Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
@@ -21493,7 +25445,7 @@
 
 .. py:function:: mitsuba.variant()
 
-    Returns → object:
+    Returns → typing.Optional[str]:
         *no description available*
 
 .. py:function:: mitsuba.variant_context()
@@ -21506,7 +25458,7 @@
 
 .. py:function:: mitsuba.variants()
 
-    Returns → object:
+    Returns → typing.List[str]:
         *no description available*
 
 .. py:function:: mitsuba.warp.beckmann_to_square(v, alpha)
@@ -22477,7 +26429,7 @@
           :py:attr:`drjit.JitFlag.SymbolicLoops` and then either performs a
           symbolic or an evaluated loop.
 
-        compress (Optional[bool]): Set this this parameter to ``True`` or ``False``
+        compress (Optional[bool]): Set this parameter to ``True`` or ``False``
           to enable or disable *loop state compression* in evaluated loops (see the
           text above for a description of this feature). The function
           queries the value of :py:attr:`drjit.JitFlag.CompressLoops` when the
@@ -22533,27 +26485,6 @@
     Returns → tuple[*Ts]:
         tuple: The function returns the final state of the loop variables following
         termination of the loop.
-
-.. py:function:: mitsuba.xml.dict_to_xml()
-
-    Converts a Mitsuba dictionary into its XML representation.
-
-    Parameter ``scene_dict``:
-        Mitsuba dictionary
-    Parameter ``filename``:
-        Output filename
-    Parameter ``split_files``:
-        Whether to split the scene into multiple files (default: False)
-
-.. py:function:: mitsuba.xml_to_props(path)
-
-    Get the names and properties of the objects described in a Mitsuba XML file
-
-    Parameter ``path`` (str):
-        *no description available*
-
-    Returns → list[tuple[str, :py:obj:`mitsuba.Properties`]]:
-        *no description available*
 
 .. py:function:: mitsuba.xyz_to_srgb(rgb, active=True)
 

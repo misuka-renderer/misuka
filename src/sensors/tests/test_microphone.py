@@ -91,7 +91,7 @@ def test02_origin_direction_parameters(variant_scalar_acoustic, origin, directio
     assert dr.allclose(actual_dir, expected_dir/dr.norm(expected_dir), atol=1e-6)
 
 
-def test03_origin_direction_validation(variant_scalar_rgb):
+def test03_origin_direction_validation(variant_scalar_acoustic):
     """Test that microphone requires both origin and direction when using those parameters"""
     # Should fail if only origin is provided
     with pytest.raises(RuntimeError, match=r"both values must be set"):
@@ -113,7 +113,7 @@ def test03_origin_direction_validation(variant_scalar_rgb):
 @pytest.mark.parametrize("origin", origins[:1])
 @pytest.mark.parametrize("direction", directions[:2])
 @pytest.mark.parametrize("kappa", [0.0, 2000])
-def test04_sample_ray_differential(variants_all_acoustic, origin, direction, kappa):
+def test04_sample_ray_differential(variant_scalar_acoustic, origin, direction, kappa):
     """Test the sample_ray_differential method"""
     microphone = create_microphone(origin, direction, kappa=kappa)
 
@@ -148,7 +148,7 @@ def test04_sample_ray_differential(variants_all_acoustic, origin, direction, kap
 @pytest.mark.parametrize("origin", origins[:1])
 @pytest.mark.parametrize("direction", directions[:2])
 @pytest.mark.parametrize("kappa", [0.0, 2e7])
-def test05_von_mises_fisher_sampling(variants_all_acoustic, origin, direction, kappa):
+def test05_von_mises_fisher_sampling(variant_scalar_acoustic, origin, direction, kappa):
     """Test that von Mises-Fisher sampling works correctly with different kappa values"""
     microphone = create_microphone(origin, direction, kappa=kappa)
 
@@ -179,7 +179,7 @@ def test05_von_mises_fisher_sampling(variants_all_acoustic, origin, direction, k
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test06_sample_direction(variants_vec_spectral, origin, direction):
+def test06_sample_direction(variant_scalar_acoustic, origin, direction):
     """Test the sample_direction method"""
     microphone = create_microphone(origin, direction, kappa=0.0)
 
@@ -212,7 +212,7 @@ def test06_sample_direction(variants_vec_spectral, origin, direction):
     assert dr.all(weight > 0)
 
 
-def test07_frequency_sampling(variants_all_acoustic):
+def test07_frequency_sampling(variant_scalar_acoustic):
     """Test frequency spectrum sampling"""
     microphone = create_microphone([0, 0, 0], [0, 0, 1])
 

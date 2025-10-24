@@ -11,7 +11,7 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-13, macos-14]
+        os: [ubuntu-24.04, windows-latest, macos-13, macos-14]
         python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
       fail-fast: false
 
@@ -36,6 +36,12 @@ jobs:
         name: Install Python
         with:
           python-version: '3.10'
+
+      - name: Install LLVM 18.1.8 on Windows
+        if: runner.os == 'Windows'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: 18.1.8
 
       - name: Prepare compiler environment for Windows
         if: runner.os == 'Windows'

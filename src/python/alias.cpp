@@ -68,7 +68,7 @@ nb::object import_with_deepbind_if_necessary(const char* name) {
 
 #if defined(__clang__) && !defined(__APPLE__)
     if (!std::getenv("DRJIT_NO_RTLD_DEEPBIND"))
-        sys.attr("setdlopenflags")(sys.attr("getdlopenflags")());
+        sys.attr("setdlopenflags")(backupflags);
 #endif
 
     return out;
@@ -95,16 +95,16 @@ static nb::object variant_module(nb::handle variant) {
 
 /// Sets the variant
 static void set_variant(nb::args args) {
-    nb::object new_variant{};
-    for (auto arg : args) {
-        // Find the first valid & compiled variant in the arguments
+    nb::list valid_variants{};
+    for (const auto &arg : args) {
         if (PyDict_Contains(variant_modules, arg.ptr()) == 1) {
-            new_variant = nb::borrow(arg);
-            break;
+            // Variant is at least compiled, we can attempt to use it.
+            valid_variants.append(arg);
         }
     }
 
-    if (!new_variant) {
+    if (valid_variants.size() == 0) {
+        // None of the requested variants are compiled.
         nb::object all_args(nb::str(", ").attr("join")(args));
         nb::object all_variants(
             nb::str(", ").attr("join")(nb::steal(PyDict_Keys(variant_modules))));
@@ -116,8 +116,36 @@ static void set_variant(nb::args args) {
         );
     }
 
-    if (!curr_variant.equal(new_variant)) {
-        nb::object new_variant_module = variant_module(new_variant);
+    nb::object old_variant = curr_variant;
+    // For each requested _and_ available variant, in order of preference.
+    for (size_t i = 0; i < valid_variants.size(); ++i) {
+        const auto &requested_variant = valid_variants[i];
+        bool is_last = (i == valid_variants.size() - 1);
+
+        if (requested_variant.equal(old_variant)) {
+            // We're already using this variant, no need to do anything.
+            break;
+        }
+
+        nb::object new_variant_module;
+        try {
+            new_variant_module = variant_module(requested_variant);
+        } catch (const nb::python_error &e) {
+            // The variant failed to import, this could happen e.g. if the
+            // CUDA driver is installed, but there is no GPU available.
+            // We only allow such failures as long as we have more variants to try.
+            if (!is_last && e.matches(PyExc_ImportError)) {
+                const auto mi = nb::module_::import_("mitsuba");
+                mi.attr("Log")(
+                    mi.attr("LogLevel").attr("Debug"),
+                    nb::str("The requested variant \"{}\" could not be loaded, "
+                            "attempting the next one. The exception was:\n{}\n")
+                        .format(requested_variant, e.what()));
+                continue;
+            } else {
+                throw e;
+            }
+        }
 
         nb::dict variant_dict = new_variant_module.attr("__dict__");
         for (const auto &k : variant_dict.keys())
@@ -126,21 +154,23 @@ static void set_variant(nb::args args) {
                 Safe_PyDict_SetItem(mi_dict, k.ptr(),
                     PyDict_GetItem(variant_dict.ptr(), k.ptr()));
 
-        nb::object old_variant = curr_variant;
+        curr_variant = requested_variant;
+        break;
+    }
 
-        // Need to update curr_variant = mi.variant() before reloading internal plugins
-        curr_variant = new_variant;
-        if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
+
+    if (!curr_variant.equal(old_variant)) {
+        // Reload internal plugins
+        if (curr_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
             nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
             nb::steal(PyImport_ReloadModule(mi_python.ptr()));
         }
 
-        // Only invoke callbacks after Mitsuba plugins have reloaded as there
-        // may be a dependency
+        // Only invoke user-provided callbacks after Mitsuba plugins have reloaded,
+        // as there may be a dependency
         const auto &callbacks = nb::borrow<nb::set>(variant_change_callbacks);
         for (const auto &cb : callbacks)
-            cb(old_variant, new_variant);
-
+            cb(old_variant, curr_variant);
     }
 }
 
@@ -170,14 +200,25 @@ static void clear_variant_callbacks() {
     nb::borrow<nb::set>(variant_change_callbacks).clear();
 }
 
-
 /// Fallback for when we're attempting to fetch variant-specific attribute
 static nb::object get_attr(nb::handle key) {
     if (PyDict_Contains(variant_modules, key.ptr()) == 1)
         return variant_module(key);
 
-    throw nb::attribute_error(
-        nb::str("module 'mitsuba' has no attribute '{}'").format(key).c_str());
+    // If no variant is set, inform the user
+    if (curr_variant.is_none() && PyUnicode_Check(key.ptr())) {
+        const char* attr_name = PyUnicode_AsUTF8(key.ptr());
+        if (attr_name) {
+            return nb::steal(PyErr_Format(PyExc_AttributeError,
+                "Cannot access '%s' before setting a variant. "
+                "Please call `mitsuba.set_variant('variant_name')` first. "
+                "For example: mitsuba.set_variant('scalar_rgb') or mitsuba.set_variant('cuda_ad_rgb'). "
+                "Use mitsuba.variants() to see all available variants.",
+                attr_name));
+        }
+    }
+
+    return nb::steal(PyErr_Format(PyExc_AttributeError, "Module 'mitsuba' has no attribute %R", key.ptr()));
 }
 
 NB_MODULE(mitsuba_alias, m) {
@@ -187,17 +228,16 @@ NB_MODULE(mitsuba_alias, m) {
     curr_variant = nb::none();
     variant_change_callbacks = nb::set();
 
-    if (!variant_modules) {
+    if (!variant_modules)
         variant_modules = PyDict_New();
-    }
 
     // Need to populate `__path__` we do it by using the `__file__` attribute
     // of a Python file which is located in the same directory as this module
-    nb::module_ os = nb::module_::import_("os");
+    nb::module_ path = nb::module_::import_("os").attr("path");
     nb::module_ cfg = nb::module_::import_("mitsuba.config");
-    nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));
-    nb::object mi_dir = os.attr("path").attr("dirname")(cfg_path);
-    nb::object mi_py_dir = os.attr("path").attr("join")(mi_dir, "python");
+    nb::object cfg_path = path.attr("realpath")(cfg.attr("__file__"));
+    nb::object mi_dir = path.attr("dirname")(cfg_path);
+    nb::object mi_py_dir = path.attr("join")(mi_dir, "python");
     nb::list paths{};
     paths.append(nb::str(mi_dir));
     paths.append(nb::str(mi_py_dir));
@@ -216,36 +256,42 @@ NB_MODULE(mitsuba_alias, m) {
             all_variant_names[i].ptr(), nb::none().ptr());
     }
 
-    m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
-    m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); });
-    m.def("set_variant", set_variant);
+    m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); },
+          nb::sig("def variant() -> typing.Optional[str]"));
+    m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); },
+          nb::sig("def variants() -> typing.List[str]"));
+    m.def("set_variant", set_variant,
+          nb::sig("def set_variant(*args: str) -> None"));
     /// Only used for variant-specific attributes e.g. mi.scalar_rgb.T
     m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
-    // `mitsuba.detail` submodule
-    nb::module_ mi_detail = m.def_submodule("detail");
+    // Create the detail submodule
+    nb::module_ mi_detail = nb::module_::import_("mitsuba.detail");
     mi_detail.def("add_variant_callback", add_variant_callback);
     mi_detail.def("remove_variant_callback", remove_variant_callback);
     mi_detail.def("clear_variant_callbacks", clear_variant_callbacks);
+    m.attr("detail") = mi_detail;
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
     mi_dict = m.attr("__dict__").ptr();
     nb::object mi_ext = import_with_deepbind_if_necessary("mitsuba.mitsuba_ext");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
-    for (const auto &k : mitsuba_ext_dict.keys())
+    for (const auto &k : mitsuba_ext_dict.keys()) {
         if (!nb::bool_(k.attr("startswith")("__")) &&
             !nb::bool_(k.attr("endswith")("__"))) {
             Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_ext_dict[k].ptr());
         }
+    }
 
     // Import contents of `mitsuba.python` into top-level `mitsuba` module
     nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_python_dict = mi_python.attr("__dict__");
-    for (const auto &k : mitsuba_python_dict.keys())
+    for (const auto &k : mitsuba_python_dict.keys()) {
         if (!nb::bool_(k.attr("startswith")("__")) &&
             !nb::bool_(k.attr("endswith")("__"))) {
             Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_python_dict[k].ptr());
         }
+    }
 
     /// Cleanup static variables, this is called when the interpreter is exiting
     auto atexit = nb::module_::import_("atexit");

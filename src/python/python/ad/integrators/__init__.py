@@ -1,36 +1,37 @@
 # Import/re-import all files in this folder to register AD integrators
-import importlib
 import mitsuba as mi
+import sys
 
 if mi.variant() is not None and not mi.variant().startswith('scalar'):
-    from . import common
-    importlib.reload(common)
+    # List of submodules to import
+    submodules = [
+        'common',
+        'prb_basic',
+        'prb',
+        'prbvolpath',
+        'direct_projective',
+        'prb_projective',
+        'volprim_rf_basic',
+        'acoustic_prb',
+        'acoustic_prb_threepoint',
+        'acoustic_ad',
+        'acoustic_ad_threepoint',
+    ]
 
-    from . import prb_basic
-    importlib.reload(prb_basic)
+    # Are we importing the submodules for the first time or reloading them?
+    reload = submodules[0] in globals()
 
-    from . import prb
-    importlib.reload(prb)
+    import importlib
+    module, name = None, None
 
-    from . import prbvolpath
-    importlib.reload(prbvolpath)
+    for name in submodules:
+        module = importlib.import_module(f'.{name}', package=__name__)
+        if reload:
+            importlib.reload(module)
 
-    from . import direct_projective
-    importlib.reload(direct_projective)
+        # Make the submodule available at package level
+        globals()[name] = module
 
-    from . import prb_projective
-    importlib.reload(prb_projective)
+    del importlib, name, submodules, module, reload
 
-    from . import acoustic_prb
-    importlib.reload(acoustic_prb)
-
-    from . import acoustic_prb_threepoint
-    importlib.reload(acoustic_prb_threepoint)
-
-    from . import acoustic_ad
-    importlib.reload(acoustic_ad)
-
-    from . import acoustic_ad_threepoint
-    importlib.reload(acoustic_ad_threepoint)
-
-del importlib, mi
+del mi, sys
