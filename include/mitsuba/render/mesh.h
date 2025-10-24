@@ -47,6 +47,9 @@ public:
          ScalarSize face_count, const Properties &props = Properties(),
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
+    // Creates an empty mesh.
+    Mesh(const Properties &props);
+
     /// Destructor
     ~Mesh();
 
@@ -417,7 +420,6 @@ public:
     size_t face_data_bytes() const;
 
 protected:
-    Mesh(const Properties &);
     inline Mesh() {}
 
     /**
@@ -580,9 +582,6 @@ protected:
     /// Directed edges data structures to support neighbor queries
     mutable DynamicBuffer<UInt32> m_E2E;
     bool m_E2E_outdated = true;
-
-
-    constexpr static ScalarIndex m_invalid_dedge = (ScalarIndex) -1;
 
     /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
     DiscreteDistribution<Float> m_sil_dedge_pmf;
