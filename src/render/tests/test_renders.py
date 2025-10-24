@@ -10,7 +10,7 @@ from os.path import join, dirname, basename, splitext, exists
 from drjit.scalar import ArrayXf as Float
 from mitsuba.scalar_rgb.test.util import find_resource
 
-color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
+color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral', 'acoustic']
 
 # List all the XML scenes in the tests/scenes folder
 TEST_SCENE_DIR = find_resource('resources/data/tests/scenes')
