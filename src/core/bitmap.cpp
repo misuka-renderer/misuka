@@ -9,6 +9,7 @@
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
 #include <thread>
+#include <cmath>
 
 #include <nanothread/nanothread.h>
 #include <drjit-core/half.h>

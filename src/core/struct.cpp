@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <ostream>
 #include <map>
+#include <cmath>
 
 /// Set this to '1' to view generated conversion code
 #if !defined(MI_JIT_LOG_ASSEMBLY)
