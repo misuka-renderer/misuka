@@ -1,3 +1,64 @@
+----------------------------------------------------------------------
+Combined Licensing Note
+----------------------------------------------------------------------
+
+This repository is based on code from **Mitsuba 3**, originally developed by
+Wenzel Jakob and licensed under the terms listed at the bottom of this page.
+
+All modifications and additions made for **misuka** by the misuka contributors
+are licensed under the GNU Lesser General Public License (LGPL), version 3
+or (at your option) any later version.
+
+When using, modifying, or redistributing this software, you must comply with
+both licenses as they apply to the respective portions of the code.
+
+----------------------------------------------------------------------
+File Level Licensing Rules
+----------------------------------------------------------------------
+
+1. New files created for misuka
+   All files authored specifically for misuka and not derived from Mitsuba
+   code are licensed under the GNU Lesser General Public License (LGPL),
+   version 3 or any later version.
+
+2. Files originating from Mitsuba 3
+   Files that come from the Mitsuba 3 codebase remain under the original
+   Mitsuba 3 license.
+
+3. Modified Mitsuba files
+   For files derived from Mitsuba code that contain modifications by misuka
+   contributors:
+   - The original Mitsuba portions remain under the original Mitsuba license.
+   - Any modifications licensed under the LGPL must be clearly marked in the
+     file header.
+   - If no such note is present, the entire file remains under the original
+     Mitsuba license.
+
+
+----------------------------------------------------------------------
+Code for misuka (LGPL)
+----------------------------------------------------------------------
+
+Copyright (c) 2025 The misuka contributors
+
+All modifications and additions to this software made for Misuka are licensed
+under the terms of the GNU Lesser General Public License (LGPL), version 3 or
+(at your option) any later version.
+
+You may obtain a copy of the LGPL at:
+https://www.gnu.org/licenses/lgpl-3.0.html
+
+This means:
+- You may use and redistribute this code under the terms of the LGPL.
+- You must make source code available for any changes to LGPL-covered parts.
+- You may link this library with proprietary software under the conditions
+  specified in the LGPL.
+
+
+----------------------------------------------------------------------
+Original Code from Mitsuba 3
+----------------------------------------------------------------------
+
 Copyright (c) 2017 Wenzel Jakob <wenzel.jakob@epfl.ch>, All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
