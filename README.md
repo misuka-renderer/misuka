@@ -46,7 +46,27 @@ Please refer the [Mitsuba 3 documentation](https://mitsuba.readthedocs.io/en/lat
 When using misuka in academic projects, please cite:
 
 ```bibtex
-@article{finnendahl:2025:diff-acoustic-pt,
+@article{misuka,
+  title = {{{misuka}}: {{An}} Open-Source Differentiable Room Acoustic Renderer},
+  shorttitle = {Misuka},
+  author = {J{\"u}terbock, Tobias and Finnendahl, Ugo and Worchel, Markus and Wujecki, Daniel and Alexa, Marc and Weinzierl, Stefan},
+  year = 2026,
+  month = jan,
+  journal = {Proceedings of Meetings on Acoustics},
+  volume = {58},
+  number = {1},
+  pages = {022004:1-022004:13},
+  publisher = {Acoustical Society of America},
+  address = {New Orleans, Louisiana},
+  doi = {10.1121/2.0002193}
+  issn = {1939-800X},
+}
+```
+
+When using Time-Resolved Path Replay Backpropagation in academic projects, please cite:
+
+```bibtex
+@article{acoustic-prb,
   title = {Differentiable Geometric Acoustic Path Tracing Using Time-Resolved Path Replay Backpropagation},
   author = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and Alexa, Marc},
   year = {2025},
@@ -60,17 +80,3 @@ When using misuka in academic projects, please cite:
   issue_date = {August 2025}
 }
 ```
-<!--  Add once published: -->
-<!--
-
-```bibtex
-@inproceedings{misuka,
-  title = {Misuka: {{An}} Open-Source Differentiable Room Acoustic Renderer},
-  booktitle = {Proceedings of {{Meetings}} on {{Acoustics}}},
-  author = {J{\"u}terbock, Tobias and Finnendahl, Ugo and Worchel, Markus and Wujecki, Daniel and Alexa, Marc and Weinzierl, Stefan},
-  year = {2025},
-  publisher = {Acoustical Society of America},
-  address = {New Orleans, USA}
-}
-```
- -->
