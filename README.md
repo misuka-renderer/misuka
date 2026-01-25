@@ -16,13 +16,13 @@ It is a fully compatible extension to [Mitsuba 3](https://github.com/mitsuba-ren
 
 ## Main Features
 
-- **Differentiation**: misuka is a differentiable renderer, meaning that it can compute derivatives of the entire simulation with respect to input parameters such as material properties, emitter and receiver positions, and scene geometry. It implements [Time-Resolved Path Replay Backpropagation][1]for efficient gradient estimation.
+- **Differentiation**: misuka is a differentiable renderer, meaning that it can compute derivatives of the entire simulation with respect to input parameters such as material properties, emitter and receiver positions, and scene geometry. It implements [Time-Resolved Path Replay Backpropagation][1] for efficient gradient estimation.
 
 - **Cross-platform**: misuka has been tested on Linux (``x86_64``), macOS (``arm64``), and Windows (``x86_64``).
 
 - **High performance**: The underlying Dr.Jit compiler fuses rendering code into kernels that achieve state-of-the-art performance using an LLVM backend targeting the CPU and a CUDA/OptiX backend targeting NVIDIA GPUs with ray tracing hardware acceleration.
 
-- **Python first**: misuka is deeply integrated with Python. Materials, textures, and even full rendering algorithms can be developed in Python, which the system JIT-compiles (and optionally differentiates) on the fly. This enables the experimentation needed for research in computer graphics and other disciplines.
+- **Python first**: misuka is deeply integrated with Python. Materials, textures, and even full rendering algorithms can be developed in Python, which the system JIT-compiles (and optionally differentiates) on the fly. This enables the experimentation needed for research.
 
 ## Disclaimer
 
