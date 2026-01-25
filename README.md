@@ -55,9 +55,8 @@ When using misuka in academic projects, please cite:
   journal = {Proceedings of Meetings on Acoustics},
   volume = {58},
   number = {1},
-  pages = {022004:1-022004:13},
+  pages = {022004:1--022004:13},
   publisher = {Acoustical Society of America},
-  address = {New Orleans, Louisiana},
   doi = {10.1121/2.0002193}
   issn = {1939-800X},
 }
@@ -66,17 +65,19 @@ When using misuka in academic projects, please cite:
 When using Time-Resolved Path Replay Backpropagation in academic projects, please cite:
 
 ```bibtex
-@article{acoustic-prb,
+@article{acoustic_prb,
   title = {Differentiable Geometric Acoustic Path Tracing Using Time-Resolved Path Replay Backpropagation},
   author = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and Alexa, Marc},
-  year = {2025},
-  month = aug,
+  year = 2025,
+  month = jul,
+  issue_date = {August 2025}
   journal = {ACM Transactions on Graphics},
   volume = {44},
   number = {4},
+  pages = {82:1--82:17},
   publisher = {Association for Computing Machinery},
   address = {New York, NY, USA},
+  issn = {0730-0301},
   doi = {10.1145/3730900},
-  issue_date = {August 2025}
 }
 ```
