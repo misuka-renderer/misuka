@@ -14,77 +14,80 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _integrator-path:
+.. _integrator-acoustic_path:
 
-Path tracer (:monosp:`path`)
-----------------------------
+Acoustic Path Tracer (:monosp:`acoustic_path`)
+-----------------------------------------------
 
 .. pluginparameters::
 
+ * - speed_of_sound
+   - |float|
+   - Speed of sound in meters per second. (Default: 343.0)
+
+ * - max_time
+   - |float|
+   - Stopping criterion for the maximum propagation time in seconds.
+     Paths whose accumulated travel distance exceeds ``max_time *
+     speed_of_sound`` are terminated.
+
  * - max_depth
    - |int|
-   - Specifies the longest path depth in the generated output image (where -1
+   - Specifies the longest path depth (where -1
      corresponds to :math:`\infty`). A value of 1 will only render directly
-     visible light sources. 2 will lead to single-bounce (direct-only)
-     illumination, and so on. (Default: -1)
+     audible sound sources. 2 will lead to first-order reflections, and so on.
+     (Default: -1)
 
  * - rr_depth
    - |int|
-   - Specifies the path depth, at which the implementation will begin to use
+   - Specifies the path depth at which the implementation will begin to use
      the *russian roulette* path termination criterion. For example, if set to
-     1, then path generation many randomly cease after encountering directly
-     visible surfaces. (Default: 5)
+     1, then path generation may randomly cease after encountering directly
+     visible surfaces. (Default: max_depth)
 
  * - hide_emitters
    - |bool|
-   - Hide directly visible emitters. (Default: no, i.e. |false|)
+   - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+     contribution from sound sources. (Default: no, i.e. |false|)
 
-This integrator implements a basic path tracer and is a **good default choice**
-when there is no strong reason to prefer another method.
+This integrator implements an acoustic path tracer that simulates sound
+propagation in a scene by tracing paths from the sensor (microphone) to
+the emitters (sound sources). It computes an energy-based impulse response
+(echogram) by accumulating path contributions into time bins determined by the
+total path length and the speed of sound.
 
-To use the path tracer appropriately, it is instructive to know roughly how
-it works: its main operation is to trace many light paths using *random walks*
-starting from the sensor. A single random walk is shown below, which entails
-casting a ray associated with a pixel in the output image and searching for
-the first visible intersection. A new direction is then chosen at the intersection,
-and the ray-casting step repeats over and over again (until one of several
-stopping criteria applies).
+At each surface interaction, the integrator uses multiple importance sampling
+(MIS) to combine BSDF and emitter samples, analogous to the optical
+:ref:`path tracer <integrator-path>`. The key difference is that energy
+transport is not assumed to be instantanous, but at the speed of sound. Instead
+of producing an image, the output is stored in a ``Tape``, where the first axis
+corresponds to frequency bins and the second axis to time bins.
 
-.. image:: ../../resources/data/docs/images/integrator/integrator_path_figure.png
-    :width: 95%
-    :align: center
+Sound paths are terminated when any of the following conditions are met:
 
-At every intersection, the path tracer tries to create a connection to
-the light source in an attempt to find a *complete* path along which
-light can flow from the emitter to the sensor. This of course only works
-when there is no occluding object between the intersection and the emitter.
+- The maximum path depth (``max_depth``) is reached.
+- The accumulated path distance exceeds ``max_time * speed_of_sound``.
+- Russian roulette terminates the path (applied after ``rr_depth`` bounces).
 
-This directly translates into a category of scenes where a path tracer can be
-expected to produce reasonable results: this is the case when the emitters are
-easily "accessible" by the contents of the scene. For instance, an interior
-scene that is lit by an area light will be considerably harder to render when
-this area light is inside a glass enclosure (which effectively counts as an
-occluder).
-
-Like the :ref:`direct <integrator-direct>` plugin, the path tracer internally
-relies on multiple importance sampling to combine BSDF and emitter samples. The
-main difference in comparison to the former plugin is that it considers light
-paths of arbitrary length to compute both direct and indirect illumination.
-
-.. note:: This integrator does not handle participating media
+.. note:: This integrator does not handle participating media or polarized
+   rendering. It requires a ``Microphone`` sensor with a ``Tape`` film type.
 
 .. tabs::
     .. code-tab::  xml
-        :name: path-integrator
+        :name: acoustic-path-integrator
 
-        <integrator type="path">
-            <integer name="max_depth" value="8"/>
+        <integrator type="acoustic_path">
+            <float name="max_time" value="1.0"/>
+            <float name="speed_of_sound" value="343.0"/>
+            <integer name="max_depth" value="-1"/>
         </integrator>
 
     .. code-tab:: python
 
-        'type': 'path',
-        'max_depth': 8
+        'type': 'acoustic_path',
+        'max_time': 1.0,
+        'speed_of_sound': 343.0,
+        'max_depth': -1,
 
  */
 
