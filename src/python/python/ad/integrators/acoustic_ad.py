@@ -255,7 +255,10 @@ class AcousticADIntegrator(RBIntegrator):
                                         ray_flags=mi.RayFlags.All,
                                         coherent=(depth == 0))
 
-            τ = si.t
+            # Calculate path segment length. si.t includes a spawn-ray epsilon, 
+            # which moves the origin towards the intersection point and reduces
+            # si.t slightly. Use true geometric distance instead: 
+            τ = dr.select(depth == 0, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
@@ -305,10 +308,15 @@ class AcousticADIntegrator(RBIntegrator):
             # Retrace the ray towards the emitter because ds is directly sampled
             # from the emitter shape instead of tracing a ray against it.
             # This contradicts the definition of "sampling of *directions*"
-            si_em       = scene.ray_intersect(si.spawn_ray(ds.d), active=active_em)
-            ds_attached = mi.DirectionSample3f(scene, si_em, ref=si)
-            ds_attached.pdf, ds_attached.delta, ds_attached.uv, ds_attached.n = (ds.pdf, ds.delta, si_em.uv, si_em.n)
-            ds = ds_attached
+            # Only retrace when gradients are needed (AD mode); in primal mode
+            # skip the retrace to match the C++ acoustic_path integrator exactly.
+            # si.spawn ray offsets the origin by a small epsilon to avoid
+            # self-intersection. This introduced minor timing differences.
+            if dr.grad_enabled(si.p):
+                si_em       = scene.ray_intersect(si.spawn_ray(ds.d), active=active_em)
+                ds_attached = mi.DirectionSample3f(scene, si_em, ref=si)
+                ds_attached.pdf, ds_attached.delta, ds_attached.uv, ds_attached.n = (ds.pdf, ds.delta, si_em.uv, si_em.n)
+                ds = ds_attached
 
             if self.is_detached:
                 # The sampled emitter direction and the pdf must be detached
@@ -331,7 +339,9 @@ class AcousticADIntegrator(RBIntegrator):
             Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # Store (emission sample) intensity to the image block
-            τ_dir      = ds.dist
+            # Use true geometric distance instead of ds.dist (which is
+            # shortened by the spawn-ray epsilon offset)
+            τ_dir      = dr.norm(ds.p - si.p)
             T_dir      = T + τ_dir
             Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                     block.size().y * T_dir / max_distance)
