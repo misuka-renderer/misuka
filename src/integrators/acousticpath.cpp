@@ -434,6 +434,9 @@ public:
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx, block, aovs, pos, ray, film, max_distance](LoopState& ls) {
 
+            Float tau     = 0;
+            Float tau_dir = 0;
+
             Log(Debug, "Starting loop.");
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "Tracing ray with origin %s m, direction %s, frequency %f Hz.", ray.o, ray.d, ray.wavelengths);
             /* dr::while_loop implicitly masks all code in the loop using the
@@ -444,8 +447,18 @@ public:
                                      /* ray_flags = */ +RayFlags::All,
                                      /* coherent = */ ls.depth == 0u);
 
-
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "Intersection found with distance %f m.", si.t);
+
+            /*
+            Calculate path segment length. spawn_ray() offsets rays by a small
+            epsilon to prevent self-intersection. This moves the origin towards
+            the intersection point and reduces si.t slightly.
+            Use true geometric distance instead:
+            */
+            tau = dr::select(ls.depth == 0u, 
+                                dr::norm(si.p - ls.ray.o),
+                                dr::norm(si.p - ls.prev_si.p)
+                            );
 
             // ---------------------- Direct emission ----------------------
 
@@ -465,8 +478,7 @@ public:
                 // Compute MIS weight for emitter sample from previous bounce
                 Float mis_bsdf = mis_weight(ls.prev_bsdf_pdf, em_pdf);
 
-                // Accumulate. si.t -> length of current segment
-                ls.time_bin = ((ls.distance + si.t) / max_distance) * block->size()[1];
+                ls.time_bin = ((ls.distance + tau) / max_distance) * block->size()[1];
                 Float result = (ls.throughput * ds.emitter->eval(si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf)[0];
 
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.throughput: %f, result = %s", ls.throughput, result);
@@ -555,8 +567,8 @@ public:
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace,"block->size(): %s,  block->size()[0]: %f, block->size()[1]: %f",
                         block->size(), block->size()[0], block->size()[1]);
 
-                // Accumulate. si.t -> length of current segment -> ds.dist: distance from current point to emitter
-                ls.time_bin = ((ls.distance + si.t + ds.dist) / max_distance) * block->size()[1];
+                tau_dir = dr::norm(ds.p - si.p);
+                ls.time_bin = ((ls.distance + tau + tau_dir) / max_distance) * block->size()[1];
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace,
                     "ls.distance: %f, max_distance: %f, time bin: %f.",
                     ls.distance, max_distance, ls.time_bin);
@@ -602,7 +614,7 @@ public:
 
             ls.throughput *= bsdf_weight;
             ls.eta *= bsdf_sample.eta;
-            ls.distance += si.t;
+            ls.distance += tau;
             ls.valid_ray |= ls.active && si.is_valid() &&
                          !has_flag(bsdf_sample.sampled_type, BSDFFlags::Null);
 
