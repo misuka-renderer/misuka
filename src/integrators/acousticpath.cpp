@@ -628,10 +628,13 @@ public:
 
             // -------------------- Stopping criterion ---------------------
 
-            dr::masked(ls.depth, si.is_valid()) += 1;
-
             Float throughput_max = dr::max(unpolarized_spectrum(ls.throughput));
 
+            active_next &= (throughput_max != 0.f);
+            active_next &= ls.distance <= max_distance;
+
+            // Russian roulette stopping probability (must cancel out ior^2
+            // to obtain unitless throughput, enforces a minimum probability)
             Float rr_prob = dr::minimum(throughput_max * dr::square(ls.eta), .95f);
             Mask rr_active = ls.depth >= m_rr_depth,
                  rr_continue = ls.sampler->next_1d() < rr_prob;
@@ -641,9 +644,10 @@ public:
                no-op in non-differentiable variants. */
             ls.throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
-            ls.active = active_next && (!rr_active || rr_continue) &&
-                     (throughput_max != 0.f) &&
-                     ls.distance <= max_distance;
+            active_next &= (!rr_active || rr_continue);
+
+            dr::masked(ls.depth, si.is_valid()) += 1;
+            ls.active = active_next;
             if constexpr (!dr::is_jit_v<Float>) {
                 Log(Trace, "active_next: %s, rr_active: %s, rr_continue: %s, throughput_max: %f, distance: %f, max_distance: %f, active: %s",
                     active_next, rr_active, rr_continue, throughput_max, ls.distance, max_distance, ls.active);
