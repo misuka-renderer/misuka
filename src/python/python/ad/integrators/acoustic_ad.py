@@ -22,7 +22,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         self.track_time_derivatives = props.get("track_time_derivatives", True)
 
-        max_depth = props.get('max_depth', 6)
+        max_depth = props.get('max_depth', -1)
         if max_depth < 0 and max_depth != -1:
             raise Exception("\"max_depth\" must be set to -1 (infinite) or a value >= 0")
 
