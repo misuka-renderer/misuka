@@ -29,7 +29,7 @@ class AcousticADIntegrator(RBIntegrator):
         # Map -1 (infinity) to 2^32-1 bounces
         self.max_depth = max_depth if max_depth != -1 else 0xffffffff
 
-        self.rr_depth = props.get('rr_depth', self.max_depth)
+        self.rr_depth = props.get('rr_depth', 100000)
         if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
 

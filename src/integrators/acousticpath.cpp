@@ -112,7 +112,7 @@ public:
         m_max_depth = (uint32_t) max_depth; // This maps -1 to 2^32-1 bounces
 
         // Depth to begin using russian roulette
-        int rr_depth = props.get<int>("rr_depth", m_max_depth);
+        int rr_depth = props.get<int>("rr_depth", 100000);
         if (rr_depth <= 0)
             Throw("\"rr_depth\" must be set to a value greater than zero!");
         m_rr_depth = (uint32_t) rr_depth;
@@ -503,7 +503,13 @@ public:
             }
 
             // Continue tracing the path at this point?
-            Bool active_next = (ls.depth + 1 < m_max_depth) && si.is_valid() && ls.distance <= max_distance;
+
+
+            if constexpr (!dr::is_jit_v<Float>) Log(Trace, "si.is_valid() = %s", si.is_valid());
+            if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.distance <= max_distance = %s", ls.distance <= max_distance);
+            if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.depth < m_max_depth = %s", ls.depth < m_max_depth);
+            Bool active_next = si.is_valid() && ls.distance <= max_distance
+                            && (ls.depth + 1 < m_max_depth);
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "Continue tracing the path at this point? %s", active_next);
 
             if (dr::none_or<false>(active_next)) {
