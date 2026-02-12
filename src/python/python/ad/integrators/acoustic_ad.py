@@ -205,6 +205,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         return sampler, spp
 
+    @dr.syntax
     def sample(self,
                scene: mi.Scene,
                sampler: mi.Sampler,
@@ -245,7 +246,9 @@ class AcousticADIntegrator(RBIntegrator):
         prev_bsdf_pdf   = mi.Float(0.) if self.skip_direct else mi.Float(1.)
         prev_bsdf_delta = mi.Bool(True)
 
-        for it in range(self.max_depth):
+        while dr.hint(active,
+                      max_iterations=self.max_depth,
+                      label="Acoustic AD Path Tracing"):
             active_next = mi.Bool(active)
 
             # Compute a surface interaction that tracks derivatives arising
