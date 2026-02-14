@@ -37,6 +37,13 @@ class AcousticADIntegrator(RBIntegrator):
         if self.rr_depth <= 0:
             raise ValueError("\"rr_depth\" must be set to a value greater than zero!")
 
+        max_energy_loss = props.get('max_energy_loss', 60.)
+        if max_energy_loss < 0. and max_energy_loss != -1.:
+            raise ValueError("\"max_energy_loss\" must be set to -1 (disabled) or a value >= 0 (in dB)")
+        # When -1, disable the criterion by using a threshold of 0
+        self.energy_threshold = 0. if max_energy_loss == -1. \
+            else 10 * 10 ** (-max_energy_loss / 10.)
+
 
     def render(self: mi.SamplingIntegrator,
                scene: mi.Scene,
@@ -396,6 +403,7 @@ class AcousticADIntegrator(RBIntegrator):
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
             active_next &= (β_max != 0)
+            active_next &= β_max >= self.energy_threshold
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2
