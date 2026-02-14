@@ -64,6 +64,7 @@ def test02_constructor_default_values(variants_all_ad_acoustic):
         assert integrator.track_time_derivatives
         assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
         assert integrator.rr_depth == 100000
+        assert dr.allclose(integrator.energy_threshold, 10 * 10 ** (-60.0 / 10.0))  # max_energy_loss=60 by default
 
 
 def test03_constructor_custom_values(variants_all_ad_acoustic):
@@ -78,6 +79,7 @@ def test03_constructor_custom_values(variants_all_ad_acoustic):
             'is_detached': False,
             'skip_direct': True,
             'track_time_derivatives': False,
+            'max_energy_loss': 60.0,
         })
 
         assert integrator.max_time == 5.0
@@ -87,6 +89,7 @@ def test03_constructor_custom_values(variants_all_ad_acoustic):
         assert not integrator.is_detached
         assert integrator.skip_direct
         assert not integrator.track_time_derivatives
+        assert dr.allclose(integrator.energy_threshold, 10 * 10 ** (-60.0 / 10.0))
 
 
 def test04_constructor_max_time_missing(variants_all_ad_acoustic):
@@ -134,6 +137,23 @@ def test08_constructor_rr_depth_invalid(variants_all_ad_acoustic):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
         with pytest.raises(Exception):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': -1})
+
+
+def test09_constructor_max_energy_loss_invalid(variants_all_ad_acoustic):
+    """max_energy_loss < 0 (and not -1) must raise ValueError."""
+    for integrator_name, *_ in INTEGRATORS:
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -2.0})
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -0.5})
+
+        # -1 (disabled) is valid
+        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -1.0})
+        assert integrator.energy_threshold == 0.0
+
+        # 0 is valid (threshold = 10)
+        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 0.0})
+        assert dr.allclose(integrator.energy_threshold, 10.0)
 
 
 # -------------------------------------------------------------------
@@ -299,7 +319,7 @@ for integrator_name, handles_discontinuities, has_render_backward, has_render_fo
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_PRIMAL)
-def test09_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
+def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -328,7 +348,7 @@ def test09_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
-def test10_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
+def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -374,7 +394,7 @@ def test10_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_BACKWARD)
-def test11_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
+def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
