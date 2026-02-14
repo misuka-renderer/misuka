@@ -116,6 +116,14 @@ public:
         if (rr_depth <= 0)
             Throw("\"rr_depth\" must be set to a value greater than zero!");
         m_rr_depth = (uint32_t) rr_depth;
+
+        float max_energy_loss = props.get<float>("max_energy_loss", 60.f);
+        if (max_energy_loss < 0.f && max_energy_loss != -1.f)
+            Throw("\"max_energy_loss\" must be set to -1 (disabled) or a value >= 0 (in dB)");
+        // When -1, disable the criterion by using a threshold of 0
+        m_energy_threshold = (max_energy_loss == -1.f)
+            ? 0.f
+            : 10 * dr::pow(10.f, -max_energy_loss / 10.f);
     }
 
     TensorXf render(Scene *scene,
@@ -458,7 +466,7 @@ public:
             the intersection point and reduces si.t slightly.
             Use true geometric distance instead:
             */
-            tau = dr::select(ls.depth == 0u, 
+            tau = dr::select(ls.depth == 0u,
                                 dr::norm(si.p - ls.ray.o),
                                 dr::norm(si.p - ls.prev_si.p)
                             );
@@ -637,6 +645,7 @@ public:
             Float throughput_max = dr::max(unpolarized_spectrum(ls.throughput));
 
             active_next &= (throughput_max != 0.f);
+            active_next &= throughput_max >= m_energy_threshold;
             active_next &= ls.distance <= max_distance;
 
             // Russian roulette stopping probability (must cancel out ior^2
@@ -747,6 +756,7 @@ protected:
 protected:
     float m_max_time;
     float m_speed_of_sound;
+    float m_energy_threshold;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AcousticPathIntegrator, MonteCarloIntegrator)
