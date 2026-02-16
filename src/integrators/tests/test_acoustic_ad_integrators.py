@@ -40,6 +40,103 @@ from mitsuba.scalar_rgb.test.util import find_resource
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 
 # -------------------------------------------------------------------
+#                          initialization tests
+# -------------------------------------------------------------------
+
+def test01_initialization(variants_all_ad_acoustic):
+    for integrator_name, *_ in INTEGRATORS:
+        integrator = mi.load_dict({'type': integrator_name,'max_time': 1})
+        assert isinstance(integrator, mi.CppADIntegrator)
+        
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name, 'max_time': -1})
+
+
+def test02_constructor_default_values(variants_all_ad_acoustic):
+    """Test that default property values are set correctly."""
+    for integrator_name, *_ in INTEGRATORS:
+        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
+
+        assert integrator.speed_of_sound == 343.0
+        assert integrator.max_time == 1.0
+        assert integrator.is_detached
+        assert not integrator.skip_direct
+        assert integrator.track_time_derivatives
+        assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
+        assert integrator.rr_depth == 100000
+
+
+def test03_constructor_custom_values(variants_all_ad_acoustic):
+    """Test that custom property values are accepted and stored."""
+    for integrator_name, *_ in INTEGRATORS:
+        integrator = mi.load_dict({
+            'type': integrator_name,
+            'max_time': 5.0,
+            'speed_of_sound': 100.0,
+            'max_depth': 10,
+            'rr_depth': 50,
+            'is_detached': False,
+            'skip_direct': True,
+            'track_time_derivatives': False,
+        })
+
+        assert integrator.max_time == 5.0
+        assert integrator.speed_of_sound == 100.0
+        assert integrator.max_depth == 10
+        assert integrator.rr_depth == 50
+        assert not integrator.is_detached
+        assert integrator.skip_direct
+        assert not integrator.track_time_derivatives
+
+
+def test04_constructor_max_time_missing(variants_all_ad_acoustic):
+    """max_time is required and must raise ValueError if missing."""
+    for integrator_name, *_ in INTEGRATORS:
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name})
+
+
+def test05_constructor_max_time_zero(variants_all_ad_acoustic):
+    """max_time=0 must raise ValueError."""
+    for integrator_name, *_ in INTEGRATORS:
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name, 'max_time': 0.0})
+
+
+def test06_constructor_speed_of_sound_invalid(variants_all_ad_acoustic):
+    """speed_of_sound <= 0 must raise ValueError."""
+    for integrator_name, *_ in INTEGRATORS:
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 0.0})
+        with pytest.raises(ValueError):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': -1.0})
+
+
+def test07_constructor_max_depth_invalid(variants_all_ad_acoustic):
+    """max_depth < -1 must raise an exception, but -1 and 0 are valid."""
+    for integrator_name, *_ in INTEGRATORS:
+        with pytest.raises(Exception):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -2})
+
+        # max_depth=-1 (infinite) is valid
+        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -1})
+        assert integrator.max_depth == 0xffffffff
+
+        # max_depth=0 is valid
+        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': 0})
+        assert integrator.max_depth == 0
+
+
+def test08_constructor_rr_depth_invalid(variants_all_ad_acoustic):
+    """rr_depth <= 0 must raise an exception."""
+    for integrator_name, *_ in INTEGRATORS:
+        with pytest.raises(Exception):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
+        with pytest.raises(Exception):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': -1})
+
+
+# -------------------------------------------------------------------
 #                          Test configs
 # -------------------------------------------------------------------
 
@@ -202,7 +299,7 @@ for integrator_name, handles_discontinuities, has_render_backward, has_render_fo
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_PRIMAL)
-def test01_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
+def test09_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -231,7 +328,7 @@ def test01_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
-def test02_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
+def test10_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -277,7 +374,7 @@ def test02_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_BACKWARD)
-def test03_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
+def test11_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -295,7 +392,7 @@ def test03_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
     dr.set_label(theta, 'theta')
     config.update(theta)
 
-    integrator.render_backward(config.scene, grad_in=etc_adj, seed=0, spp=config.spp, params=theta) 
+    integrator.render_backward(config.scene, grad_in=etc_adj, seed=0, spp=config.spp, params=theta)
 
     grad = dr.grad(theta) / dr.width(etc_fwd_ref) / config.spp
     grad_ref = dr.mean(etc_fwd_ref, axis=None) * grad_in
