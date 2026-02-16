@@ -18,7 +18,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         self.speed_of_sound = props.get("speed_of_sound", 343.)
         if self.max_time <= 0. or self.speed_of_sound <= 0.:
-            raise Exception("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!")
+            raise ValueError("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!")
 
         self.is_detached = props.get("is_detached", True)
 
@@ -28,14 +28,14 @@ class AcousticADIntegrator(RBIntegrator):
 
         max_depth = props.get('max_depth', -1)
         if max_depth < 0 and max_depth != -1:
-            raise Exception("\"max_depth\" must be set to -1 (infinite) or a value >= 0")
+            raise ValueError("\"max_depth\" must be set to -1 (infinite) or a value >= 0")
 
         # Map -1 (infinity) to 2^32-1 bounces
         self.max_depth = max_depth if max_depth != -1 else 0xffffffff
 
         self.rr_depth = props.get('rr_depth', 100000)
         if self.rr_depth <= 0:
-            raise Exception("\"rr_depth\" must be set to a value greater than zero!")
+            raise ValueError("\"rr_depth\" must be set to a value greater than zero!")
 
 
     def render(self: mi.SamplingIntegrator,
@@ -48,8 +48,8 @@ class AcousticADIntegrator(RBIntegrator):
         mi.Log(mi.LogLevel.Info, "Rendering in normal mode")
 
         if not develop:
-            raise Exception("develop=True must be specified when "
-                            "invoking AD integrators")
+            raise RuntimeError("develop=True must be specified when "
+                               "invoking AD integrators")
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -142,9 +142,9 @@ class AcousticADIntegrator(RBIntegrator):
 
         # Re-scale the position to [0, 1]^2
         if not dr.allclose(film.crop_size(), film.size()):
-            raise Exception("Acoustic sampling does not support cropping")
+            raise RuntimeError("Acoustic sampling does not support cropping")
         if not dr.allclose(film.crop_offset(), mi.Vector2i(0, 0)):
-            raise Exception("Acoustic sampling does not support cropping")
+            raise RuntimeError("Acoustic sampling does not support cropping")
 
         scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
         offset = -mi.ScalarVector2f(film.crop_offset()) * scale
@@ -192,13 +192,13 @@ class AcousticADIntegrator(RBIntegrator):
         film_size = film.crop_size()
 
         if film.sample_border():
-            raise Exception("Acoustic sampling does not support border sampling")
+            raise RuntimeError("Acoustic sampling does not support border sampling")
             film_size += 2 * film.rfilter().border_size()
 
         wavefront_size = film_size.x * spp
 
         if wavefront_size >= 2**32:
-            raise Exception(
+            raise RuntimeError(
                 "The total number of Monte Carlo samples required by this "
                 "rendering task (%i) exceeds 2^32-1 = 4294967295. Please use "
                 "fewer samples per pixel or render using multiple passes."
@@ -220,7 +220,7 @@ class AcousticADIntegrator(RBIntegrator):
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> None:
-        mi.Log(mi.LogLevel.Debug, f"running sample().")
+        mi.Log(mi.LogLevel.Debug, "running sample().")
 
         film = sensor.film()
         n_frequencies = mi.ScalarVector2f(film.crop_size()).x
