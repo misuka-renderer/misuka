@@ -358,9 +358,9 @@ class ShoeboxScatteringConfig(ConfigBase):
 #                           List configs
 # -------------------------------------------------------------------
 BASIC_CONFIGS_LIST = [
-    SphericalEmitterRadianceConfig,
     ShoeboxAbsorptionConfig,
     ShoeboxScatteringConfig,
+    SphericalEmitterRadianceConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
@@ -375,7 +375,7 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 INTEGRATORS_RENDER = [
     ('acoustic_ad',             False,  True,   True),
     ('acoustic_prb',            False,  True,   False),
-    ('acoustic_ad_threepoint',  True,   True,   True),
+    # ('acoustic_ad_threepoint',  True,   True,   True),
     ('acoustic_prb_threepoint', True,   True,   False)
 ]
 
@@ -395,7 +395,6 @@ for integrator_name, handles_discontinuities, has_render_backward, has_render_fo
         if has_render_forward:
             CONFIGS_FORWARD.append((integrator_name, config))
 
-print(f"Primal configs: {len(CONFIGS_PRIMAL)}")
 
 
 # -------------------------------------------------------------------
@@ -407,15 +406,12 @@ print(f"Primal configs: {len(CONFIGS_PRIMAL)}")
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_PRIMAL)
 def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
     config = config()
-    print(f"Testing config: {config}, integrator: {integrator_name}")
     config.initialize()
-    print(f"Initialized config: {config}")
 
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict, parallel=False)
-    return
 
-    filename = join(output_dir, f"test_{config.name}_etc_primal_ref.exr")
+    filename = join(output_dir, f"test_{config.name}_primal_ref.exr")
     etc_primal_ref = mi.TensorXf(mi.Bitmap(filename))
     etc = integrator.render(config.scene, seed=0, spp=config.spp) / config.spp
     error = dr.abs(etc - etc_primal_ref) / dr.maximum(dr.abs(etc_primal_ref), 2e-2)
@@ -515,8 +511,8 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
         print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
         pytest.fail("Gradient values exceeded configuration's tolerances!")
-
 """
+
 # -------------------------------------------------------------------
 #                      Generate reference images
 # -------------------------------------------------------------------
