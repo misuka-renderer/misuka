@@ -9,7 +9,49 @@ from .common import mis_weight
 from .acoustic_ad import AcousticADIntegrator
 
 class AcousticADThreePointIntegrator(AcousticADIntegrator):
+    r"""
+    .. _integrator-acoustic_ad_threepoint:
 
+    Acoustic AD Three-Point Form (:monosp:`acoustic_ad_threepoint`)
+    ---------------------------------------------------------------
+
+    .. pluginparameters::
+        :extra-rows: 0
+
+        (Inherits all parameters from
+        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form
+    reparametrization that can also handle **non-static scenes** with moving
+    geometry.
+
+    Rather than sampling directions in :math:`\mathbb{H}^2`, this integrator
+    samples surface points in the scene (which inherently move with the
+    geometry). This reparametrization:
+
+    1. Removes most of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    This variant merely exists for debugging purposes and as a reference
+    implementation. For differentiable rendering of non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+    """
 
     @dr.syntax
     def sample(self,
