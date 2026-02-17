@@ -92,7 +92,9 @@ class AcousticADIntegrator(RBIntegrator):
             'max_depth': -1,
     """
 
-    def __init__(self, props = mi.Properties()):
+    def __init__(self, props):
+        super().__init__(props)
+
         self.max_time    = props.get("max_time")
         if self.max_time is None or self.max_time <= 0.:
             raise ValueError("\"max_time\" must be set to a value greater than zero!")
