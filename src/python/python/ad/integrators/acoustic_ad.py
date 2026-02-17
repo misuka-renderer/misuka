@@ -123,11 +123,11 @@ class AcousticADIntegrator(RBIntegrator):
             raise ValueError("\"rr_depth\" must be set to a value greater than zero!")
 
         max_energy_loss = props.get('max_energy_loss', 60.)
-        if max_energy_loss < 0. and max_energy_loss != -1.:
-            raise ValueError("\"max_energy_loss\" must be set to -1 (disabled) or a value >= 0 (in dB)")
+        if max_energy_loss <= 0. and max_energy_loss != -1.:
+            raise ValueError("\"max_energy_loss\" must be set to -1 (disabled) or a value > 0 (in dB)")
         # When -1, disable the criterion by using a threshold of 0
         self.energy_threshold = 0. if max_energy_loss == -1. \
-            else 10 * 10 ** (-max_energy_loss / 10.)
+            else 10 ** (-max_energy_loss / 10.)
 
 
     def render(self: mi.SamplingIntegrator,
