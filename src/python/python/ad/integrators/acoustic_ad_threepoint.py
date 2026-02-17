@@ -183,7 +183,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             dir_next = dr.normalize(diff_next)
             wo = si.to_local(dir_next)
             bsdf_val    = bsdf.eval(bsdf_ctx, si, wo, active_next)
-            
+
             if dr.hint(ad_variant, mode='scalar'):
                 bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
                     (bsdf_sample.pdf != 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
