@@ -130,7 +130,8 @@ public:
         // When -1, disable the criterion by using a threshold of 0
         m_energy_threshold = (max_energy_loss == -1.f)
             ? 0.f
-            : 10 * dr::pow(10.f, -max_energy_loss / 10.f);
+            : dr::pow(10.f, -max_energy_loss / 10.f);
+        Log(Warn, "Throughput threshold: %.2e", m_energy_threshold);
     }
 
     TensorXf render(Scene *scene,
