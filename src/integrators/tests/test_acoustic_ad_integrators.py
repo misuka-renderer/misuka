@@ -47,7 +47,7 @@ def test01_initialization(variants_all_ad_acoustic):
     for integrator_name, *_ in INTEGRATORS:
         integrator = mi.load_dict({'type': integrator_name,'max_time': 1})
         assert isinstance(integrator, mi.CppADIntegrator)
-        
+
         with pytest.raises(ValueError):
             mi.load_dict({'type': integrator_name, 'max_time': -1})
 
@@ -168,23 +168,24 @@ class ConfigBase:
     requires_discontinuities = False
 
     def __init__(self) -> None:
-        self.spp = 2**22
-        self.speed_of_sound = 1
-        self.max_time = 20
-        self.sampling_rate = 10.0
+        self.spp = 2**20
+        self.speed_of_sound = 340
+        self.max_time = 0.2
+        self.max_energy_loss = 20
+        self.sampling_rate = 1000.0
         self.frequencies = '250, 500'
         self.error_mean_threshold = 0.05
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.05
         self.ref_fd_epsilon = 1e-3
-        self.emitter_radius = 1
-        self.max_depth = 4
+        self.emitter_radius = 0.5
+        self.max_depth = -1
 
         self.integrator_dict = {
             'max_depth': self.max_depth,
             'speed_of_sound': self.speed_of_sound,
             'max_time': self.max_time,
-
+            'max_energy_loss': self.max_energy_loss,
         }
 
         self.sensor_dict = {
@@ -451,7 +452,7 @@ if __name__ == "__main__":
         config.initialize()
 
         integrator_path = mi.load_dict({
-            'type': 'acoustic_ad',  # TODO: change this to acousticpath once implemented
+            'type': 'acoustic_path',
             'speed_of_sound': config.speed_of_sound,
             'max_depth': config.integrator_dict['max_depth'],
             'max_time': config.max_time,
