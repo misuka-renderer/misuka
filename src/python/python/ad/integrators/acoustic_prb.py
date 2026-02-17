@@ -9,7 +9,43 @@ from .common import RBIntegrator, mis_weight
 from .acoustic_ad import AcousticADIntegrator
 
 class AcousticPRBIntegrator(AcousticADIntegrator):
-    """This Integrator is biased for when moving geometry"""
+    r"""
+    .. _integrator-acoustic_prb:
+
+    Acoustic Path Replay Backpropagation (:monosp:`acoustic_prb`)
+    -------------------------------------------------------------
+
+    .. pluginparameters::
+        :extra-rows: 0
+
+        (Inherits all parameters from
+        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+
+    This integrator works analogously to the
+    :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
+    additional gradient tracking. It uses time-resolved path replay
+    backpropagation (PRB) to efficiently propagate gradients with respect to
+    material properties, using constant memory and linear time complexity.
+
+    This integrator is only suitable for **static scenes** (i.e., scenes with
+    no moving objects). For non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`
+    instead.
+
+    .. warning:: This integrator is biased when used with moving geometry.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+    """
 
     @dr.syntax
     def sample(self,

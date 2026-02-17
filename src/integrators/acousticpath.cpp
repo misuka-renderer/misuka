@@ -50,6 +50,12 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
    - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
      contribution from sound sources. (Default: no, i.e. |false|)
 
+ * - max_energy_loss
+   - |float|
+   - Maximum energy loss in dB before a path is terminated. When the path
+     throughput drops below the corresponding threshold, the path is stopped.
+     Set to -1 to disable this criterion. (Default: 60.0)
+
 This integrator implements an acoustic path tracer that simulates sound
 propagation in a scene by tracing paths from the sensor (microphone) to
 the emitters (sound sources). It computes an energy-based impulse response
@@ -59,7 +65,7 @@ total path length and the speed of sound.
 At each surface interaction, the integrator uses multiple importance sampling
 (MIS) to combine BSDF and emitter samples, analogous to the optical
 :ref:`path tracer <integrator-path>`. The key difference is that energy
-transport is not assumed to be instantanous, but at the speed of sound. Instead
+transport is not assumed to be instantaneous, but at the speed of sound. Instead
 of producing an image, the output is stored in a ``Tape``, where the first axis
 corresponds to frequency bins and the second axis to time bins.
 
@@ -67,6 +73,7 @@ Sound paths are terminated when any of the following conditions are met:
 
 - The maximum path depth (``max_depth``) is reached.
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
+- The path throughput drops below the energy loss threshold (``max_energy_loss``).
 - Russian roulette terminates the path (applied after ``rr_depth`` bounces).
 
 .. note:: This integrator does not handle participating media or polarized

@@ -9,6 +9,60 @@ from .common import RBIntegrator, mis_weight
 from .acoustic_ad import AcousticADIntegrator
 
 class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
+    r"""
+    .. _integrator-acoustic_prb_threepoint:
+
+    Acoustic PRB Three-Point Form (:monosp:`acoustic_prb_threepoint`)
+    -----------------------------------------------------------------
+
+    .. pluginparameters::
+        :extra-rows: 0
+
+        (Inherits all parameters from
+        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but can also handle
+    **non-static scenes** with moving geometry. Moving geometry causes two
+    challenges:
+
+    1. Moving geometry can cause discontinuities in the integrand whose
+       locations depend on the scene parameters -- for example, when a small
+       displacement of a surface causes a ray to start or stop intersecting it.
+       Even if the derivative of the integral with respect to a scene parameter
+       is continuous, it cannot be estimated by differentiating the individual
+       rays that sample the integrand, because those local derivatives are
+       discontinuous, making them incompatible with automatic differentiation.
+
+    2. Moving geometry influences the path geometry. When the ray sampling
+       strategy is detached from the optimized parameters, local changes of the
+       scene geometry have a global effect on all successive path vertices.
+       Standard PRB methods do not account for this and only consider the
+       influence on the next (few) ray segments.
+
+    This integrator handles both problems by reparametrizing the integral.
+    Rather than sampling directions in :math:`\mathbb{H}^2`, it samples
+    surface points in the scene (which inherently move with the geometry).
+    This:
+
+    1. Removes some of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+    """
 
     @dr.syntax
     def sample(self,
