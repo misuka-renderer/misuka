@@ -93,16 +93,15 @@ class AcousticADIntegrator(RBIntegrator):
     """
 
     def __init__(self, props = mi.Properties()):
-        super().__init__(props)
-
         self.max_time    = props.get("max_time")
-        if self.max_time is None:
-            raise ValueError("Property \"max_time\" has not been specified!")
+        if self.max_time is None or self.max_time <= 0.:
+            raise ValueError("\"max_time\" must be set to a value greater than zero!")
 
 
         self.speed_of_sound = props.get("speed_of_sound", 343.)
-        if self.max_time <= 0. or self.speed_of_sound <= 0.:
-            raise ValueError("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!")
+        if self.speed_of_sound is None or self.speed_of_sound <= 0.:
+            raise ValueError("Property \"speed_of_sound\" must be set to a value greater than zero!")
+
 
         self.is_detached = props.get("is_detached", True)
 
