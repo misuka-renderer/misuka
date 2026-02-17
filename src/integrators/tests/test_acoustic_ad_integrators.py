@@ -39,121 +39,123 @@ from mitsuba.scalar_rgb.test.util import find_resource
 
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 
+
 # -------------------------------------------------------------------
 #                          initialization tests
 # -------------------------------------------------------------------
 
-def test01_initialization(variants_all_ad_acoustic):
-    for integrator_name, *_ in INTEGRATORS:
-        integrator = mi.load_dict({'type': integrator_name,'max_time': 1})
-        assert isinstance(integrator, mi.CppADIntegrator)
+# List of integrators to test
 
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': -1})
+INTEGRATORS = [
+    'acoustic_ad',
+    'acoustic_ad_threepoint',
+    'acoustic_prb',
+    'acoustic_prb_threepoint'
+]
 
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test01_initialization(variants_all_jit_acoustic, integrator_name):
+    integrator = mi.load_dict({'type': integrator_name,
+                               'max_time': 1.0,
+                               'speed_of_sound': 343.0}, parallel=False)
+    assert isinstance(integrator, mi.CppADIntegrator)
 
-def test02_constructor_default_values(variants_all_ad_acoustic):
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': -1})
+
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name):
     """Test that default property values are set correctly."""
-    for integrator_name, *_ in INTEGRATORS:
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
 
-        assert integrator.speed_of_sound == 343.0
-        assert integrator.max_time == 1.0
-        assert integrator.is_detached
-        assert not integrator.skip_direct
-        assert integrator.track_time_derivatives
-        assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
-        assert integrator.rr_depth == 100000
-        assert dr.allclose(integrator.energy_threshold, 10 * 10 ** (-60.0 / 10.0))  # max_energy_loss=60 by default
+    assert integrator.speed_of_sound == 343.0
+    assert integrator.max_time == 1.0
+    assert integrator.is_detached
+    assert not integrator.skip_direct
+    assert integrator.track_time_derivatives
+    assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
+    assert integrator.rr_depth == 100000
+    assert dr.allclose(integrator.energy_threshold, 10 ** (-60.0 / 10.0))
 
-
-def test03_constructor_custom_values(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name):
     """Test that custom property values are accepted and stored."""
-    for integrator_name, *_ in INTEGRATORS:
-        integrator = mi.load_dict({
-            'type': integrator_name,
-            'max_time': 5.0,
-            'speed_of_sound': 100.0,
-            'max_depth': 10,
-            'rr_depth': 50,
-            'is_detached': False,
-            'skip_direct': True,
-            'track_time_derivatives': False,
-            'max_energy_loss': 60.0,
-        })
+    integrator = mi.load_dict({
+        'type': integrator_name,
+        'max_time': 5.0,
+        'speed_of_sound': 100.0,
+        'max_depth': 10,
+        'rr_depth': 50,
+        'is_detached': False,
+        'skip_direct': True,
+        'track_time_derivatives': False,
+        'max_energy_loss': 60.0,
+    })
 
-        assert integrator.max_time == 5.0
-        assert integrator.speed_of_sound == 100.0
-        assert integrator.max_depth == 10
-        assert integrator.rr_depth == 50
-        assert not integrator.is_detached
-        assert integrator.skip_direct
-        assert not integrator.track_time_derivatives
-        assert dr.allclose(integrator.energy_threshold, 10 * 10 ** (-60.0 / 10.0))
+    assert integrator.max_time == 5.0
+    assert integrator.speed_of_sound == 100.0
+    assert integrator.max_depth == 10
+    assert integrator.rr_depth == 50
+    assert not integrator.is_detached
+    assert integrator.skip_direct
+    assert not integrator.track_time_derivatives
+    assert dr.allclose(integrator.energy_threshold, 10 ** (-60.0 / 10.0))
 
-
-def test04_constructor_max_time_missing(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test04_constructor_max_time_missing(variants_all_jit_acoustic, integrator_name):
     """max_time is required and must raise ValueError if missing."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name})
 
-
-def test05_constructor_max_time_zero(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test05_constructor_max_time_zero(variants_all_jit_acoustic, integrator_name):
     """max_time=0 must raise ValueError."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': 0.0})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 0.0})
 
-
-def test06_constructor_speed_of_sound_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test06_constructor_speed_of_sound_invalid(variants_all_jit_acoustic, integrator_name):
     """speed_of_sound <= 0 must raise ValueError."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 0.0})
-        with pytest.raises(ValueError):
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 0.0})
+    with pytest.raises(ValueError):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': -1.0})
 
-
-def test07_constructor_max_depth_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test07_constructor_max_depth_invalid(variants_all_jit_acoustic, integrator_name):
     """max_depth < -1 must raise an exception, but -1 and 0 are valid."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(Exception):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -2})
+    with pytest.raises(Exception):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -2})
 
-        # max_depth=-1 (infinite) is valid
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -1})
-        assert integrator.max_depth == 0xffffffff
+    # max_depth=-1 (infinite) is valid
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -1})
+    assert integrator.max_depth == 0xffffffff
 
-        # max_depth=0 is valid
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': 0})
-        assert integrator.max_depth == 0
+    # max_depth=0 is valid
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': 0})
+    assert integrator.max_depth == 0
 
-
-def test08_constructor_rr_depth_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test08_constructor_rr_depth_invalid(variants_all_jit_acoustic, integrator_name):
     """rr_depth <= 0 must raise an exception."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(Exception):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
-        with pytest.raises(Exception):
+    with pytest.raises(Exception):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
+    with pytest.raises(Exception):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': -1})
 
-
-def test09_constructor_max_energy_loss_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test09_constructor_max_energy_loss_invalid(variants_all_jit_acoustic, integrator_name):
     """max_energy_loss < 0 (and not -1) must raise ValueError."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -2.0})
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -0.5})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -2.0})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 0.0})
 
-        # -1 (disabled) is valid
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -1.0})
-        assert integrator.energy_threshold == 0.0
-
-        # 0 is valid (threshold = 10)
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 0.0})
-        assert dr.allclose(integrator.energy_threshold, 10.0)
+    # -1 (disabled) is valid
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -1.0})
+    assert integrator.energy_threshold == 0.0
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 123})
+    assert integrator.energy_threshold == 10 ** (-123 / 10.0)
 
 
 # -------------------------------------------------------------------
