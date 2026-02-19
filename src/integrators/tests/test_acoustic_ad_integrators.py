@@ -375,7 +375,7 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 INTEGRATORS_RENDER = [
     ('acoustic_ad',             False,  True,   True),
     ('acoustic_prb',            False,  True,   False),
-    # ('acoustic_ad_threepoint',  True,   True,   True),
+    ('acoustic_ad_threepoint',  True,   True,   True),
     ('acoustic_prb_threepoint', True,   True,   False)
 ]
 
