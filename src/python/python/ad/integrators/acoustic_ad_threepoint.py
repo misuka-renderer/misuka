@@ -62,6 +62,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                block: mi.ImageBlock,
                position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
+               mode: Optional[dr.ADMode] = dr.ADMode.Primal,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         mi.Log(mi.LogLevel.Debug, f"Running sample().")
@@ -93,14 +94,16 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
         prev_si         = dr.zeros(mi.SurfaceInteraction3f)
         prev_bsdf_pdf   = mi.Float(0.) if self.skip_direct else mi.Float(1.)
         prev_bsdf_delta = mi.Bool(True)
-        si = None
+        si = dr.zeros(mi.SurfaceInteraction3f)
 
-        for it in range(self.max_depth):
+        while dr.hint(active,
+                      max_iterations=self.max_depth,
+                      label="Acoustic AD Threepoint (%s)" % mode.name):
             active_next = mi.Bool(active)
 
             # The first path vertex requires some special handling (see below)
             first_vertex = (depth == 0)
-            if it == 0:
+            if first_vertex:
                 si = scene.ray_intersect(dr.detach(ray),
                                         ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
                                         coherent=mi.Bool(True))
