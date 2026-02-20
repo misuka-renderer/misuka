@@ -9,7 +9,49 @@ from .common import mis_weight
 from .acoustic_ad import AcousticADIntegrator
 
 class AcousticADThreePointIntegrator(AcousticADIntegrator):
+    r"""
+    .. _integrator-acoustic_ad_threepoint:
 
+    Acoustic AD Three-Point Form (:monosp:`acoustic_ad_threepoint`)
+    ---------------------------------------------------------------
+
+    .. pluginparameters::
+        :extra-rows: 0
+
+        (Inherits all parameters from
+        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form
+    reparametrization that can also handle **non-static scenes** with moving
+    geometry.
+
+    Rather than sampling directions in :math:`\mathbb{H}^2`, this integrator
+    samples surface points in the scene (which inherently move with the
+    geometry). This reparametrization:
+
+    1. Removes most of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    This variant merely exists for debugging purposes and as a reference
+    implementation. For differentiable rendering of non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+    """
 
     @dr.syntax
     def sample(self,
@@ -20,6 +62,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                block: mi.ImageBlock,
                position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
+               mode: Optional[dr.ADMode] = dr.ADMode.Primal,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         mi.Log(mi.LogLevel.Debug, f"Running sample().")
@@ -51,14 +94,16 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
         prev_si         = dr.zeros(mi.SurfaceInteraction3f)
         prev_bsdf_pdf   = mi.Float(0.) if self.skip_direct else mi.Float(1.)
         prev_bsdf_delta = mi.Bool(True)
-        si = None
+        si = dr.zeros(mi.SurfaceInteraction3f)
 
-        for it in range(self.max_depth):
+        while dr.hint(active,
+                      max_iterations=self.max_depth,
+                      label="Acoustic AD Threepoint (%s)" % mode.name):
             active_next = mi.Bool(active)
 
             # The first path vertex requires some special handling (see below)
             first_vertex = (depth == 0)
-            if it == 0:
+            if first_vertex:
                 si = scene.ray_intersect(dr.detach(ray),
                                         ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
                                         coherent=mi.Bool(True))
@@ -183,7 +228,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             dir_next = dr.normalize(diff_next)
             wo = si.to_local(dir_next)
             bsdf_val    = bsdf.eval(bsdf_ctx, si, wo, active_next)
-            
+
             if dr.hint(ad_variant, mode='scalar'):
                 bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
                     (bsdf_sample.pdf != 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
@@ -205,6 +250,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
             active_next &= (β_max != 0)
+            active_next &= β_max >= self.energy_threshold
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2

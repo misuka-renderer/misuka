@@ -8,17 +8,102 @@ import gc
 from .common import RBIntegrator, mis_weight
 
 class AcousticADIntegrator(RBIntegrator):
-    def __init__(self, props = mi.Properties()):
+    r"""
+    .. _integrator-acoustic_ad:
+
+    Acoustic AD Integrator (:monosp:`acoustic_ad`)
+    ---------------------------------------------------
+
+    .. pluginparameters::
+
+     * - speed_of_sound
+       - |float|
+       - Speed of sound in meters per second. (Default: 343.0)
+
+     * - max_time
+       - |float|
+       - Stopping criterion for the maximum propagation time in seconds.
+         Paths whose accumulated travel distance exceeds ``max_time *
+         speed_of_sound`` are terminated.
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         audible sound sources. 2 will lead to first-order reflections, and so
+         on. (Default: -1)
+
+     * - rr_depth
+       - |int|
+       - Specifies the path depth at which the implementation will begin to use
+         the *russian roulette* path termination criterion. (Default: 100000)
+
+     * - max_energy_loss
+       - |float|
+       - Maximum energy loss in dB before a path is terminated. Set to -1 to
+         disable this criterion. (Default: 60.0)
+
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+         contribution from sound sources. (Default: no, i.e. |false|)
+
+     * - is_detached
+       - |bool|
+       - Whether the sampling strategy should be detached from the optimized
+         parameters. (Default: |true|)
+
+     * - skip_direct
+       - |bool|
+       - Skip the direct (line-of-sight) contribution from sound sources.
+         (Default: |false|)
+
+     * - track_time_derivatives
+       - |bool|
+       - Whether to track derivatives with respect to time/distance.
+         (Default: |true|)
+
+    This is the base class for differentiable acoustic integrators. It extends
+    the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
+    differentiation (AD) support, enabling gradient-based optimization of scene
+    parameters such as material properties.
+
+    Like the acoustic path tracer, it simulates sound propagation by tracing
+    paths from the sensor (microphone) to the emitters (sound sources), and
+    computes an energy-based impulse response (echogram) by accumulating path
+    contributions into time bins determined by the total path length and the
+    speed of sound.
+
+    This class is not meant to be used in practice, but mostly exists for
+    debugging purposes and as a reference implementation.
+    Instead, use <acoustic_prb> for differentiable rendering of static scenes
+    or <acoustic_prb_threepoint> for non-static scenes.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+    """
+
+    def __init__(self, props):
         super().__init__(props)
 
         self.max_time    = props.get("max_time")
-        if self.max_time is None:
-            raise ValueError("Property \"max_time\" has not been specified!")
+        if self.max_time is None or self.max_time <= 0.:
+            raise ValueError("\"max_time\" must be set to a value greater than zero!")
 
 
         self.speed_of_sound = props.get("speed_of_sound", 343.)
-        if self.max_time <= 0. or self.speed_of_sound <= 0.:
-            raise ValueError("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!")
+        if self.speed_of_sound is None or self.speed_of_sound <= 0.:
+            raise ValueError("Property \"speed_of_sound\" must be set to a value greater than zero!")
+
 
         self.is_detached = props.get("is_detached", True)
 
@@ -36,6 +121,13 @@ class AcousticADIntegrator(RBIntegrator):
         self.rr_depth = props.get('rr_depth', 100000)
         if self.rr_depth <= 0:
             raise ValueError("\"rr_depth\" must be set to a value greater than zero!")
+
+        max_energy_loss = props.get('max_energy_loss', 60.)
+        if max_energy_loss <= 0. and max_energy_loss != -1.:
+            raise ValueError("\"max_energy_loss\" must be set to -1 (disabled) or a value > 0 (in dB)")
+        # When -1, disable the criterion by using a threshold of 0
+        self.energy_threshold = 0. if max_energy_loss == -1. \
+            else 10 ** (-max_energy_loss / 10.)
 
 
     def render(self: mi.SamplingIntegrator,
@@ -262,9 +354,9 @@ class AcousticADIntegrator(RBIntegrator):
                                         ray_flags=mi.RayFlags.All,
                                         coherent=(depth == 0))
 
-            # Calculate path segment length. si.t includes a spawn-ray epsilon, 
+            # Calculate path segment length. si.t includes a spawn-ray epsilon,
             # which moves the origin towards the intersection point and reduces
-            # si.t slightly. Use true geometric distance instead: 
+            # si.t slightly. Use true geometric distance instead:
             τ = dr.select(depth == 0, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
             # Get the BSDF, potentially computes texture-space differentials
@@ -330,7 +422,7 @@ class AcousticADIntegrator(RBIntegrator):
                 # Recompute `em_weight = em_val / ds.pdf` with only `em_val` attached
                 dr.disable_grad(ds.d, ds.pdf)
                 em_val    = scene.eval_emitter_direction(si, ds, active_em)
-                
+
                 if dr.hint(ad_variant, mode='scalar'):
                     em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
 
@@ -342,7 +434,7 @@ class AcousticADIntegrator(RBIntegrator):
             if self.is_detached:
                 dr.disable_grad(bsdf_pdf_em)
             mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-            
+
             Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # Store (emission sample) intensity to the image block
@@ -368,7 +460,7 @@ class AcousticADIntegrator(RBIntegrator):
                 # Recompute `bsdf_weight = bsdf_val / bsdf_sample.pdf` with only `bsdf_val` attached
                 dr.disable_grad(bsdf_sample.wo, bsdf_sample.pdf)
                 bsdf_val    = bsdf.eval(bsdf_ctx, si, bsdf_sample.wo, active_next)
-                
+
                 if dr.hint(ad_variant, mode='scalar'):
                     bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
                     (bsdf_sample.pdf != 0), bsdf_val / bsdf_sample.pdf, 0))
@@ -396,6 +488,7 @@ class AcousticADIntegrator(RBIntegrator):
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
             active_next &= (β_max != 0)
+            active_next &= β_max >= self.energy_threshold
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2

@@ -50,6 +50,12 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
    - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
      contribution from sound sources. (Default: no, i.e. |false|)
 
+ * - max_energy_loss
+   - |float|
+   - Maximum energy loss in dB before a path is terminated. When the path
+     throughput drops below the corresponding threshold, the path is stopped.
+     Set to -1 to disable this criterion. (Default: 60.0)
+
 This integrator implements an acoustic path tracer that simulates sound
 propagation in a scene by tracing paths from the sensor (microphone) to
 the emitters (sound sources). It computes an energy-based impulse response
@@ -59,7 +65,7 @@ total path length and the speed of sound.
 At each surface interaction, the integrator uses multiple importance sampling
 (MIS) to combine BSDF and emitter samples, analogous to the optical
 :ref:`path tracer <integrator-path>`. The key difference is that energy
-transport is not assumed to be instantanous, but at the speed of sound. Instead
+transport is not assumed to be instantaneous, but at the speed of sound. Instead
 of producing an image, the output is stored in a ``Tape``, where the first axis
 corresponds to frequency bins and the second axis to time bins.
 
@@ -67,6 +73,7 @@ Sound paths are terminated when any of the following conditions are met:
 
 - The maximum path depth (``max_depth``) is reached.
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
+- The path throughput drops below the energy loss threshold (``max_energy_loss``).
 - Russian roulette terminates the path (applied after ``rr_depth`` bounces).
 
 .. note:: This integrator does not handle participating media or polarized
@@ -116,6 +123,14 @@ public:
         if (rr_depth <= 0)
             Throw("\"rr_depth\" must be set to a value greater than zero!");
         m_rr_depth = (uint32_t) rr_depth;
+
+        float max_energy_loss = props.get<float>("max_energy_loss", 60.f);
+        if (max_energy_loss < 0.f && max_energy_loss != -1.f)
+            Throw("\"max_energy_loss\" must be set to -1 (disabled) or a value >= 0 (in dB)");
+        // When -1, disable the criterion by using a threshold of 0
+        m_energy_threshold = (max_energy_loss == -1.f)
+            ? 0.f
+            : 10 * dr::pow(10.f, -max_energy_loss / 10.f);
     }
 
     TensorXf render(Scene *scene,
@@ -458,7 +473,7 @@ public:
             the intersection point and reduces si.t slightly.
             Use true geometric distance instead:
             */
-            tau = dr::select(ls.depth == 0u, 
+            tau = dr::select(ls.depth == 0u,
                                 dr::norm(si.p - ls.ray.o),
                                 dr::norm(si.p - ls.prev_si.p)
                             );
@@ -637,6 +652,7 @@ public:
             Float throughput_max = dr::max(unpolarized_spectrum(ls.throughput));
 
             active_next &= (throughput_max != 0.f);
+            active_next &= throughput_max >= m_energy_threshold;
             active_next &= ls.distance <= max_distance;
 
             // Russian roulette stopping probability (must cancel out ior^2
@@ -680,6 +696,7 @@ public:
             << "\n  max_time = " << m_max_time
             << "\n  max_depth = " << m_max_depth
             << "\n  rr_depth = " << m_rr_depth
+            << "\n  max_energy_loss = " << - 10.0f * log10(m_energy_threshold) << " dB"
             << "\n  hide_emitters = " << m_hide_emitters
             << "\n  stop = " << m_stop << "\n]";
         return oss.str();
@@ -747,6 +764,7 @@ protected:
 protected:
     float m_max_time;
     float m_speed_of_sound;
+    float m_energy_threshold;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AcousticPathIntegrator, MonteCarloIntegrator)
