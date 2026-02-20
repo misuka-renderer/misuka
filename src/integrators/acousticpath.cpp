@@ -697,6 +697,7 @@ public:
             << "\n  max_time = " << m_max_time
             << "\n  max_depth = " << m_max_depth
             << "\n  rr_depth = " << m_rr_depth
+            << "\n  max_energy_loss = " << - 10.0f * log10(m_energy_threshold) << " dB"
             << "\n  hide_emitters = " << m_hide_emitters
             << "\n  stop = " << m_stop << "\n]";
         return oss.str();
