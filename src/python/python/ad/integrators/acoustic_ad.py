@@ -119,7 +119,7 @@ class AcousticADIntegrator(RBIntegrator):
         if max_energy_loss <= 0. and max_energy_loss != -1.:
             raise ValueError("\"max_energy_loss\" must be set to -1 (disabled) or a value > 0 (in dB)")
 
-        self.energy_threshold = \
+        self.throughput_threshold = \
             0. if max_energy_loss == -1. else 10 ** (-max_energy_loss / 10.)
 
 
@@ -480,7 +480,7 @@ class AcousticADIntegrator(RBIntegrator):
 
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
-            active_next &= β_max >= self.energy_threshold
+            active_next &= β_max >= self.throughput_threshold
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2

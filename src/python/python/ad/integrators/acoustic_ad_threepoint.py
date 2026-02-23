@@ -249,7 +249,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
-            active_next &= β_max >= self.energy_threshold
+            active_next &= β_max >= self.throughput_threshold
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2

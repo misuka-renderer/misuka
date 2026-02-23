@@ -128,10 +128,9 @@ public:
         if (max_energy_loss < 0.f && max_energy_loss != -1.f)
             Throw("\"max_energy_loss\" must be set to -1 (disabled) or a value >= 0 (in dB)");
         // When -1, disable the criterion by using a threshold of 0
-        m_energy_threshold = (max_energy_loss == -1.f)
+        m_throughput_threshold = (max_energy_loss == -1.f)
             ? 0.f
             : dr::pow(10.f, -max_energy_loss / 10.f);
-        Log(Warn, "Throughput threshold: %.2e", m_energy_threshold);
     }
 
     TensorXf render(Scene *scene,
@@ -653,7 +652,7 @@ public:
             Float throughput_max = dr::max(unpolarized_spectrum(ls.throughput));
 
             active_next &= (throughput_max != 0.f);
-            active_next &= throughput_max >= m_energy_threshold;
+            active_next &= throughput_max >= m_throughput_threshold;
             active_next &= ls.distance <= max_distance;
 
             // Russian roulette stopping probability (must cancel out ior^2
@@ -697,7 +696,7 @@ public:
             << "\n  max_time = " << m_max_time
             << "\n  max_depth = " << m_max_depth
             << "\n  rr_depth = " << m_rr_depth
-            << "\n  max_energy_loss = " << - 10.0f * log10(m_energy_threshold) << " dB"
+            << "\n  max_energy_loss = " << - 10.0f * log10(m_throughput_threshold) << " dB"
             << "\n  hide_emitters = " << m_hide_emitters
             << "\n  stop = " << m_stop << "\n]";
         return oss.str();
@@ -765,7 +764,7 @@ protected:
 protected:
     float m_max_time;
     float m_speed_of_sound;
-    float m_energy_threshold;
+    float m_throughput_threshold;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AcousticPathIntegrator, MonteCarloIntegrator)
