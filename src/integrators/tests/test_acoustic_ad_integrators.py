@@ -71,11 +71,11 @@ def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name
     assert integrator.speed_of_sound == 343.0
     assert integrator.max_time == 1.0
     assert integrator.is_detached
-    assert not integrator.skip_direct
+    assert not integrator.hide_emitters
     assert integrator.track_time_derivatives
     assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
     assert integrator.rr_depth == 100000
-    assert dr.allclose(integrator.energy_threshold, 10 ** (-60.0 / 10.0))
+    assert dr.allclose(integrator.throughput_threshold, 10 ** (-60.0 / 10.0))
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name):
@@ -87,7 +87,7 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
         'max_depth': 10,
         'rr_depth': 50,
         'is_detached': False,
-        'skip_direct': True,
+        'hide_emitters': True,
         'track_time_derivatives': False,
         'max_energy_loss': 60.0,
     })
@@ -97,9 +97,9 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
     assert integrator.max_depth == 10
     assert integrator.rr_depth == 50
     assert not integrator.is_detached
-    assert integrator.skip_direct
+    assert integrator.hide_emitters
     assert not integrator.track_time_derivatives
-    assert dr.allclose(integrator.energy_threshold, 10 ** (-60.0 / 10.0))
+    assert dr.allclose(integrator.throughput_threshold, 10 ** (-60.0 / 10.0))
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test04_constructor_max_time_missing(variants_all_jit_acoustic, integrator_name):
@@ -153,9 +153,9 @@ def test09_constructor_max_energy_loss_invalid(variants_all_jit_acoustic, integr
 
     # -1 (disabled) is valid
     integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -1.0})
-    assert integrator.energy_threshold == 0.0
+    assert integrator.throughput_threshold == 0.0
     integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 123})
-    assert integrator.energy_threshold == 10 ** (-123 / 10.0)
+    assert integrator.throughput_threshold == 10 ** (-123 / 10.0)
 
 
 # -------------------------------------------------------------------
