@@ -53,11 +53,6 @@ class AcousticADIntegrator(RBIntegrator):
        - Whether the sampling strategy should be detached from the optimized
          parameters. (Default: |true|)
 
-     * - skip_direct
-       - |bool|
-       - Skip the direct (line-of-sight) contribution from sound sources.
-         (Default: |false|)
-
      * - track_time_derivatives
        - |bool|
        - Whether to track derivatives with respect to time/distance.
@@ -106,8 +101,6 @@ class AcousticADIntegrator(RBIntegrator):
 
 
         self.is_detached = props.get("is_detached", True)
-
-        self.skip_direct = props.get("skip_direct", False)
 
         self.track_time_derivatives = props.get("track_time_derivatives", True)
 
@@ -339,7 +332,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         # Variables caching information from the previous bounce
         prev_si         = dr.zeros(mi.SurfaceInteraction3f)
-        prev_bsdf_pdf   = mi.Float(0.) if self.skip_direct else mi.Float(1.)
+        prev_bsdf_pdf   = mi.Float(0.) if self.hide_emitters else mi.Float(1.)
         prev_bsdf_delta = mi.Bool(True)
 
         while dr.hint(active,
@@ -364,7 +357,7 @@ class AcousticADIntegrator(RBIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Hide the environment emitter if necessary
+            # Hide the direct sound if necessary
             if self.hide_emitters:
                 active_next &= ~((depth == 0) & ~si.is_valid())
 

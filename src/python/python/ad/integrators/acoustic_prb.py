@@ -94,7 +94,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         # Variables caching information from the previous bounce
         prev_ray        = dr.zeros(mi.Ray3f)
         prev_pi         = dr.zeros(mi.PreliminaryIntersection3f)
-        prev_bsdf_pdf   = mi.Float(0.) if self.skip_direct else mi.Float(1.)
+        prev_bsdf_pdf   = mi.Float(0.) if self.hide_emitters else mi.Float(1.)
         prev_bsdf_delta = mi.Bool(True)
 
         # Helper functions for time derivatives
@@ -139,7 +139,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Hide the environment emitter if necessary
+            # Hide the direct sound if necessary
             if dr.hint(self.hide_emitters, mode='scalar'):
                 active_next &= ~((depth == 0) & ~si.is_valid())
 
