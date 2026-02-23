@@ -157,7 +157,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                                 block.size().y * T / max_distance)
             block.put(pos=Le_pos,
                       values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
-                      active= (Le[0] > 0.)) #FIXME: (TJ) should be active_next&(Le[0] > 0.) ?
+                      active= active_next & (Le[0] > 0.))
 
             # ---------------------- Emitter sampling ----------------------
 
@@ -208,7 +208,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                                     block.size().y * T_dir / max_distance)
             block.put(pos=Lr_dir_pos,
                       values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
-                      active=active_em)
+                      active=active_em & (Lr_dir[0] > 0.))
 
             # ------------------ Detached BSDF sampling -------------------
             with dr.suspend_grad():

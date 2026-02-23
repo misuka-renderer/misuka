@@ -244,15 +244,12 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 else: # adjoint:
                     δHL = δHL - δHLe - δHLr_dir
             else: # primal
-                # FIXME (MW): Why are we ignoring active and active_em when writing to the block?
-                #       Should still work for samples that don't hit geometry (because distance will be inf)
-                #       but what about other reasons for becoming inactive?
                 block.put(pos=Le_pos,
                           values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
-                          active=(Le[0] > 0.))
+                          active=active_next & (Le[0] > 0.))
                 block.put(pos=Lr_dir_pos,
                           values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
-                          active=(Lr_dir[0] > 0.))
+                          active=active_em & (Lr_dir[0] > 0.))
 
             # ---- Update loop variables based on current interaction -----
 
