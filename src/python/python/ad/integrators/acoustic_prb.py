@@ -268,7 +268,6 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
-            active_next &= (β_max != 0)
             active_next &= β_max >= self.energy_threshold
             active_next &= distance <= max_distance
 
