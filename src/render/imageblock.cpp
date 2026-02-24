@@ -275,7 +275,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 count_u = pos_1_u - pos_0_u + 1u;
 
         // Base index of the top left corner
-        UInt32 index = 
+        UInt32 index =
             dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
 
         if (m_y_only) {
@@ -364,7 +364,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Float weight = weights_y[y];
                     for (uint32_t k = 0; k < m_channel_count; ++k) {
                         if constexpr (!JIT) {
-                            DRJIT_MARK_USED(active_1);
+                            if (unlikely(!active_1))
+                                return;
                             ptr[index] = dr::fmadd(values[k], weight, ptr[index + k]);
                         } else {
                             accum(values[k] * weight, index + k, active_1);
@@ -379,7 +380,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                             Float weight = weights_x[x] * weights_y[y];
 
                             if constexpr (!JIT) {
-                                DRJIT_MARK_USED(active_2);
+                                if (unlikely(!active_2))
+                                    return;
                                 ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
                             } else {
                                 accum(values[k] * weight, index, active_2);
@@ -574,7 +576,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Mask active_1 = active && (y + ys < size.y());
 
                     UInt32 xs = 0;
-                    
+
                     if (m_y_only) {
                         for (uint32_t k = 0; k < m_channel_count; ++k)
                             accum(values[k] * weight_y, index + k, active_1);
@@ -682,7 +684,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             count_u = pos_1_u - pos_0_u + 1u;
 
     // Base index of the top left corner
-    UInt32 index = 
+    UInt32 index =
         dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
 
     if (m_y_only) {
