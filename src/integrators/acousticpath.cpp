@@ -514,7 +514,7 @@ public:
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "valid_ray: %s", ls.valid_ray);
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "putting value %f into block at position [%f, %f]", ls.valid_ray ? aovs[0] : 0.f , pos[0], ls.time_bin);
 
-                block->put({ pos[0], ls.time_bin }, aovs, result > 0.f && ls.valid_ray == true);
+                block->put({ pos[0], ls.time_bin }, aovs, result > 0.f && ls.valid_ray && ls.active);
             }
 
             // Continue tracing the path at this point?
@@ -612,7 +612,7 @@ public:
                 }
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "valid_ray: %s, active_em: %s", ls.valid_ray, active_em);
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "putting value %f into block at position [%f, %f]", ls.valid_ray ? aovs[0] : 0.f , pos[0], ls.time_bin);
-                block->put({ pos[0], ls.time_bin }, aovs, active_em);
+                block->put({ pos[0], ls.time_bin }, aovs, result > 0.f && ls.valid_ray && active_em);
             }
 
             // ---------------------- BSDF sampling ----------------------
