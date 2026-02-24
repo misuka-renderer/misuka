@@ -434,7 +434,8 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
-def test11_rendering_forward(variant_cuda_ad_acoustic, integrator_name, config):
+def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
+    mi.set_log_level(mi.LogLevel.Debug)
     config = config()
     config.initialize()
 
@@ -481,9 +482,11 @@ def test11_rendering_forward(variant_cuda_ad_acoustic, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_BACKWARD)
 def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
+    mi.set_log_level(mi.LogLevel.Debug)
+
     config = config()
     config.initialize()
-
+    config.spp = 1
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
 
