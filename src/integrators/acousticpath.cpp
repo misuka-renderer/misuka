@@ -519,7 +519,6 @@ public:
 
             // Continue tracing the path at this point?
 
-
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "si.is_valid() = %s", si.is_valid());
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "active = %s", ls.active);
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.distance <= max_distance = %s", ls.distance <= max_distance);
