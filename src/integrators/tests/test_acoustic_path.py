@@ -82,6 +82,61 @@ def test06_constructor_max_energy_loss_invalid(variants_all_acoustic):
     integrator = mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'max_energy_loss': 0.0})
     assert integrator is not None
 
+@pytest.mark.parametrize('rfilter', ['box', 'gaussian'])
+def test07_hide_emitters(variants_all_acoustic, rfilter):
+    speed_of_sound = 1
+    max_time = 3
+    sample_rate = 1
+    time_bins = int(sample_rate * max_time)
+    spp = 1
+
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'microphone': {
+            'type': 'microphone',
+            'kappa': 1e12,
+            'origin': [0, 0, 1],
+            'direction': [0, 0, -1],
+            'film': {
+                'type': 'tape',
+                'time_bins': time_bins,
+                'frequencies': '1',
+                'rfilter': {'type': rfilter},
+            }
+        },
+        'rectangle': {
+            'type': 'rectangle',
+            'flip_normals': False,
+            'emitter': {
+                'type': 'area',
+                'radiance': {'type': 'uniform',
+                                'value': 1},
+            }
+        },
+    })
+
+
+    integrator = mi.load_dict({'type': 'acoustic_path',
+                               'speed_of_sound': speed_of_sound,
+                               'max_depth': 1,
+                               'max_time': max_time, 'hide_emitters': True})
+    assert integrator.hide_emitters
+    etc_hide_emitter = integrator.render(scene, seed=0, spp=spp)
+    print(etc_hide_emitter.numpy().shape)
+    print(f'{etc_hide_emitter[:, 0, 0] = }')
+    assert dr.allclose(etc_hide_emitter[:, 0, 0], 0)
+
+    integrator = mi.load_dict({'type': 'acoustic_path',
+                               'speed_of_sound': speed_of_sound,
+                               'max_depth': 1,
+                               'max_time': max_time, 'hide_emitters': False})
+    assert not integrator.hide_emitters
+    etc = integrator.render(scene, seed=0, spp=spp)
+    print(f'{etc[:, 0, 0] = }')
+    assert not dr.allclose(etc[:, 0, 0], 0)
+
+
 
 # -------------------------------------------------------------------
 #                          Test configs
@@ -105,12 +160,14 @@ class ConfigBase:
         self.error_mean_threshold_bwd = 0.05
         self.emitter_radius = 0.5
         self.max_depth = -1
+        self.hide_emitters = False
 
         self.integrator_dict = {
             'max_depth': self.max_depth,
             'speed_of_sound': self.speed_of_sound,
             'max_time': self.max_time,
             'max_energy_loss': self.max_energy_loss,
+            'hide_emitters': self.hide_emitters,
         }
 
         self.sensor_dict = {
