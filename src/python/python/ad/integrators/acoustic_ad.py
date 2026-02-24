@@ -169,6 +169,8 @@ class AcousticADIntegrator(RBIntegrator):
                 position_sample=position_sample,
                 active=mi.Bool(True)
             )
+            mi.Log(mi.LogLevel.Debug, "Finished sample().")
+
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, position_sample#, L, valid
@@ -540,6 +542,7 @@ class AcousticADIntegrator(RBIntegrator):
                     position_sample=position_sample,
                     active=mi.Bool(True)
                 )
+                mi.Log(mi.LogLevel.Debug, "Finished sample().")
 
                 film.put_block(block)
                 result_img = film.develop()
@@ -592,6 +595,7 @@ class AcousticADIntegrator(RBIntegrator):
                     position_sample=position_sample,
                     active=mi.Bool(True)
                 )
+                mi.Log(mi.LogLevel.Debug, "Finished sample().")
 
                 film.put_block(block)
                 result_img = film.develop()
