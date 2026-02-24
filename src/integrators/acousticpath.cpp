@@ -503,9 +503,9 @@ public:
 
                 if (likely(has_flag(film->flags(), FilmFlags::Special))) {
                     film->prepare_sample(result, ray.wavelengths, aovs,
-                                        /*weight*/ 1.f,
-                                        /*alpha */ 1.f,
-                                        /*Mask*/ true);
+                        /*weight*/ 1.f,
+                        /*alpha is ignored*/ 1.f,
+                        /*Mask is ignored*/ true);
                 } else {
                     Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
