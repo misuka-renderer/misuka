@@ -430,11 +430,11 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
         mi.util.write_bitmap(filename, etc)
         mi.util.write_bitmap(filename_ref, etc)
 
-"""
+
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
-def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
+def test11_rendering_forward(variant_cuda_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -442,7 +442,7 @@ def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
     integrator = mi.load_dict(config.integrator_dict)
 
 
-    filename = join(output_dir, f"test_{config.name}_etc_fwd_ref.exr")
+    filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
     etc_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
     theta = mi.Float(0.0)
@@ -487,7 +487,7 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
 
-    filename = join(output_dir, f"test_{config.name}_etc_fwd_ref.exr")
+    filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
     etc_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
     grad_in = 0.001
@@ -511,7 +511,7 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
         print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
         pytest.fail("Gradient values exceeded configuration's tolerances!")
-"""
+
 
 # -------------------------------------------------------------------
 #                      Generate reference images
