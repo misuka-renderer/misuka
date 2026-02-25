@@ -493,8 +493,6 @@ def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_BACKWARD)
 def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
-    mi.set_log_level(mi.LogLevel.Debug)
-
     config = config()
     config.initialize()
     config.integrator_dict['type'] = integrator_name
@@ -502,6 +500,10 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
 
     filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
     etc_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
+
+    # FIXME: remove this normalization once the integrators normalize by spp.
+    #FIXME: use value used to generate the reference ETC in the config, not necessarily 2**30.
+    etc_fwd_ref *= config.spp / 2**30
 
     grad_in = 0.001
     etc_adj = dr.full(mi.TensorXf, grad_in, etc_fwd_ref.shape)
@@ -513,11 +515,17 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
 
     integrator.render_backward(config.scene, grad_in=etc_adj, seed=0, spp=config.spp, params=theta)
 
-    grad = dr.grad(theta) / dr.width(etc_fwd_ref)
-    print(f"grad: {grad}")
+    grad = dr.grad(theta)
     grad_ref = dr.mean(etc_fwd_ref, axis=None) * grad_in
-    print(f"grad_ref: {grad_ref}")
+    if dr.isnan(grad):
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> grad: {grad}")
+        pytest.fail("Gradient is NaN!")
 
+    if dr.isinf(grad):
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> grad: {grad}")
+        pytest.fail("Gradient is Inf!")
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
