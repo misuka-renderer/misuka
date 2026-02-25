@@ -173,6 +173,8 @@ class ConfigBase:
         self.spp = 2**20
         self.speed_of_sound = 340
         self.max_time = 0.2
+        self.max_depth = -1
+        self.rr_depth = 100000
         self.max_energy_loss = 20
         self.sampling_rate = 1000.0
         self.frequencies = '250, 500'
@@ -181,13 +183,14 @@ class ConfigBase:
         self.error_mean_threshold_bwd = 0.05
         self.ref_fd_epsilon = 1e-3
         self.emitter_radius = 0.5
-        self.max_depth = -1
 
         self.integrator_dict = {
             'max_depth': self.max_depth,
             'speed_of_sound': self.speed_of_sound,
+            'max_depth': self.max_depth,
             'max_time': self.max_time,
             'max_energy_loss': self.max_energy_loss,
+            'rr_depth': self.rr_depth,
         }
 
         self.sensor_dict = {
@@ -263,7 +266,7 @@ class SphericalEmitterRadianceConfig(ConfigBase):
                     'type': 'area',
                     'radiance': {
                         'type': 'uniform',
-                        'value': 1000,
+                        'value': 1,
                     },
                 },
             },
@@ -276,7 +279,7 @@ class ShoeboxAbsorptionConfig(ConfigBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'shoebox.bsdf.absorption.value'
+        self.key = 'shoebox.bsdf.absorption.values'
         self.scene_dict = {
             'type': 'scene',
             'shoebox': {
@@ -287,10 +290,12 @@ class ShoeboxAbsorptionConfig(ConfigBase):
                     'type': 'acousticbsdf',
                     'specular_lobe_width': 0.001,
                     'absorption': {
-                        'type': 'uniform', 'value': 0.5,
+                        'type': 'spectrum',
+                        'value': [(250, 0.4), (500, 0.6)],
                     },
                     'scattering': {
-                        'type': 'uniform', 'value': 0.5,
+                        'type': 'spectrum',
+                        'value': [(250, 0.1), (500, 0.9)],
                     },
                 },
             },
@@ -316,7 +321,7 @@ class ShoeboxScatteringConfig(ConfigBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'shoebox.bsdf.scattering.value'
+        self.key = 'shoebox.bsdf.scattering.values'
         self.scene_dict = {
             'type': 'scene',
             'shoebox': {
@@ -327,10 +332,12 @@ class ShoeboxScatteringConfig(ConfigBase):
                     'type': 'acousticbsdf',
                     'specular_lobe_width': 0.001,
                     'absorption': {
-                        'type': 'uniform', 'value': 0.5,
+                        'type': 'spectrum',
+                        'value': [(250, 0.4), (500, 0.6)],
                     },
                     'scattering': {
-                        'type': 'uniform', 'value': 0.5
+                        'type': 'spectrum',
+                        'value': [(250, 0.1), (500, 0.9)],
                     },
                 },
             },
@@ -410,10 +417,14 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
 
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict, parallel=False)
-
     filename = join(output_dir, f"test_{config.name}_primal_ref.exr")
     etc_primal_ref = mi.TensorXf(mi.Bitmap(filename))
-    etc = integrator.render(config.scene, seed=0, spp=config.spp) / config.spp
+    etc = integrator.render(config.scene, seed=0, spp=config.spp)
+
+    # FIXME: once the integrators normalize by spp, remove this normalization.
+    etc /= dr.max(dr.abs(etc))
+    etc_primal_ref /= dr.max(dr.abs(etc_primal_ref))
+
     error = dr.abs(etc - etc_primal_ref) / dr.maximum(dr.abs(etc_primal_ref), 2e-2)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
@@ -426,9 +437,9 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_primal.exr")
         filename_ref = join(os.getcwd(), f"test_{integrator_name}_{config.name}_ref.exr")
         print(f'-> write current image: {filename}')
-        pytest.fail("ETC values exceeded configuration's tolerances!")
         mi.util.write_bitmap(filename, etc)
-        mi.util.write_bitmap(filename_ref, etc)
+        mi.util.write_bitmap(filename_ref, etc_primal_ref)
+        pytest.fail("ETC values exceeded configuration's tolerances!")
 
 
 @pytest.mark.slow
@@ -486,7 +497,6 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
 
     config = config()
     config.initialize()
-    config.spp = 1
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
 
@@ -503,8 +513,10 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
 
     integrator.render_backward(config.scene, grad_in=etc_adj, seed=0, spp=config.spp, params=theta)
 
-    grad = dr.grad(theta) / dr.width(etc_fwd_ref) / config.spp
+    grad = dr.grad(theta) / dr.width(etc_fwd_ref)
+    print(f"grad: {grad}")
     grad_ref = dr.mean(etc_fwd_ref, axis=None) * grad_in
+    print(f"grad_ref: {grad_ref}")
 
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
@@ -543,12 +555,13 @@ if __name__ == "__main__":
         integrator_path = mi.load_dict({
             'type': 'acoustic_path',
             'speed_of_sound': config.speed_of_sound,
-            'max_depth': config.integrator_dict['max_depth'],
+            'max_depth': config.max_depth,
             'max_time': config.max_time,
+            'max_energy_loss': config.max_energy_loss,
         })
 
         # Primal render
-        etc_ref = integrator_path.render(config.scene, seed=0, spp=args.spp) / args.spp
+        etc_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
 
         filename = join(output_dir, f"test_{config.name}_primal_ref.exr")
         mi.util.write_bitmap(filename, etc_ref)
@@ -556,12 +569,12 @@ if __name__ == "__main__":
         # Finite difference
         theta = mi.Float(-0.5 * config.ref_fd_epsilon)
         config.update(theta)
-        etc_1 = integrator_path.render(config.scene, seed=0, spp=args.spp) / args.spp
+        etc_1 = integrator_path.render(config.scene, seed=0, spp=args.spp)
         dr.eval(etc_1)
 
         theta = mi.Float(0.5 * config.ref_fd_epsilon)
         config.update(theta)
-        etc_2 = integrator_path.render(config.scene, seed=0, spp=args.spp) / args.spp
+        etc_2 = integrator_path.render(config.scene, seed=0, spp=args.spp)
         dr.eval(etc_2)
 
         etc_fd = (etc_2 - etc_1) / config.ref_fd_epsilon
