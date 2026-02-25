@@ -97,7 +97,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
-                      label="Acoustic AD Threepoint (%s)" % mode.name):
+                      label="Acoustic AD Threepoint"):
             active_next = mi.Bool(active)
 
             # The first path vertex requires some special handling (see below)
