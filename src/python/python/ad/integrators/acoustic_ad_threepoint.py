@@ -154,8 +154,10 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
             Le_pos = mi.Point2f(position_sample.x * n_frequencies,
                                 block.size().y * T / max_distance)
+            # Detach radiance values when writing to the block to avoid
+            # attaching wavefront-sized AD nodes to the image splatting stage.
             block.put(pos=Le_pos,
-                      values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
+                      values=film.prepare_sample(dr.detach(Le[0]), dr.detach(si.wavelengths), n_channels),
                       active= active_next & (Le[0] > 0.))
 
             # ---------------------- Emitter sampling ----------------------
