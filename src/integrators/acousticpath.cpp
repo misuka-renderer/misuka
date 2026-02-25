@@ -694,12 +694,15 @@ public:
         std::ostringstream oss;
         oss << "AcousticPathIntegrator["
             << "\n  speed_of_sound = " << m_speed_of_sound
-            << "\n  max_time = " << m_max_time
-            << "\n  max_depth = " << m_max_depth
-            << "\n  rr_depth = " << m_rr_depth
-            << "\n  max_energy_loss = " << - 10.0f * log10(m_throughput_threshold) << " dB"
-            << "\n  hide_emitters = " << m_hide_emitters
-            << "\n  stop = " << m_stop << "\n]";
+            << "\n  max_time = " << m_max_time << "\n  max_depth = "
+            << (m_max_depth == (uint32_t) -1 ? std::string("disabled")
+                                             : std::to_string(m_max_depth))
+            << "\n  rr_depth = " << m_rr_depth << "\n  max_energy_loss = "
+            << (m_throughput_threshold == 0.f
+                    ? std::string("disabled")
+                    : (std::to_string(-10.0f * log10(m_throughput_threshold)) +
+                       " dB"))
+            << "\n  hide_emitters = " << m_hide_emitters << "\n]";
         return oss.str();
     }
 
