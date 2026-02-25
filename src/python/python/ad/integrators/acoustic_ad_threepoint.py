@@ -63,7 +63,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                **_ # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum, mi.Bool]:
         mi.Log(mi.LogLevel.Debug, f"Running sample().")
 
         film = sensor.film()
@@ -265,6 +265,9 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             active = active_next
 
 
-        return (depth != 0)
+        return (
+            block,
+            (depth != 0)
+        )
 
 mi.register_integrator("acoustic_ad_threepoint", lambda props: AcousticADThreePointIntegrator(props))
