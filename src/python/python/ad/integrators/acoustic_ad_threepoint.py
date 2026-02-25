@@ -62,7 +62,6 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                block: mi.ImageBlock,
                position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
-               mode: Optional[dr.ADMode] = dr.ADMode.Primal,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         mi.Log(mi.LogLevel.Debug, f"Running sample().")
