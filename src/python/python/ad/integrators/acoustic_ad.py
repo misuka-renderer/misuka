@@ -122,6 +122,24 @@ class AcousticADIntegrator(RBIntegrator):
         self.throughput_threshold = \
             0. if max_energy_loss == -1. else 10 ** (-max_energy_loss / 10.)
 
+    def to_string(self):
+        md = self.max_depth if self.max_depth != 0xffffffff else -1
+        if self.throughput_threshold == 0.:
+            max_el = "disabled"
+        else:
+            max_el = f"{ -10.0 * (dr.log(self.throughput_threshold) / dr.log(10.0)) } dB"
+
+        return (
+            f"{type(self).__name__}[\n"
+            f"  speed_of_sound = {self.speed_of_sound}\n"
+            f"  max_time = {self.max_time}\n"
+            f"  max_depth = {md}\n"
+            f"  rr_depth = {self.rr_depth}\n"
+            f"  max_energy_loss = {max_el}\n"
+            f"  hide_emitters = {self.hide_emitters}\n"
+            f"]"
+        )
+
 
     def render(self: mi.SamplingIntegrator,
                scene: mi.Scene,
