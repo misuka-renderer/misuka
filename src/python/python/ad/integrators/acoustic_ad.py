@@ -306,7 +306,7 @@ class AcousticADIntegrator(RBIntegrator):
                position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                **_ # Absorbs unused arguments
-    ) -> None:
+    ) -> Tuple[mi.Spectrum, mi.Bool]:
         mi.Log(mi.LogLevel.Debug, "running sample().")
 
         film = sensor.film()
@@ -499,7 +499,10 @@ class AcousticADIntegrator(RBIntegrator):
             depth[si.is_valid()] += 1
             active = active_next
 
-        return block
+        return (
+            block,
+            (depth != 1),
+        )
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
