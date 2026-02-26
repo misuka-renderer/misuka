@@ -103,13 +103,18 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &, Mask /* active */) const override {
+    sample_direction(const Interaction3f &it, const Point2f &, Mask active) const override {
         Log(Debug, "line %d: Running %s().", __LINE__, __FUNCTION__);
+
+        DirectionSample3f ds = dr::zeros<PositionSample3f>();
+        ds.pdf = 0.f;
+
+        if (dr::none_or<false>(active))
+            return { ds, dr::zeros<Spectrum>() };
 
         Transform4f trafo     = m_to_world.value();
         Transform4f trafo_inv = trafo.inverse();
 
-        DirectionSample3f ds = dr::zeros<PositionSample3f>();
         ds.p                 = trafo.translation();
         ds.d                 = ds.p - it.p;
 
@@ -118,7 +123,8 @@ public:
         ds.d /= ds.dist;
 
         ds.n     = -ds.d;
-        ds.delta = Mask(true);
+        ds.delta = active;
+        ds.pdf   = dr::select(active, Float(1.f), Float(0.f));
         // dir in local space
         Vector3f d_local = trafo_inv * ds.n;
         // Set to sample point that would produce it. Is this rational? Is the
@@ -128,7 +134,7 @@ public:
         Spectrum wav_weight(
             warp::square_to_von_mises_fisher_pdf(d_local, m_kappa));
 
-        return { ds, wav_weight };
+        return { ds, wav_weight & active };
     }
 
     ScalarBoundingBox3f bbox() const override {
