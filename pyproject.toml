@@ -11,7 +11,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "Mitsuba"
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 readme = "README.md"
 dependencies = [
