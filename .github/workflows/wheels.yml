@@ -1,12 +1,16 @@
 name: Build Python wheels and upload to TestPyPi
 on:
-  workflow_dispatch:
-    inputs:
-      upload:
-        description: 'Upload wheels to PyPI?'
-        type: boolean
-        required: true
-        default: false
+  # workflow_dispatch:
+  #   inputs:
+  #     upload:
+  #       description: 'Upload wheels to PyPI?'
+  #       type: boolean
+  #       required: true
+  #       default: false
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 jobs:
   build_wheels:
@@ -97,7 +101,7 @@ jobs:
   upload_testpypi:
     name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload == 'true' }}
+    # if: ${{ github.event.inputs.upload == 'true' }}
     needs: [build_wheels]
     permissions:
       contents: read
