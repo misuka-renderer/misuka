@@ -1,18 +1,21 @@
-name: Build Python wheels
+name: Build Python wheels and upload to TestPyPi
 on:
   workflow_dispatch:
     inputs:
       upload:
-        description: 'Upload wheels to PyPI? (0: no, 1: yes)'
+        description: 'Upload wheels to PyPI?'
+        type: boolean
         required: true
-        default: '0'
+        default: false
 
 jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-13, macos-14]
-        python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
+        # os: [ubuntu-22.04, windows-latest, macos-13, macos-14]
+        # python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
+        os: [ubuntu-22.04, macos-13, macos-14]
+        python: [cp39, cp310, cp311, cp312]
       fail-fast: false
 
     name: >
@@ -32,7 +35,7 @@ jobs:
           attempt_limit: 3
           attempt_delay: 2000
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         name: Install Python
         with:
           python-version: '3.10'
@@ -52,39 +55,37 @@ jobs:
       # Set up envvars to build the correct wheel (stable ABI or not)
       ################################################################
 
-
-
       - name: Prepare cibuildwheel environment (UNIX)
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $GITHUB_ENV &&
-          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DMI_DEFAULT_VARIANTS=\"scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized\"\"" >> $GITHUB_ENV
+          echo 'CIBW_CONFIG_SETTINGS=cmake.args=-DMI_DEFAULT_VARIANTS=scalar_acoustic' >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment (Windows)
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DMI_DEFAULT_VARIANTS='scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized''" >> $env:GITHUB_ENV
+          echo 'CIBW_CONFIG_SETTINGS=cmake.args=-DMI_DEFAULT_VARIANTS=scalar_acoustic' >> $env:GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (UNIX)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
           stable_cp=$(echo ${{ matrix.python }} | cut -d_ -f1) &&
           echo "CIBW_BUILD=${stable_cp}-*" >> $GITHUB_ENV &&
-          echo "CIBW_CONFIG_SETTINGS=\"wheel.py-api=cp312\" \"cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=\"scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized\"\"" >> $GITHUB_ENV
+          echo 'CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=scalar_acoustic' >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (Windows)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           $stable_cp = '${{ matrix.python }}' -split '_'
           echo "CIBW_BUILD=$($stable_cp[0])-*" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args='-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS='scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized''" >> $env:GITHUB_ENV
+          echo 'CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=scalar_acoustic' >> $env:GITHUB_ENV
 
 
       #########################
       # Build and store wheels
       #########################
-      - name: Build wheel
+      - name: Build wheels
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 
@@ -93,23 +94,47 @@ jobs:
           name: wheels-${{ matrix.os }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
-  upload_pypi:
-    name: Upload wheels to PyPI
+  upload_testpypi:
+    name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload == '1'}}
+    if: ${{ github.event.inputs.upload == 'true' }}
     needs: [build_wheels]
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      #########################
-      # Fetch and upload wheels
-      #########################
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.10.2
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
+          password: ${{secrets.TESTPYPI_TOKEN}}
+          
+
+
+  # upload_pypi:
+  #   name: Upload wheels to PyPI
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.event.inputs.upload == '1'}}
+  #   needs: [build_wheels]
+
+  #   steps:
+  #     #########################
+  #     # Fetch and upload wheels
+  #     #########################
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: wheels-*
+  #         merge-multiple: true
+  #         path: dist
+
+  #     - uses: pypa/gh-action-pypi-publish@v1.10.2
+  #       with:
+  #         user: __token__
+  #         password: ${{ secrets.PYPI_PASSWORD }}

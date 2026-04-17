@@ -10,9 +10,9 @@ build-backend = "scikit_build_core.build"
 
 
 [project]
-name = "Mitsuba"
+name = "misuka"
 dynamic = ["version"]
-description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
+description = "misuka: A differentiable room acoustic renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mitsuba-renderer/mitsuba3"
+Homepage = "https://github.com/misuka-renderer/misuka"
 
 [project.scripts]
 mitsuba  = "mitsuba.cli:_main"
@@ -51,12 +51,12 @@ logging.level = "INFO"
 # Necessary to see build output from the actual compilation
 build-verbosity = 1
 
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
 archs = ["auto64"]
 skip = "*-musllinux* pp*"
 
 # Try to import the package to see if it was built correctly (compromise)
-test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_rgb')\""]
+test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_acoustic')\""]
 
 # Needed for full C++17 support
 [tool.cibuildwheel.macos.environment]
