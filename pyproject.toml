@@ -56,7 +56,7 @@ archs = ["auto64"]
 skip = "*-musllinux* pp*"
 
 # Try to import the package to see if it was built correctly (compromise)
-test-command = ["python -c \"import misuka as mi; mi.set_variant('scalar_acoustic')\""]
+test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_acoustic')\""]
 
 # Needed for full C++17 support
 [tool.cibuildwheel.macos.environment]
