@@ -16,8 +16,10 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-14]
-        python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
+        # os: [ubuntu-24.04, windows-latest, macos-14]
+        # python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
+        os: [ubuntu-24.04, macos-14]
+        python: [cp39, cp310, cp311, cp312, cp313]
       fail-fast: false
 
     name: >
@@ -74,14 +76,14 @@ jobs:
         run: |
           stable_cp=$(echo ${{ matrix.python }} | cut -d_ -f1)
           echo "CIBW_BUILD=${stable_cp}-*" >> $GITHUB_ENV
-          echo 'CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_acoustic,llvm_ad_rgb' >> $GITHUB_ENV
+          echo 'CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args="-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_acoustic,llvm_ad_rgb"' >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (Windows)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           $stable_cp = '${{ matrix.python }}' -split '_'
           echo "CIBW_BUILD=$($stable_cp[0])-*" >> $env:GITHUB_ENV
-          echo 'CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_acoustic,llvm_ad_rgb' >> $env:GITHUB_ENV
+          echo 'CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args="-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_acoustic,llvm_ad_rgb"' >> $env:GITHUB_ENV
 
 
       #########################
