@@ -9,7 +9,43 @@ from .common import RBIntegrator, mis_weight
 from .acoustic_ad import AcousticADIntegrator
 
 class AcousticPRBIntegrator(AcousticADIntegrator):
-    """This Integrator is biased for when moving geometry"""
+    r"""
+    .. _integrator-acoustic_prb:
+
+    Acoustic Path Replay Backpropagation (:monosp:`acoustic_prb`)
+    -------------------------------------------------------------
+
+    .. pluginparameters::
+        :extra-rows: 0
+
+        (Inherits all parameters from
+        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+
+    This integrator works analogously to the
+    :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
+    additional gradient tracking. It uses time-resolved path replay
+    backpropagation (PRB) to efficiently propagate gradients with respect to
+    material properties, using constant memory and linear time complexity.
+
+    This integrator is only suitable for **static scenes** (i.e., scenes with
+    no moving objects). For non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`
+    instead.
+
+    .. warning:: This integrator is biased when used with moving geometry.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+    """
 
     @dr.syntax
     def sample(self,
@@ -58,7 +94,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         # Variables caching information from the previous bounce
         prev_ray        = dr.zeros(mi.Ray3f)
         prev_pi         = dr.zeros(mi.PreliminaryIntersection3f)
-        prev_bsdf_pdf   = mi.Float(0.) if self.skip_direct else mi.Float(1.)
+        prev_bsdf_pdf   = mi.Float(0.) if self.hide_emitters else mi.Float(1.)
         prev_bsdf_delta = mi.Bool(True)
 
         # Helper functions for time derivatives
@@ -103,7 +139,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Hide the environment emitter if necessary
+            # Hide the direct sound if necessary
             if dr.hint(self.hide_emitters, mode='scalar'):
                 active_next &= ~((depth == 0) & ~si.is_valid())
 
@@ -208,15 +244,12 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 else: # adjoint:
                     δHL = δHL - δHLe - δHLr_dir
             else: # primal
-                # FIXME (MW): Why are we ignoring active and active_em when writing to the block?
-                #       Should still work for samples that don't hit geometry (because distance will be inf)
-                #       but what about other reasons for becoming inactive?
                 block.put(pos=Le_pos,
                           values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
-                          active=(Le[0] > 0.))
+                          active=active_next & (Le[0] > 0.))
                 block.put(pos=Lr_dir_pos,
                           values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
-                          active=(Lr_dir[0] > 0.))
+                          active=active_em & (Lr_dir[0] > 0.))
 
             # ---- Update loop variables based on current interaction -----
 
@@ -235,7 +268,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
-            active_next &= (β_max != 0)
+            active_next &= β_max >= self.throughput_threshold
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2

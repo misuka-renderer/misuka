@@ -39,101 +39,123 @@ from mitsuba.scalar_rgb.test.util import find_resource
 
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 
+
 # -------------------------------------------------------------------
 #                          initialization tests
 # -------------------------------------------------------------------
 
-def test01_initialization(variants_all_ad_acoustic):
-    for integrator_name, *_ in INTEGRATORS:
-        integrator = mi.load_dict({'type': integrator_name,'max_time': 1})
-        assert isinstance(integrator, mi.CppADIntegrator)
-        
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': -1})
+# List of integrators to test
 
+INTEGRATORS = [
+    'acoustic_ad',
+    'acoustic_ad_threepoint',
+    'acoustic_prb',
+    'acoustic_prb_threepoint'
+]
 
-def test02_constructor_default_values(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test01_initialization(variants_all_jit_acoustic, integrator_name):
+    integrator = mi.load_dict({'type': integrator_name,
+                               'max_time': 1.0,
+                               'speed_of_sound': 343.0}, parallel=False)
+    assert isinstance(integrator, mi.CppADIntegrator)
+
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': -1})
+
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name):
     """Test that default property values are set correctly."""
-    for integrator_name, *_ in INTEGRATORS:
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
 
-        assert integrator.speed_of_sound == 343.0
-        assert integrator.max_time == 1.0
-        assert integrator.is_detached
-        assert not integrator.skip_direct
-        assert integrator.track_time_derivatives
-        assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
-        assert integrator.rr_depth == 100000
+    assert integrator.speed_of_sound == 343.0
+    assert integrator.max_time == 1.0
+    assert integrator.is_detached
+    assert not integrator.hide_emitters
+    assert integrator.track_time_derivatives
+    assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
+    assert integrator.rr_depth == 100000
+    assert dr.allclose(integrator.throughput_threshold, 10 ** (-60.0 / 10.0))
 
-
-def test03_constructor_custom_values(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name):
     """Test that custom property values are accepted and stored."""
-    for integrator_name, *_ in INTEGRATORS:
-        integrator = mi.load_dict({
-            'type': integrator_name,
-            'max_time': 5.0,
-            'speed_of_sound': 100.0,
-            'max_depth': 10,
-            'rr_depth': 50,
-            'is_detached': False,
-            'skip_direct': True,
-            'track_time_derivatives': False,
-        })
+    integrator = mi.load_dict({
+        'type': integrator_name,
+        'max_time': 5.0,
+        'speed_of_sound': 100.0,
+        'max_depth': 10,
+        'rr_depth': 50,
+        'is_detached': False,
+        'hide_emitters': True,
+        'track_time_derivatives': False,
+        'max_energy_loss': 60.0,
+    })
 
-        assert integrator.max_time == 5.0
-        assert integrator.speed_of_sound == 100.0
-        assert integrator.max_depth == 10
-        assert integrator.rr_depth == 50
-        assert not integrator.is_detached
-        assert integrator.skip_direct
-        assert not integrator.track_time_derivatives
+    assert integrator.max_time == 5.0
+    assert integrator.speed_of_sound == 100.0
+    assert integrator.max_depth == 10
+    assert integrator.rr_depth == 50
+    assert not integrator.is_detached
+    assert integrator.hide_emitters
+    assert not integrator.track_time_derivatives
+    assert dr.allclose(integrator.throughput_threshold, 10 ** (-60.0 / 10.0))
 
-
-def test04_constructor_max_time_missing(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test04_constructor_max_time_missing(variants_all_jit_acoustic, integrator_name):
     """max_time is required and must raise ValueError if missing."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name})
 
-
-def test05_constructor_max_time_zero(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test05_constructor_max_time_zero(variants_all_jit_acoustic, integrator_name):
     """max_time=0 must raise ValueError."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': 0.0})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 0.0})
 
-
-def test06_constructor_speed_of_sound_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test06_constructor_speed_of_sound_invalid(variants_all_jit_acoustic, integrator_name):
     """speed_of_sound <= 0 must raise ValueError."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(ValueError):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 0.0})
-        with pytest.raises(ValueError):
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 0.0})
+    with pytest.raises(ValueError):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': -1.0})
 
-
-def test07_constructor_max_depth_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test07_constructor_max_depth_invalid(variants_all_jit_acoustic, integrator_name):
     """max_depth < -1 must raise an exception, but -1 and 0 are valid."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(Exception):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -2})
+    with pytest.raises(Exception):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -2})
 
-        # max_depth=-1 (infinite) is valid
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -1})
-        assert integrator.max_depth == 0xffffffff
+    # max_depth=-1 (infinite) is valid
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': -1})
+    assert integrator.max_depth == 0xffffffff
 
-        # max_depth=0 is valid
-        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': 0})
-        assert integrator.max_depth == 0
+    # max_depth=0 is valid
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_depth': 0})
+    assert integrator.max_depth == 0
 
-
-def test08_constructor_rr_depth_invalid(variants_all_ad_acoustic):
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test08_constructor_rr_depth_invalid(variants_all_jit_acoustic, integrator_name):
     """rr_depth <= 0 must raise an exception."""
-    for integrator_name, *_ in INTEGRATORS:
-        with pytest.raises(Exception):
-            mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
-        with pytest.raises(Exception):
+    with pytest.raises(Exception):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
+    with pytest.raises(Exception):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': -1})
+
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test09_constructor_max_energy_loss_invalid(variants_all_jit_acoustic, integrator_name):
+    """max_energy_loss < 0 (and not -1) must raise ValueError."""
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -2.0})
+    with pytest.raises(ValueError):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 0.0})
+
+    # -1 (disabled) is valid
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -1.0})
+    assert integrator.throughput_threshold == 0.0
+    integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 123})
+    assert integrator.throughput_threshold == 10 ** (-123 / 10.0)
 
 
 # -------------------------------------------------------------------
@@ -148,23 +170,27 @@ class ConfigBase:
     requires_discontinuities = False
 
     def __init__(self) -> None:
-        self.spp = 2**22
-        self.speed_of_sound = 1
-        self.max_time = 20
-        self.sampling_rate = 10.0
+        self.spp = 2**20
+        self.speed_of_sound = 340
+        self.max_time = 0.2
+        self.max_depth = -1
+        self.rr_depth = 100000
+        self.max_energy_loss = 20
+        self.sampling_rate = 1000.0
         self.frequencies = '250, 500'
         self.error_mean_threshold = 0.05
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.05
         self.ref_fd_epsilon = 1e-3
-        self.emitter_radius = 1
-        self.max_depth = 4
+        self.emitter_radius = 0.5
 
         self.integrator_dict = {
             'max_depth': self.max_depth,
             'speed_of_sound': self.speed_of_sound,
+            'max_depth': self.max_depth,
             'max_time': self.max_time,
-
+            'max_energy_loss': self.max_energy_loss,
+            'rr_depth': self.rr_depth,
         }
 
         self.sensor_dict = {
@@ -240,11 +266,95 @@ class SphericalEmitterRadianceConfig(ConfigBase):
                     'type': 'area',
                     'radiance': {
                         'type': 'uniform',
-                        'value': 1000,
+                        'value': 1,
                     },
                 },
             },
         }
+
+class ShoeboxAbsorptionConfig(ConfigBase):
+    """
+    Absorption coefficient of the shoebox room.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'shoebox.bsdf.absorption.values'
+        self.scene_dict = {
+            'type': 'scene',
+            'shoebox': {
+                'type': 'cube',
+                'flip_normals': True,
+                'to_world': T().scale([7, 5, 3]),
+                'bsdf': {
+                    'type': 'acousticbsdf',
+                    'specular_lobe_width': 0.001,
+                    'absorption': {
+                        'type': 'spectrum',
+                        'value': [(250, 0.4), (500, 0.6)],
+                    },
+                    'scattering': {
+                        'type': 'spectrum',
+                        'value': [(250, 0.1), (500, 0.9)],
+                    },
+                },
+            },
+            'spherical_emitter': {
+                'type': 'sphere',
+                'radius': self.emitter_radius,
+                'center': [2, 0, 0],
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'uniform',
+                        'value': 1,
+                    },
+                },
+            },
+        }
+
+
+class ShoeboxScatteringConfig(ConfigBase):
+    """
+    Scattering coefficient of the shoebox room.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'shoebox.bsdf.scattering.values'
+        self.scene_dict = {
+            'type': 'scene',
+            'shoebox': {
+                'type': 'cube',
+                'flip_normals': True,
+                'to_world': T().scale([7, 5, 3]),
+                'bsdf': {
+                    'type': 'acousticbsdf',
+                    'specular_lobe_width': 0.001,
+                    'absorption': {
+                        'type': 'spectrum',
+                        'value': [(250, 0.4), (500, 0.6)],
+                    },
+                    'scattering': {
+                        'type': 'spectrum',
+                        'value': [(250, 0.1), (500, 0.9)],
+                    },
+                },
+            },
+            'spherical_emitter': {
+                'type': 'sphere',
+                'radius': self.emitter_radius,
+                'center': [2, 0, 0],
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'uniform',
+                        'value': 1,
+                    },
+                },
+            },
+        }
+
 
 
 # -------------------------------------------------------------------
@@ -255,6 +365,8 @@ class SphericalEmitterRadianceConfig(ConfigBase):
 #                           List configs
 # -------------------------------------------------------------------
 BASIC_CONFIGS_LIST = [
+    ShoeboxAbsorptionConfig,
+    ShoeboxScatteringConfig,
     SphericalEmitterRadianceConfig,
 ]
 
@@ -267,7 +379,7 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 
 # List of integrators to test
 # (Name, handles discontinuities, has render_backward, has render_forward)
-INTEGRATORS = [
+INTEGRATORS_RENDER = [
     ('acoustic_ad',             False,  True,   True),
     ('acoustic_prb',            False,  True,   False),
     ('acoustic_ad_threepoint',  True,   True,   True),
@@ -277,7 +389,7 @@ INTEGRATORS = [
 CONFIGS_PRIMAL   = []
 CONFIGS_BACKWARD = []
 CONFIGS_FORWARD  = []
-for integrator_name, handles_discontinuities, has_render_backward, has_render_forward in INTEGRATORS:
+for integrator_name, handles_discontinuities, has_render_backward, has_render_forward in INTEGRATORS_RENDER:
     todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     for config in todos:
         if (('direct' in integrator_name or 'projective' in integrator_name) and
@@ -299,16 +411,19 @@ for integrator_name, handles_discontinuities, has_render_backward, has_render_fo
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_PRIMAL)
-def test09_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
+def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict, parallel=False)
-
-    filename = join(output_dir, f"test_{config.name}_etc_primal_ref.exr")
+    filename = join(output_dir, f"test_{config.name}_primal_ref.exr")
     etc_primal_ref = mi.TensorXf(mi.Bitmap(filename))
-    etc = integrator.render(config.scene, seed=0, spp=config.spp) / config.spp
+    etc = integrator.render(config.scene, seed=0, spp=config.spp)
+
+    # FIXME: once the integrators normalize by spp, remove this normalization.
+    etc /= dr.max(dr.abs(etc))
+    etc_primal_ref /= dr.max(dr.abs(etc_primal_ref))
 
     error = dr.abs(etc - etc_primal_ref) / dr.maximum(dr.abs(etc_primal_ref), 2e-2)
     error_mean = dr.mean(error, axis=None)
@@ -319,16 +434,19 @@ def test09_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
         print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_etc_primal.exr")
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_primal.exr")
+        filename_ref = join(os.getcwd(), f"test_{integrator_name}_{config.name}_ref.exr")
         print(f'-> write current image: {filename}')
         mi.util.write_bitmap(filename, etc)
+        mi.util.write_bitmap(filename_ref, etc_primal_ref)
         pytest.fail("ETC values exceeded configuration's tolerances!")
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
-def test10_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
+def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
+    mi.set_log_level(mi.LogLevel.Debug)
     config = config()
     config.initialize()
 
@@ -336,7 +454,7 @@ def test10_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
     integrator = mi.load_dict(config.integrator_dict)
 
 
-    filename = join(output_dir, f"test_{config.name}_etc_fwd_ref.exr")
+    filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
     etc_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
     theta = mi.Float(0.0)
@@ -374,15 +492,18 @@ def test10_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_BACKWARD)
-def test11_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
+def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
     config = config()
     config.initialize()
-
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
 
-    filename = join(output_dir, f"test_{config.name}_etc_fwd_ref.exr")
+    filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
     etc_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
+
+    # FIXME: remove this normalization once the integrators normalize by spp.
+    #FIXME: use value used to generate the reference ETC in the config, not necessarily 2**30.
+    etc_fwd_ref *= config.spp / 2**30
 
     grad_in = 0.001
     etc_adj = dr.full(mi.TensorXf, grad_in, etc_fwd_ref.shape)
@@ -394,9 +515,17 @@ def test11_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
 
     integrator.render_backward(config.scene, grad_in=etc_adj, seed=0, spp=config.spp, params=theta)
 
-    grad = dr.grad(theta) / dr.width(etc_fwd_ref) / config.spp
+    grad = dr.grad(theta)
     grad_ref = dr.mean(etc_fwd_ref, axis=None) * grad_in
+    if dr.isnan(grad):
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> grad: {grad}")
+        pytest.fail("Gradient is NaN!")
 
+    if dr.isinf(grad):
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> grad: {grad}")
+        pytest.fail("Gradient is Inf!")
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -405,6 +534,7 @@ def test11_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
         print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
         pytest.fail("Gradient values exceeded configuration's tolerances!")
+
 
 # -------------------------------------------------------------------
 #                      Generate reference images
@@ -415,11 +545,14 @@ if __name__ == "__main__":
     Generate reference primal/forward ETCs for all configs.
     """
     parser = argparse.ArgumentParser(prog='GenerateConfigReferenceETCs')
-    parser.add_argument('--spp', default=2147483647, type=int,
-                        help='Samples per pixel. Default value: floor(2**32-1 / 2), which maxes out the spp')
+    parser.add_argument('--spp', default=2**30, type=int,
+                        help='Samples per pixel. Default value: 2**30.')
     args = parser.parse_args()
 
-    mi.set_variant('cuda_ad_acoustic', 'llvm_ad_acoustic')
+    if args.spp != 2**30:
+        raise Warning("Normalization is hardcoded in the tests. If you want to generate reference ETCs with a different spp, please update the normalization in the tests accordingly. This will be fixed once the integrators normalize by spp.")
+
+    mi.set_variant('cuda_acoustic', 'llvm_acoustic')
 
     if not exists(output_dir):
         os.makedirs(output_dir)
@@ -431,30 +564,31 @@ if __name__ == "__main__":
         config.initialize()
 
         integrator_path = mi.load_dict({
-            'type': 'acoustic_ad',  # TODO: change this to acousticpath once implemented
+            'type': 'acoustic_path',
             'speed_of_sound': config.speed_of_sound,
-            'max_depth': config.integrator_dict['max_depth'],
+            'max_depth': config.max_depth,
             'max_time': config.max_time,
+            'max_energy_loss': config.max_energy_loss,
         })
 
         # Primal render
-        etc_ref = integrator_path.render(config.scene, seed=0, spp=args.spp) / args.spp
+        etc_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
 
-        filename = join(output_dir, f"test_{config.name}_etc_primal_ref.exr")
+        filename = join(output_dir, f"test_{config.name}_primal_ref.exr")
         mi.util.write_bitmap(filename, etc_ref)
 
         # Finite difference
         theta = mi.Float(-0.5 * config.ref_fd_epsilon)
         config.update(theta)
-        etc_1 = integrator_path.render(config.scene, seed=0, spp=args.spp) / args.spp
+        etc_1 = integrator_path.render(config.scene, seed=0, spp=args.spp)
         dr.eval(etc_1)
 
         theta = mi.Float(0.5 * config.ref_fd_epsilon)
         config.update(theta)
-        etc_2 = integrator_path.render(config.scene, seed=0, spp=args.spp) / args.spp
+        etc_2 = integrator_path.render(config.scene, seed=0, spp=args.spp)
         dr.eval(etc_2)
 
-        image_fd = (etc_2 - etc_1) / config.ref_fd_epsilon
+        etc_fd = (etc_2 - etc_1) / config.ref_fd_epsilon
 
-        filename = join(output_dir, f"test_{config.name}_etc_fwd_ref.exr")
-        mi.util.write_bitmap(filename, image_fd)
+        filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
+        mi.util.write_bitmap(filename, etc_fd)
