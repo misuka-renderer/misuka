@@ -28,7 +28,7 @@ For all of this to work out properly, you will have to specify the
 
 .. code-block:: bash
 
-    git clone -b stable --recursive https://github.com/mitsuba-renderer/mitsuba3
+    git clone -b stable --recursive https://github.com/misuka-renderer/misuka
 
 If you already cloned the repository and forgot to specify this flag, it's
 possible to fix the repository in retrospect using the following command:
