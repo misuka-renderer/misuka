@@ -16,10 +16,8 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        # os: [ubuntu-22.04, ubuntu-24.04, windows-latest, macos-13, macos-14]
-        # python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
-        os: [ubuntu-24.04, macos-14]
-        python: [cp312]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, macos-14]
+        python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
       fail-fast: false
 
     name: >
@@ -101,7 +99,6 @@ jobs:
   upload_testpypi:
     name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
-    # if: ${{ github.event.inputs.upload == 'true' }}
     needs: [build_wheels]
     permissions:
       contents: read
