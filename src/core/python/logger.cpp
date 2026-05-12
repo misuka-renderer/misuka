@@ -3,6 +3,7 @@
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <Python.h>
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
