@@ -20,10 +20,16 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
     PyCodeObject *f_code = frame->f_code;
 #endif
 
-    std::string name =
-        nb::borrow<nb::str>(nb::handle(f_code->co_name)).c_str();
-    std::string filename =
-        nb::borrow<nb::str>(nb::handle(f_code->co_filename)).c_str();
+    std::string name;
+    std::string filename;
+
+#if PY_VERSION_HEX >= 0x030C0000
+    name = nb::borrow<nb::str>(nb::handle(PyCode_GetName(f_code))).c_str();
+    filename = nb::borrow<nb::str>(nb::handle(PyCode_GetFilename(f_code))).c_str();
+#else
+    name = nb::borrow<nb::str>(nb::handle(f_code->co_name)).c_str();
+    filename = nb::borrow<nb::str>(nb::handle(f_code->co_filename)).c_str();
+#endif
     std::string fmt = "%s: %s";
     int lineno = PyFrame_GetLineNumber(frame);
 
