@@ -24,8 +24,16 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
     std::string filename;
 
 #if PY_VERSION_HEX >= 0x030C0000
-    name = nb::borrow<nb::str>(nb::handle(PyCode_GetName(f_code))).c_str();
-    filename = nb::borrow<nb::str>(nb::handle(PyCode_GetFilename(f_code))).c_str();
+    PyObject *name_obj = PyObject_GetAttrString((PyObject *)f_code, "co_name");
+    PyObject *filename_obj = PyObject_GetAttrString((PyObject *)f_code, "co_filename");
+    if (name_obj) {
+        name = nb::borrow<nb::str>(nb::handle(name_obj)).c_str();
+        Py_DECREF(name_obj);
+    }
+    if (filename_obj) {
+        filename = nb::borrow<nb::str>(nb::handle(filename_obj)).c_str();
+        Py_DECREF(filename_obj);
+    }
 #else
     name = nb::borrow<nb::str>(nb::handle(f_code->co_name)).c_str();
     filename = nb::borrow<nb::str>(nb::handle(f_code->co_filename)).c_str();
