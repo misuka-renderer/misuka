@@ -27,11 +27,11 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
     PyObject *name_obj = PyObject_GetAttrString((PyObject *)f_code, "co_name");
     PyObject *filename_obj = PyObject_GetAttrString((PyObject *)f_code, "co_filename");
     if (name_obj) {
-        name = nb::borrow<nb::str>(nb::handle(name_obj)).c_str();
+        name = PyUnicode_AsUTF8(name_obj);
         Py_DECREF(name_obj);
     }
     if (filename_obj) {
-        filename = nb::borrow<nb::str>(nb::handle(filename_obj)).c_str();
+        filename = PyUnicode_AsUTF8(filename_obj);
         Py_DECREF(filename_obj);
     }
 #else
