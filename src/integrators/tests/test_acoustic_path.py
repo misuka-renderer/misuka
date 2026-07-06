@@ -68,18 +68,18 @@ def test05_constructor_rr_depth_invalid(variants_all_acoustic):
 
 
 def test06_constructor_max_energy_loss_invalid(variants_all_acoustic):
-    """max_energy_loss < 0 (and not -1) must raise an exception."""
+    """max_energy_loss <= 0 (and not -1) must raise an exception."""
     with pytest.raises(Exception):
         mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'max_energy_loss': -2.0})
     with pytest.raises(Exception):
         mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'max_energy_loss': -0.5})
 
+    # 0 is invalid
+    with pytest.raises(Exception):
+        mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'max_energy_loss': 0.0})
+
     # -1 (disabled) is valid
     integrator = mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'max_energy_loss': -1.0})
-    assert integrator is not None
-
-    # 0 is valid
-    integrator = mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'max_energy_loss': 0.0})
     assert integrator is not None
 
 @pytest.mark.parametrize('rfilter', ['box', 'gaussian'])

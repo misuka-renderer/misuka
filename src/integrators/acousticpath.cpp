@@ -125,8 +125,8 @@ public:
         m_rr_depth = (uint32_t) rr_depth;
 
         float max_energy_loss = props.get<float>("max_energy_loss", 60.f);
-        if (max_energy_loss < 0.f && max_energy_loss != -1.f)
-            Throw("\"max_energy_loss\" must be set to -1 (disabled) or a value >= 0 (in dB)");
+        if (max_energy_loss <= 0.f && max_energy_loss != -1.f)
+            Throw("\"max_energy_loss\" must be set to -1 (disabled) or a value > 0 (in dB)");
         // When -1, disable the criterion by using a threshold of 0
         m_throughput_threshold = (max_energy_loss == -1.f)
             ? 0.f
