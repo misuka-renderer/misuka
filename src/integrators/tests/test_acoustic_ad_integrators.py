@@ -613,7 +613,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.spp != 2**30:
-        raise Warning("Normalization is hardcoded in the tests. If you want to generate reference ETCs with a different spp, please update the normalization in the tests accordingly. This will be fixed once the integrators normalize by spp.")
+        raise ValueError("Normalization is hardcoded in the tests. If you want to generate reference ETCs with a different spp, please update the normalization in the tests accordingly. This will be fixed once the integrators normalize by spp.")
 
     mi.set_variant('cuda_acoustic', 'llvm_acoustic')
 

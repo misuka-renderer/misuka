@@ -269,9 +269,9 @@ class ShoeboxConfig(ConfigBase):
 # -------------------------------------------------------------------
 #                           List configs
 # -------------------------------------------------------------------
-# (Name, handles discontinuities, has render_backward, has render_forward)
+# List of integrators to test
 INTEGRATORS = [
-    ('acoustic_path'),
+    'acoustic_path',
 ]
 
 CONFIGS_LIST = [
@@ -292,7 +292,7 @@ for integrator_name in INTEGRATORS:
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_PRIMAL)
-def test07_rendering_primal(variants_all_acoustic, integrator_name, config):
+def test08_rendering_primal(variants_all_acoustic, integrator_name, config):
     config = config()
     config.initialize()
 
