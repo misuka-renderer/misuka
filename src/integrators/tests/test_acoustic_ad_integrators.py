@@ -185,7 +185,6 @@ class ConfigBase:
         self.emitter_radius = 0.5
 
         self.integrator_dict = {
-            'max_depth': self.max_depth,
             'speed_of_sound': self.speed_of_sound,
             'max_depth': self.max_depth,
             'max_time': self.max_time,
