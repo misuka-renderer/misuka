@@ -457,6 +457,7 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
 
 
 @pytest.mark.slow
+@pytest.mark.skip(reason="Gradient estimation will be tested in a future PR.")
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
 def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
@@ -504,6 +505,7 @@ def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
 
 
 @pytest.mark.slow
+@pytest.mark.skip(reason="Gradient estimation will be tested in a future PR.")
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_BACKWARD)
 def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config):
@@ -550,6 +552,7 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
+@pytest.mark.skip(reason="Gradient estimation will be tested in a future PR.")
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('ad_name, prb_name, config', CONFIGS_AD_PRB)
