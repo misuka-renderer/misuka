@@ -510,7 +510,6 @@ public:
                     Throw("AcousticPathIntegrator only supports Tape and SpecTape films");
                 }
 
-                if constexpr (!dr::is_jit_v<Float>) Log(Trace, "si.is_valid(): %s", si.is_valid());
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "valid_ray: %s", ls.valid_ray);
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "putting value %f into block at position [%f, %f]", ls.valid_ray ? aovs[0] : 0.f , pos[0], ls.time_bin);
 
@@ -520,7 +519,6 @@ public:
             // Continue tracing the path at this point?
 
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "si.is_valid() = %s", si.is_valid());
-            if constexpr (!dr::is_jit_v<Float>) Log(Trace, "active = %s", ls.active);
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.distance <= max_distance = %s", ls.distance <= max_distance);
             if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.depth < m_max_depth = %s", ls.depth < m_max_depth);
             Bool active_next = si.is_valid() && ls.distance <= max_distance
@@ -529,7 +527,6 @@ public:
 
             if (dr::none_or<false>(active_next)) {
                 ls.active = active_next;
-                Log(Trace, "Terminating path.");
                 return; // early exit for scalar mode
             }
 

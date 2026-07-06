@@ -460,7 +460,6 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS_FORWARD)
 def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
-    mi.set_log_level(mi.LogLevel.Debug)
     config = config()
     config.initialize()
 
