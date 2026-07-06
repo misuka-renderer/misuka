@@ -402,6 +402,20 @@ for integrator_name, handles_discontinuities, has_render_backward, has_render_fo
         if has_render_forward:
             CONFIGS_FORWARD.append((integrator_name, config))
 
+# Pairs of (AD integrator, matching PRB integrator). They are two
+# implementations of the same gradient estimator and must agree numerically
+# when driven with the same scene, seed, and spp.
+AD_PRB_PAIRS = [
+    ('acoustic_ad',            'acoustic_prb'),
+    ('acoustic_ad_threepoint', 'acoustic_prb_threepoint'),
+]
+
+CONFIGS_AD_PRB = [
+    (ad, prb, cfg)
+    for ad, prb in AD_PRB_PAIRS
+    for cfg in BASIC_CONFIGS_LIST
+]
+
 
 
 # -------------------------------------------------------------------
@@ -534,6 +548,54 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
         print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
         pytest.fail("Gradient values exceeded configuration's tolerances!")
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
+@pytest.mark.parametrize('ad_name, prb_name, config', CONFIGS_AD_PRB)
+def test13_ad_prb_equivalence(variants_all_ad_acoustic, ad_name, prb_name, config):
+    """AD and PRB integrators should compute the same gradient for the same
+    scene, seed, and spp."""
+
+    # Same shape as the reference ETC used by test12 — we only need it to size
+    # the adjoint buffer, not its values.
+    config_cls = config
+    ref_filename = join(output_dir, f"test_{config_cls().name}_fwd_ref.exr")
+    etc_fwd_ref = mi.TensorXf(mi.Bitmap(ref_filename))
+
+    spp = 1
+    seed = 0
+    grad_in = 0.001
+    etc_adj = dr.full(mi.TensorXf, grad_in, etc_fwd_ref.shape)
+
+    def run(integrator_name):
+        cfg = config_cls()
+        cfg.spp = spp
+        cfg.initialize()
+        cfg.integrator_dict['type'] = integrator_name
+        integrator = mi.load_dict(cfg.integrator_dict)
+
+        theta = mi.Float(0.0)
+        dr.enable_grad(theta)
+        dr.set_label(theta, 'theta')
+        cfg.update(theta)
+
+        integrator.render_backward(
+            cfg.scene, grad_in=etc_adj, seed=seed, spp=spp, params=theta)
+        return dr.grad(theta)
+
+    grad_ad  = run(ad_name)
+    grad_prb = run(prb_name)
+
+    if not dr.allclose(grad_ad, grad_prb, rtol=1e-4, atol=1e-6):
+        print(f"Failure in config: {config_cls().name}")
+        print(f"-> {ad_name}  grad: {grad_ad}")
+        print(f"-> {prb_name} grad: {grad_prb}")
+        diff = dr.abs(grad_ad - grad_prb)
+        rel  = diff / dr.maximum(dr.abs(grad_ad), 1e-12)
+        print(f"-> abs diff: {diff}")
+        print(f"-> rel diff: {rel}")
+        pytest.fail(f"{ad_name} and {prb_name} disagree on gradient!")
 
 
 # -------------------------------------------------------------------
