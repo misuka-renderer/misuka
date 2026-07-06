@@ -71,8 +71,10 @@ class AcousticADIntegrator(RBIntegrator):
 
     This class is not meant to be used in practice, but mostly exists for
     debugging purposes and as a reference implementation.
-    Instead, use <acoustic_prb> for differentiable rendering of static scenes
-    or <acoustic_prb_threepoint> for non-static scenes.
+    Instead, use :ref:`acoustic_prb <integrator-acoustic_prb>` for
+    differentiable rendering of static scenes or
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` for
+    non-static scenes.
 
     .. note:: This integrator does not handle participating media or polarized
        rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
