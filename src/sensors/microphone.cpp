@@ -35,7 +35,7 @@ public:
                 ScalarPoint3f target = origin + direction;
                 auto [up, unused] = coordinate_system(dr::normalize(direction));
 
-                m_to_world = ScalarTransform4f::look_at(origin, target, up);
+                m_to_world = ScalarAffineTransform4f::look_at(origin, target, up);
                 dr::make_opaque(m_to_world);
             }
         }
@@ -113,8 +113,8 @@ public:
         if (dr::none_or<false>(active))
             return { ds, dr::zeros<Spectrum>() };
 
-        Transform4f trafo     = m_to_world.value();
-        Transform4f trafo_inv = trafo.inverse();
+        AffineTransform4f trafo     = m_to_world.value();
+        AffineTransform4f trafo_inv = trafo.inverse();
 
         ds.p                 = trafo.translation();
         ds.d                 = ds.p - it.p;
@@ -156,11 +156,10 @@ public:
 
     // TODO: traverse() needed?
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Microphone)
 protected:
     Float m_kappa;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Microphone, Sensor)
-MI_EXPORT_PLUGIN(Microphone, "Microphone");
+MI_EXPORT_PLUGIN(Microphone)
 NAMESPACE_END(mitsuba)
