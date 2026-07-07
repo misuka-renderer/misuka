@@ -136,7 +136,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -183,7 +183,7 @@ public:
         TensorXf result;
         if constexpr (!dr::is_jit_v<Float>) {
             // Render on the CPU using a spiral pattern
-            uint32_t n_threads = (uint32_t) Thread::thread_count();
+            uint32_t n_threads = (uint32_t) (pool_size() + 1);
 
             Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
                 film_size[0], film_size.y(), spp, spp == 1 ? "" : "s",
@@ -207,11 +207,9 @@ public:
             // Avoid overlaps in RNG seeding RNG when a seed is manually specified
             seed *= dr::prod(film_size);
 
-            ThreadEnvironment env;
             dr::parallel_for(
                 dr::blocked_range<uint32_t>(0, total_blocks, 1),
                 [&](const dr::blocked_range<uint32_t> &range) {
-                    ScopedSetThreadEnvironment set_env(env);
                     // Fork a non-overlapping sampler for the current worker
                     ref<Sampler> sampler = sensor->sampler()->fork();
 
@@ -723,7 +721,7 @@ public:
             return dr::fmadd(a, b, c);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(AcousticPathIntegrator)
 
 protected:
 
@@ -769,6 +767,5 @@ protected:
     float m_throughput_threshold;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AcousticPathIntegrator, MonteCarloIntegrator)
-MI_EXPORT_PLUGIN(AcousticPathIntegrator, "Acoustic Path Tracer integrator");
+MI_EXPORT_PLUGIN(AcousticPathIntegrator)
 NAMESPACE_END(mitsuba)
