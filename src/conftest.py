@@ -104,23 +104,32 @@ for variant in all_possible_variants:
 
 # Create variant groups using the filter helper
 variant_groups = {
-    "any_scalar": v.all("scalar").one(),
-    "any_llvm": v.all("llvm").one(),
-    "any_cuda": v.all("cuda").one(),
-    "any_metal": v.all("metal").one(),
+    # "Optical" here means every non-acoustic (rgb/spectral/mono) variant --
+    # i.e. the variant families this test framework was originally written
+    # for, before misuka added the acoustic simulation extension. Upstream
+    # tests use e.g. variants_all/variants_all_scalar with no acoustic
+    # awareness at all, so those groups deliberately exclude "acoustic";
+    # use variants_all_acoustic (or a more specific acoustic group below)
+    # for acoustic-aware tests.
+    "any_scalar": v.all("scalar").exclude("acoustic").one(),
+    "any_llvm": v.all("llvm").exclude("acoustic").one(),
+    "any_cuda": v.all("cuda").exclude("acoustic").one(),
+    "any_metal": v.all("metal").exclude("acoustic").one(),
     "any_acoustic": v.all("acoustic").one(),
-    "all": v,
-    "all_scalar": v.all("scalar"),
+    "all": v.exclude("acoustic"),
+    "all_optical": v.exclude("acoustic"),
+    "all_scalar": v.all("scalar").exclude("acoustic"),
     "all_rgb": v.all("rgb"),
     "all_rgb_unpolarized": v.all("rgb").exclude("polarized"),
     "all_spectral": v.all("spectral"),
     "all_acoustic": v.all("acoustic"),
-    "all_backends_once": v.all("scalar").one()
-    + v.all("llvm").one()
-    + v.all("cuda").one()
-    + v.all("metal").one(),
-    "vec_backends_once": v.all("llvm").one() + v.all("cuda").one()
-    + v.all("metal").one(),
+    "all_backends_once": v.all("scalar").exclude("acoustic").one()
+    + v.all("llvm").exclude("acoustic").one()
+    + v.all("cuda").exclude("acoustic").one()
+    + v.all("metal").exclude("acoustic").one(),
+    "vec_backends_once": v.all("llvm").exclude("acoustic").one()
+    + v.all("cuda").exclude("acoustic").one()
+    + v.all("metal").exclude("acoustic").one(),
     "vec_backends_once_rgb": v.all("llvm", "rgb").one() + v.all("cuda", "rgb").one()
     + v.all("metal", "rgb").one(),
     "vec_backends_once_spectral": v.all("llvm", "spectral").one()
