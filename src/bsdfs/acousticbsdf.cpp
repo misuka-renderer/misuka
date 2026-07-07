@@ -101,8 +101,8 @@ public:
 
     AcousticBSDF(const Properties &props) : Base(props) {
 
-        m_absorption = props.texture<Texture>("absorption", 0.5f);
-        m_scattering = props.texture<Texture>("scattering", 0.5f);
+        m_absorption = props.get_texture<Texture>("absorption", 0.5f);
+        m_scattering = props.get_texture<Texture>("scattering", 0.5f);
 
         // Beckmann distribution
         m_type           = MicrofacetType::Beckmann;
@@ -116,14 +116,11 @@ public:
         m_flags = m_components[0] | m_components[1];
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("absorption", m_absorption.get(),
-                             +ParamFlags::Differentiable);
-        callback->put_object("scattering", m_scattering.get(),
-                             +ParamFlags::Differentiable);
-        callback->put_parameter("specular_lobe_width", m_alpha,
-                                ParamFlags::Differentiable |
-                                    ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("absorption", m_absorption, ParamFlags::Differentiable);
+        cb->put("scattering", m_scattering, ParamFlags::Differentiable);
+        cb->put("specular_lobe_width", m_alpha,
+                ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -300,7 +297,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(AcousticBSDF)
 protected:
     ref<Texture> m_absorption;
     ref<Texture> m_scattering;
@@ -309,8 +306,9 @@ protected:
     MicrofacetType m_type;
     Float m_alpha;
     bool m_sample_visible;
+
+    MI_TRAVERSE_CB(Base, m_absorption, m_scattering, m_alpha)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AcousticBSDF, BSDF)
-MI_EXPORT_PLUGIN(AcousticBSDF, "Acoustic material")
+MI_EXPORT_PLUGIN(AcousticBSDF)
 NAMESPACE_END(mitsuba)
