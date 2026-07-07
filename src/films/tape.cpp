@@ -28,7 +28,7 @@ public:
         // This is semantically inconsistent but no problem if we use frequencies everywhere consistently.
         if (props.type("frequencies") == Properties::Type::String) {
             std::vector<std::string> frequencies_str =
-                string::tokenize(props.string("frequencies"), " ,");
+                string::tokenize(props.get<std::string_view>("frequencies"), " ,");
 
             std::vector<ScalarFloat> frequencies;
             frequencies.reserve(frequencies_str.size());
@@ -65,11 +65,11 @@ public:
         m_count = props.get<bool>("count", false);
 
         std::string file_format = string::to_lower(
-            props.string("file_format", "openexr"));
+            props.get<std::string_view>("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
-            props.string("pixel_format", "MultiChannel"));
+            props.get<std::string_view>("pixel_format", "MultiChannel"));
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.get<std::string_view>("component_format", "float16"));
 
         if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -84,11 +84,11 @@ public:
         }
 
         if (component_format == "float16")
-            m_component_format = Struct::Type::Float16;
+            m_component_format = sj::Type::Float16;
         else if (component_format == "float32")
-            m_component_format = Struct::Type::Float32;
+            m_component_format = sj::Type::Float32;
         else if (component_format == "uint32")
-            m_component_format = Struct::Type::UInt32;
+            m_component_format = sj::Type::UInt32;
         else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
@@ -184,7 +184,7 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
+        auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
 
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
@@ -240,7 +240,7 @@ public:
             // Conversion is necessary before saving to disk
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
+                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
@@ -276,17 +276,18 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Tape)
 protected:
     Bitmap::FileFormat m_file_format;
-    Struct::Type m_component_format;
+    sj::Type m_component_format;
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
     std::vector<ScalarFloat> m_frequencies;
     bool m_count;
+
+    MI_TRAVERSE_CB(Base, m_storage)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Tape, Film)
-MI_EXPORT_PLUGIN(Tape, "Tape")
+MI_EXPORT_PLUGIN(Tape)
 NAMESPACE_END(mitsuba)
