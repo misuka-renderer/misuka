@@ -129,6 +129,8 @@ variant_groups = {
     'all_ad_rgb' : [x for x in variants if x.endswith('ad_rgb')],
     'all_ad_spectral' : [x for x in variants if x.endswith('ad_spectral')],
     'all_ad_acoustic' : [x for x in variants if x.endswith('ad_acoustic')],
+    'all_cuda_ad_acoustic' : [x for x in variants if x.endswith('cuda_ad_acoustic')],
+    'all_llvm_ad_acoustic' : [x for x in variants if x.endswith('llvm_ad_acoustic')],
     'all_jit_acoustic' : [x for x in variants if x.endswith('acoustic') and not x.startswith('scalar')],
 }
 

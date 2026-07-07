@@ -1,0 +1,5 @@
+# ETCs dumped here by the acoustic integrator tests on failure (see plot_etcs.py)
+*.exr
+
+# Per-ETC figures written by plot_etcs.py
+*.png
