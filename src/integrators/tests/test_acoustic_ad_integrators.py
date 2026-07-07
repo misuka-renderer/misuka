@@ -39,6 +39,10 @@ from mitsuba.scalar_rgb.test.util import find_resource
 
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 
+# Directory next to this test file where rendered ETCs and reference copies are
+# written on failure, so they can be inspected/plotted (see plot_etcs.py).
+tests_dir = os.path.dirname(os.path.abspath(__file__))
+
 
 # -------------------------------------------------------------------
 #                          initialization tests
@@ -447,8 +451,8 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
         print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_primal.exr")
-        filename_ref = join(os.getcwd(), f"test_{integrator_name}_{config.name}_ref.exr")
+        filename = join(tests_dir, f"test_{integrator_name}_{config.name}_primal.exr")
+        filename_ref = join(tests_dir, f"test_{integrator_name}_{config.name}_ref.exr")
         print(f'-> write current image: {filename}')
         mi.util.write_bitmap(filename, etc)
         mi.util.write_bitmap(filename_ref, etc_primal_ref)
@@ -493,10 +497,10 @@ def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
         print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+        filename = join(tests_dir, f"test_{integrator_name}_{config.name}_image_fwd.exr")
         print(f'-> write current image: {filename}')
         mi.util.write_bitmap(filename, etc_fwd)
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
+        filename = join(tests_dir, f"test_{integrator_name}_{config.name}_image_error.exr")
         print(f'-> write error image: {filename}')
         mi.util.write_bitmap(filename, error)
         pytest.fail("Gradient values exceeded configuration's tolerances!")

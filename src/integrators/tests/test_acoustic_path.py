@@ -13,6 +13,10 @@ from mitsuba.scalar_acoustic import ScalarTransform4f as T
 
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 
+# Directory next to this test file where rendered ETCs and reference copies are
+# written on failure, so they can be inspected/plotted (see plot_etcs.py).
+tests_dir = os.path.dirname(os.path.abspath(__file__))
+
 def test01_constructor_valid(variants_all_acoustic):
     """Test that the integrator can be constructed with valid parameters."""
     integrator = mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0})
@@ -316,9 +320,11 @@ def test08_rendering_primal(variants_all_acoustic, integrator_name, config):
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
         print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}-{config.name}-{mi.variant()}-primal.exr")
+        filename = join(tests_dir, f"test_{integrator_name}-{config.name}-{mi.variant()}-primal.exr")
+        filename_ref = join(tests_dir, f"test_{integrator_name}-{config.name}-{mi.variant()}-ref.exr")
         print(f'-> write current image: {filename}')
         mi.util.write_bitmap(filename, etc)
+        mi.util.write_bitmap(filename_ref, etc_ref)
         pytest.fail("ETC values exceeded configuration's tolerances!")
 
 
