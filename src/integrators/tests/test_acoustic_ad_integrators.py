@@ -65,7 +65,7 @@ def test01_initialization(variants_all_jit_acoustic, integrator_name):
                                'speed_of_sound': 343.0}, parallel=False)
     assert isinstance(integrator, mi.CppADIntegrator)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='max_time'):
         mi.load_dict({'type': integrator_name, 'max_time': -1})
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
@@ -109,21 +109,21 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test04_constructor_max_time_missing(variants_all_jit_acoustic, integrator_name):
     """max_time is required and must raise ValueError if missing."""
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='max_time'):
         mi.load_dict({'type': integrator_name})
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test05_constructor_max_time_zero(variants_all_jit_acoustic, integrator_name):
     """max_time=0 must raise ValueError."""
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='max_time'):
         mi.load_dict({'type': integrator_name, 'max_time': 0.0})
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test06_constructor_speed_of_sound_invalid(variants_all_jit_acoustic, integrator_name):
     """speed_of_sound <= 0 must raise ValueError."""
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='speed_of_sound'):
         mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 0.0})
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='speed_of_sound'):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': -1.0})
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
@@ -154,9 +154,9 @@ def test08_constructor_rr_depth_invalid(variants_all_jit_acoustic, integrator_na
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test09_constructor_max_energy_loss_invalid(variants_all_jit_acoustic, integrator_name):
     """max_energy_loss < 0 (and not -1) must raise ValueError."""
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='max_energy_loss'):
         mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': -2.0})
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError, match='max_energy_loss'):
         mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'max_energy_loss': 0.0})
 
     # -1 (disabled) is valid
