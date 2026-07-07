@@ -89,7 +89,7 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
         'max_time': 5.0,
         'speed_of_sound': 100.0,
         'max_depth': 10,
-        'rr_depth': 50,
+        'rr_depth': 100000,
         'is_detached': False,
         'hide_emitters': True,
         'track_time_derivatives': False,
@@ -99,7 +99,7 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
     assert integrator.max_time == 5.0
     assert integrator.speed_of_sound == 100.0
     assert integrator.max_depth == 10
-    assert integrator.rr_depth == 50
+    assert integrator.rr_depth == 100000
     assert not integrator.is_detached
     assert integrator.hide_emitters
     assert not integrator.track_time_derivatives
@@ -141,11 +141,14 @@ def test07_constructor_max_depth_invalid(variants_all_jit_acoustic, integrator_n
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test08_constructor_rr_depth_invalid(variants_all_jit_acoustic, integrator_name):
-    """rr_depth <= 0 must raise an exception."""
+    """rr_depth <= 0 must raise an exception, and Russian roulette is not yet
+    implemented, so any non-default rr_depth must also raise."""
     with pytest.raises(Exception):
         mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 0})
     with pytest.raises(Exception):
             mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': -1})
+    with pytest.raises(Exception):
+        mi.load_dict({'type': integrator_name, 'max_time': 1.0, 'rr_depth': 50})
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test09_constructor_max_energy_loss_invalid(variants_all_jit_acoustic, integrator_name):

@@ -27,7 +27,7 @@ def test01_constructor_valid(variants_all_acoustic):
         'max_time': 5.0,
         'speed_of_sound': 100.0,
         'max_depth': 10,
-        'rr_depth': 50,
+        'rr_depth': 100000,
         'max_energy_loss': 60.0,
     })
     assert integrator is not None
@@ -64,11 +64,14 @@ def test04_constructor_max_depth_invalid(variants_all_acoustic):
 
 
 def test05_constructor_rr_depth_invalid(variants_all_acoustic):
-    """rr_depth <= 0 must raise an exception."""
+    """rr_depth <= 0 must raise an exception, and Russian roulette is not yet
+    implemented, so any non-default rr_depth must also raise."""
     with pytest.raises(Exception):
         mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'rr_depth': 0})
     with pytest.raises(Exception):
         mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'rr_depth': -1})
+    with pytest.raises(Exception):
+        mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'rr_depth': 50})
 
 
 def test06_constructor_max_energy_loss_invalid(variants_all_acoustic):
