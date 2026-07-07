@@ -382,7 +382,7 @@ public:
                                      Float *aovs /* this stores the values that are put into the ImageBlock, see film::prepare_sample() */,
                                      Bool active) const {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
-        Log(Debug, "Running acousticpath::sample() ..");
+        Log(Debug, "Running acoustic_path::sample() ..");
 
         if (unlikely(m_max_depth == 0))
             return { 0.f, false };

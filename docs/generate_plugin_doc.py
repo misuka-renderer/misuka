@@ -89,7 +89,7 @@ SAMPLER_ORDERING = [
 ]
 
 INTEGRATOR_ORDERING = [
-    'acousticpath',
+    'acoustic_path',
     'direct',
     'path',
     'aov',
