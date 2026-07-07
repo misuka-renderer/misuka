@@ -520,7 +520,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         return (
             block,
-            (depth != 1),
+            (depth != 0),  # Ray validity flag for alpha blending
         )
 
     def render_forward(self: mi.SamplingIntegrator,
