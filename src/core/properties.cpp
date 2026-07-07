@@ -602,7 +602,8 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
     std::string_view plugin_name;
 
     // Determine variant properties
-    bool is_spectral      = variant.find("spectral") != std::string::npos,
+    bool is_spectral      = variant.find("spectral") != std::string::npos ||
+                            variant.find("acoustic") != std::string::npos,
          is_monochromatic = variant.find("mono")     != std::string::npos;
 
     switch (type) {
