@@ -35,8 +35,9 @@ class AcousticADIntegrator(RBIntegrator):
 
      * - rr_depth
        - |int|
-       - Specifies the path depth at which the implementation will begin to use
-         the *russian roulette* path termination criterion. (Default: 100000)
+       - Russian roulette path termination is not yet supported. Setting this
+         to any value other than the default raises an error. Use
+         ``max_energy_loss`` instead. (Default: 100000)
 
      * - max_energy_loss
        - |float|
@@ -116,6 +117,8 @@ class AcousticADIntegrator(RBIntegrator):
         self.rr_depth = props.get('rr_depth', 100000)
         if self.rr_depth <= 0:
             raise ValueError("\"rr_depth\" must be set to a value greater than zero!")
+        if self.rr_depth != 100000:
+            raise NotImplementedError("Russian Roulette is not yet implemented! Please use energy loss stopping criterion instead.")
 
         max_energy_loss = props.get('max_energy_loss', 60.)
         if max_energy_loss <= 0. and max_energy_loss != -1.:

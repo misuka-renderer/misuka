@@ -40,10 +40,9 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
 
  * - rr_depth
    - |int|
-   - Specifies the path depth at which the implementation will begin to use
-     the *russian roulette* path termination criterion. For example, if set to
-     1, then path generation may randomly cease after encountering directly
-     visible surfaces. (Default: max_depth)
+   - Russian roulette path termination is not yet supported. Setting this
+     to any value other than the default raises an error. Use
+     ``max_energy_loss`` instead. (Default: 100000)
 
  * - hide_emitters
    - |bool|
@@ -74,7 +73,6 @@ Sound paths are terminated when any of the following conditions are met:
 - The maximum path depth (``max_depth``) is reached.
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
 - The path throughput drops below the energy loss threshold (``max_energy_loss``).
-- Russian roulette terminates the path (applied after ``rr_depth`` bounces).
 
 .. note:: This integrator does not handle participating media or polarized
    rendering. It requires a ``Microphone`` sensor with a ``Tape`` film type.
@@ -122,6 +120,8 @@ public:
         int rr_depth = props.get<int>("rr_depth", 100000);
         if (rr_depth <= 0)
             Throw("\"rr_depth\" must be set to a value greater than zero!");
+        if (rr_depth != 100000)
+            Throw("Russian Roulette is not yet implemented! Please use energy loss stopping criterion instead.");
         m_rr_depth = (uint32_t) rr_depth;
 
         float max_energy_loss = props.get<float>("max_energy_loss", 60.f);
