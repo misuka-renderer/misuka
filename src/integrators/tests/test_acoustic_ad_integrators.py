@@ -463,6 +463,136 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
         pytest.fail("ETC values exceeded configuration's tolerances!")
 
 
+def _finite_depth_scene(scattering, time_bins=40):
+    """A small enclosed shoebox with a flat (mesh-based) emitter and an
+    omnidirectional microphone, used to exercise the direct sound and
+    first-order reflections at small, *finite* path depths.
+
+    Deliberately uses a ``rectangle`` emitter rather than a ``sphere``: while
+    investigating this bug, driving the JIT (``llvm_ad_acoustic``) acoustic
+    integrators against a *sphere* emitter (Embree "user geometry", traced via
+    the per-shape ``ray_intersect_preliminary_packet`` callback in
+    ``src/render/embree.h``) triggered an intermittent, pre-existing
+    segfault inside Embree's packet intersector for user geometry. That crash:
+      * reproduces with this fix stashed out (i.e. it predates and is
+        unrelated to the ordering bug fixed here),
+      * lives entirely in generic, unmodified upstream Mitsuba/Embree
+        infrastructure (``src/render/embree.h``, ``src/shapes/sphere.cpp``
+        have no misuka-specific changes),
+      * appears to be a timing-sensitive data race (its trigger rate was not a
+        clean function of scene parameters), consistent with concurrent
+        access to a shape from multiple Embree/nanothread worker threads.
+    A ``rectangle`` is internally a two-triangle ``Mesh`` and is intersected
+    through Embree's native triangle geometry path instead, which does not
+    exercise the affected callback; it reproduces the reported bug just as
+    well (any smooth emitter shape triggers the missing-emitter-hit bug) and
+    was empirically stable across many repeated runs. The sphere/Embree crash
+    is a separate, serious finding that deserves its own follow-up
+    investigation and is out of scope for the specular/direct-sound fixes
+    made here.
+    """
+    return {
+        'type': 'scene',
+        'shoebox': {
+            'type': 'cube',
+            'flip_normals': True,
+            'to_world': T().scale([7, 5, 3]),
+            'bsdf': {
+                'type': 'acousticbsdf',
+                'specular_lobe_width': 0.001,
+                'absorption': {'type': 'spectrum', 'value': [(250, 0.1), (500, 0.1)]},
+                'scattering': {'type': 'spectrum', 'value': [(250, scattering), (500, scattering)]},
+            },
+        },
+        'rect_emitter': {
+            'type': 'rectangle',
+            'to_world': T().translate([2, 0, 0]).rotate(axis=[0, 1, 0], angle=90).scale(0.5),
+            'flip_normals': True,  # face the rectangle towards the microphone
+            'emitter': {'type': 'area', 'radiance': {'type': 'uniform', 'value': 1}},
+        },
+        'sensor': {
+            'type': 'microphone',
+            'origin': [-2, 0, 0],
+            'direction': [1, 0, 0],
+            'kappa': 0,
+            'film': {
+                'type': 'tape',
+                'rfilter': {'type': 'box'},
+                'sample_border': False,
+                'pixel_format': 'MultiChannel',
+                'component_format': 'float32',
+                'frequencies': '250, 500',
+                'time_bins': time_bins,
+            },
+        },
+    }
+
+
+def test10b_finite_depth_emitter_hits(variant_llvm_ad_acoustic):
+    """Regression test: the AD/PRB integrators must record the direct-emission
+    contribution (``Le``) whenever a traced ray hits an emitter, *including* at
+    the terminal path depth.
+
+    A bug in the PRB integrators gated the ``Le`` splat on the ``active_next``
+    mask *after* it had been reduced by ``depth + 1 < max_depth``. That silently
+    dropped:
+      * the direct (line-of-sight) sound when ``max_depth == 1``, and
+      * specular reflections captured by BSDF sampling at the final bounce.
+        Specular energy reaches a point microphone almost exclusively through
+        such emitter hits (next-event estimation contributes ~nothing for a
+        near-delta lobe), so the specular component of the ETC went missing.
+
+    The existing primal tests only use ``max_depth == -1`` (infinite), where the
+    terminal depth is never reached, so they could not catch this. Here we use
+    small finite depths and compare against the reference ``acoustic_path``
+    integrator, which handles these contributions correctly.
+
+    The check is restricted to a single JIT backend on purpose: the bug lives in
+    backend-independent Python code, and driving several of these Python
+    integrators across multiple variants in one process trips an unrelated,
+    pre-existing crash (see the notes in the accompanying fix).
+    """
+    spp = 2 ** 14
+    seed = 0
+
+    def render(itype, max_depth, scattering):
+        scene = mi.load_dict(_finite_depth_scene(scattering))
+        integrator = mi.load_dict({
+            'type': itype,
+            'speed_of_sound': 340,
+            'max_time': 0.2,
+            'max_depth': max_depth,
+            'max_energy_loss': -1,
+        }, parallel=False)
+        return integrator.render(scene, seed=seed, spp=spp)
+
+    # Reference contributions from the (correct) acoustic_path integrator.
+    ref_direct = dr.sum(render('acoustic_path', 1, 0.05), axis=None)   # direct sound
+    ref_spec   = dr.sum(render('acoustic_path', 2, 0.05), axis=None)   # + specular refl.
+
+    # The specular first-order reflection must add meaningful energy on top of
+    # the direct sound, otherwise there is nothing to detect as "missing".
+    assert ref_spec > 1.1 * ref_direct
+
+    for integrator_name in ('acoustic_prb', 'acoustic_prb_threepoint'):
+        # max_depth == 1: direct sound only. Must be non-zero (was 0.0) and
+        # match the reference.
+        etc_direct = render(integrator_name, 1, 0.05)
+        assert dr.max(dr.abs(etc_direct)) > 0.0, \
+            f"{integrator_name}: direct sound missing at max_depth=1"
+        assert dr.allclose(dr.sum(etc_direct, axis=None), ref_direct, rtol=1e-2), \
+            f"{integrator_name}: direct sound energy disagrees with acoustic_path"
+
+        # max_depth == 2, low scattering: the first-order reflection is almost
+        # purely specular and is captured via an emitter hit at the terminal
+        # bounce. Must match the reference (was ~missing before the fix).
+        etc_spec = dr.sum(render(integrator_name, 2, 0.05), axis=None)
+        assert dr.allclose(etc_spec, ref_spec, rtol=2e-2), \
+            f"{integrator_name}: specular first reflection disagrees with acoustic_path"
+        assert etc_spec > 1.1 * dr.sum(etc_direct, axis=None), \
+            f"{integrator_name}: specular first reflection contributes no energy"
+
+
 @pytest.mark.slow
 @pytest.mark.skip(reason="Gradient estimation will be tested in a future PR.")
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')

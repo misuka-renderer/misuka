@@ -195,6 +195,15 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
 
             # ---------------------- Emitter sampling ----------------------
 
+            # The direct emission recorded above must be splatted whenever we
+            # actually hit an emitter, even at the maximum depth (e.g. the
+            # direct sound for max_depth == 1, or a specular reflection captured
+            # by BSDF sampling at the final bounce). Capture that mask *before*
+            # restricting `active_next` to continuable paths, otherwise these
+            # contributions are silently discarded. This mirrors the ordering in
+            # AcousticADIntegrator.sample().
+            active_direct = mi.Bool(active_next)
+
             # Should we continue tracing to reach one more vertex?
             active_next &= (depth + 1 < self.max_depth)
 
@@ -286,7 +295,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
             else: # primal
                 block.put(pos=Le_pos,
                           values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
-                          active=active_next & (Le[0] > 0.))
+                          active=active_direct & (Le[0] > 0.))
                 block.put(pos=Lr_dir_pos,
                           values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                           active=active_em & (Lr_dir[0] > 0.))
