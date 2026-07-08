@@ -20,7 +20,7 @@ It is a fully compatible extension to [Mitsuba 3](https://github.com/mitsuba-ren
 
 - **Cross-platform**: misuka has been tested on Linux (``x86_64``), macOS (``arm64``), and Windows (``x86_64``).
 
-- **High performance**: The underlying Dr.Jit compiler fuses rendering code into kernels that achieve state-of-the-art performance using an LLVM backend targeting the CPU and a CUDA/OptiX backend targeting NVIDIA GPUs with ray tracing hardware acceleration.
+- **High performance**: The underlying Dr.Jit compiler fuses rendering code into kernels that achieve state-of-the-art performance using an LLVM backend targeting the CPU, a CUDA/OptiX backend targeting NVIDIA GPUs, and a Metal backend targeting Apple Silicon GPUs, all with hardware-accelerated ray tracing.
 
 - **Python first**: misuka is deeply integrated with Python. Materials, textures, and even full rendering algorithms can be developed in Python, which the system JIT-compiles (and optionally differentiates) on the fly. This enables the experimentation needed for research.
 
@@ -42,6 +42,7 @@ Please refer the [Mitsuba 3 documentation](https://mitsuba.readthedocs.io/en/lat
 - `Python >= 3.9`
 - (optional) For computation on the GPU: `Nvidia driver >= 535`
 - (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
+- (optional) For computation on Apple Silicon GPUs: macOS with a Metal-capable GPU
 
 When using misuka in academic projects, please cite:
 
