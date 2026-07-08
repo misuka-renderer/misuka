@@ -145,6 +145,16 @@
         "spectrum": "Spectrum<Float, 1>"
     },
 
+    "metal_acoustic": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "metal_ad_acoustic": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
     # Scalar variant definitions
 
     "scalar_mono": {
