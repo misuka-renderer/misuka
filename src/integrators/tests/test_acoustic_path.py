@@ -2,6 +2,7 @@
 import drjit as dr
 import mitsuba as mi
 
+import numpy as np
 import pytest
 import os
 import argparse
@@ -17,6 +18,132 @@ output_dir = find_resource('resources/data_acoustic/tests/integrators')
 # Directory next to this test file where rendered ETCs and reference copies are
 # written on failure, so they can be inspected/plotted (see plot_etcs.py).
 tests_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+# -------------------------------------------------------------------
+#              Cross-backend (LLVM <-> Metal) equivalence
+# -------------------------------------------------------------------
+#
+# These helpers render the *same* scene on two backends and compare the
+# resulting ETCs / gradients. Unlike the regression tests above (which compare a
+# single variant against a stored .exr), they catch backend-specific divergences
+# such as the Metal backend dropping the direct sound. They deliberately do NOT
+# use the `variants_*` fixtures from conftest.py (which parametrize a single
+# variant per test) -- instead each test drives both variants internally,
+# rebuilding the scene under each because Mitsuba types are variant-specific.
+
+# Non-`ad` pair for primal (forward) rendering, `ad` pair for gradients.
+PRIMAL_PAIR = ('llvm_acoustic', 'metal_acoustic')
+AD_PAIR     = ('llvm_ad_acoustic', 'metal_ad_acoustic')
+
+
+def _backend_available(variant):
+    """True if `variant` is compiled and its JIT backend is live at runtime."""
+    if variant not in mi.variants():
+        return False
+    if variant.startswith('llvm'):
+        return dr.has_backend(dr.JitBackend.LLVM)
+    if variant.startswith('metal'):
+        return dr.has_backend(dr.JitBackend.Metal)
+    if variant.startswith('cuda'):
+        return dr.has_backend(dr.JitBackend.CUDA)
+    return True
+
+
+def require_pair(pair):
+    """Skip the test unless both variants of `pair` are usable."""
+    missing = [v for v in pair if not _backend_available(v)]
+    if missing:
+        pytest.skip(f"cross-backend equivalence needs {pair}; unavailable: {missing}")
+
+
+def _variant_cleanup():
+    """Same teardown conftest.py runs between variant-scoped tests, so switching
+    variants mid-test does not leak kernels/instances across backends."""
+    dr.sync_thread()
+    dr.flush_kernel_cache()
+    dr.kernel_history_clear()
+    dr.flush_malloc_cache()
+    dr.detail.malloc_clear_statistics()
+    dr.detail.clear_registry()
+    dr.set_flag(dr.JitFlag.Default, True)
+
+
+def render_on_variant(variant, build_and_render):
+    """Set `variant`, run `build_and_render()` (which builds the scene + integrator
+    and returns a drjit/mitsuba result), copy the result to a host NumPy array, and
+    clean up. All variant-specific objects are created and destroyed inside the
+    chosen variant."""
+    mi.set_variant(variant)
+    try:
+        result = build_and_render()
+        arr = np.array(result, dtype=np.float64)
+    finally:
+        _variant_cleanup()
+    return arr
+
+
+def _dump_pair(label, ref, test):
+    """Write both ETCs next to the test file for inspection on failure."""
+    safe = label.replace('/', '_').replace(' ', '_')
+    for tag, arr in (('llvm_ref', ref), ('metal_test', test)):
+        try:
+            path = join(tests_dir, f"equiv_{safe}_{tag}.exr")
+            mi.util.write_bitmap(path, mi.TensorXf(np.asarray(arr, dtype=np.float32)))
+            print(f"-> wrote {path}")
+        except Exception as e:  # dumping is best-effort
+            print(f"-> could not write {tag}: {e}")
+
+
+def assert_direct_sound_present(ref, test, *, label, min_ratio=0.5):
+    """Assert the strongest bin of the reference ETC (the direct arrival) is also
+    present, with comparable energy, on the test backend. This is the assertion
+    that directly targets the reported Metal 'missing direct sound' symptom."""
+    ref = np.asarray(ref, dtype=np.float64)
+    test = np.asarray(test, dtype=np.float64)
+    assert ref.shape == test.shape, \
+        f"{label}: shape mismatch {test.shape} != {ref.shape}"
+    idx = np.unravel_index(int(np.argmax(np.abs(ref))), ref.shape)
+    ref_peak = float(ref[idx])
+    test_val = float(test[idx])
+    assert ref_peak > 0, f"{label}: reference ETC has no signal"
+    if test_val <= min_ratio * ref_peak:
+        _dump_pair(label, ref, test)
+        pytest.fail(
+            f"{label}: direct sound missing/attenuated on test backend at bin "
+            f"{idx}: ref={ref_peak:.4g} test={test_val:.4g} "
+            f"(need >= {min_ratio:g}x)")
+
+
+def assert_etc_equivalent(ref, test, *, label, rtol=5e-2, atol_frac=2e-2):
+    """Compare two ETCs bin-by-bin with a relative tolerance plus a floor
+    (`atol_frac` * reference peak) so near-zero bins don't dominate."""
+    ref = np.asarray(ref, dtype=np.float64)
+    test = np.asarray(test, dtype=np.float64)
+    assert ref.shape == test.shape, \
+        f"{label}: shape mismatch {test.shape} != {ref.shape}"
+    peak = float(np.max(np.abs(ref)))
+    atol = atol_frac * peak
+    if not np.allclose(test, ref, rtol=rtol, atol=atol):
+        denom = np.maximum(np.abs(ref), atol)
+        rel = np.abs(test - ref) / denom
+        _dump_pair(label, ref, test)
+        pytest.fail(
+            f"{label}: ETCs differ (rel err max={rel.max():.3g} "
+            f"mean={rel.mean():.3g}, peak={peak:.3g}, "
+            f"rtol={rtol:g} atol={atol:.3g})")
+
+
+def assert_grad_equivalent(ref, test, *, label, rtol=5e-2, atol=1e-6):
+    """Compare gradients from two backends, failing on NaN/Inf or disagreement."""
+    ref = np.asarray(ref, dtype=np.float64)
+    test = np.asarray(test, dtype=np.float64)
+    assert np.all(np.isfinite(ref)), f"{label}: llvm gradient not finite: {ref}"
+    assert np.all(np.isfinite(test)), f"{label}: metal gradient not finite: {test}"
+    if not np.allclose(test, ref, rtol=rtol, atol=atol):
+        pytest.fail(
+            f"{label}: gradients differ llvm={ref.ravel()} metal={test.ravel()} "
+            f"(rtol={rtol:g} atol={atol:g})")
 
 def test01_constructor_valid(variants_all_acoustic):
     """Test that the integrator can be constructed with valid parameters."""
@@ -331,6 +458,35 @@ def test08_rendering_primal(variants_all_acoustic, integrator_name, config):
         mi.util.write_bitmap(filename_ref, etc_ref)
         pytest.fail("ETC values exceeded configuration's tolerances!")
 
+
+# -------------------------------------------------------------------
+#            LLVM <-> Metal forward-rendering equivalence
+# -------------------------------------------------------------------
+
+@pytest.mark.slow
+@pytest.mark.parametrize('config', CONFIGS_LIST)
+def test09_llvm_metal_equivalence_primal(config):
+    """`acoustic_path` must produce the same ETC on the LLVM and Metal backends,
+    including the direct sound (strongest arrival)."""
+    require_pair(PRIMAL_PAIR)
+
+    seed = 0
+    spp = 2 ** 16
+    name = config().name
+
+    def build_and_render():
+        cfg = config()
+        cfg.initialize()
+        cfg.integrator_dict['type'] = 'acoustic_path'
+        integrator = mi.load_dict(cfg.integrator_dict, parallel=False)
+        return integrator.render(cfg.scene, seed=seed, spp=spp)
+
+    ref  = render_on_variant(PRIMAL_PAIR[0], build_and_render)  # llvm
+    test = render_on_variant(PRIMAL_PAIR[1], build_and_render)  # metal
+
+    label = f"acoustic_path/{name}"
+    assert_direct_sound_present(ref, test, label=label)
+    assert_etc_equivalent(ref, test, label=label)
 
 
 # -------------------------------------------------------------------

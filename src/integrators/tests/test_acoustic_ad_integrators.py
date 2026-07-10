@@ -29,6 +29,7 @@ from mitsuba.scalar_acoustic import ScalarTransform4f as T
 import drjit as dr
 import mitsuba as mi
 
+import numpy as np
 import pytest
 import os
 import argparse
@@ -37,6 +38,13 @@ from os.path import join, exists
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 from mitsuba.scalar_rgb.test.util import find_resource
+
+# Cross-backend (LLVM <-> Metal) equivalence helpers live in the sibling test
+# module; pytest's default import mode puts this directory on sys.path.
+from test_acoustic_path import (
+    PRIMAL_PAIR, AD_PAIR, require_pair, render_on_variant,
+    assert_direct_sound_present, assert_etc_equivalent, assert_grad_equivalent,
+)
 
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 
@@ -735,6 +743,115 @@ def test13_ad_prb_equivalence(variants_all_ad_acoustic, ad_name, prb_name, confi
         print(f"-> abs diff: {diff}")
         print(f"-> rel diff: {rel}")
         pytest.fail(f"{ad_name} and {prb_name} disagree on gradient!")
+
+
+# -------------------------------------------------------------------
+#            LLVM <-> Metal equivalence (forward, then backward)
+# -------------------------------------------------------------------
+
+# Integrators whose primal render / backward gradient are compared across
+# backends. Forward-mode is compared for `acoustic_ad` only (see below).
+EQUIV_INTEGRATORS = ['acoustic_ad', 'acoustic_prb']
+
+EQUIV_SEED = 0
+EQUIV_SPP  = 2 ** 16
+EQUIV_GRAD_IN = 0.001
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('integrator_name', EQUIV_INTEGRATORS)
+@pytest.mark.parametrize('config', BASIC_CONFIGS_LIST)
+def test14_llvm_metal_equivalence_primal(integrator_name, config):
+    """Primal ETCs must match across LLVM and Metal, direct sound included."""
+    require_pair(AD_PAIR)
+    name = config().name
+
+    def build_and_render():
+        cfg = config()
+        cfg.initialize()
+        cfg.integrator_dict['type'] = integrator_name
+        integrator = mi.load_dict(cfg.integrator_dict)
+        return integrator.render(cfg.scene, seed=EQUIV_SEED, spp=EQUIV_SPP)
+
+    ref  = render_on_variant(AD_PAIR[0], build_and_render)  # llvm
+    test = render_on_variant(AD_PAIR[1], build_and_render)  # metal
+
+    label = f"{integrator_name}/{name} (primal)"
+    assert_direct_sound_present(ref, test, label=label)
+    assert_etc_equivalent(ref, test, label=label)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('integrator_name', EQUIV_INTEGRATORS)
+@pytest.mark.parametrize('config', BASIC_CONFIGS_LIST)
+def test15_llvm_metal_equivalence_backward(integrator_name, config):
+    """Backward gradients w.r.t. the scene parameter must match across backends."""
+    require_pair(AD_PAIR)
+    name = config().name
+
+    def compute_grad():
+        cfg = config()
+        cfg.spp = EQUIV_SPP
+        cfg.initialize()
+        cfg.integrator_dict['type'] = integrator_name
+        integrator = mi.load_dict(cfg.integrator_dict)
+
+        # Size the adjoint buffer from a cheap primal render.
+        shape = integrator.render(cfg.scene, seed=EQUIV_SEED, spp=1).shape
+        etc_adj = dr.full(mi.TensorXf, EQUIV_GRAD_IN, shape)
+
+        theta = mi.Float(0.0)
+        dr.enable_grad(theta)
+        dr.set_label(theta, 'theta')
+        cfg.update(theta)
+
+        integrator.render_backward(cfg.scene, grad_in=etc_adj, seed=EQUIV_SEED,
+                                   spp=EQUIV_SPP, params=theta)
+        return dr.grad(theta)
+
+    grad_llvm  = render_on_variant(AD_PAIR[0], compute_grad)
+    grad_metal = render_on_variant(AD_PAIR[1], compute_grad)
+
+    assert_grad_equivalent(grad_llvm, grad_metal,
+                           label=f"{integrator_name}/{name} (backward)")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('config', BASIC_CONFIGS_LIST)
+def test16_llvm_metal_equivalence_forward(config):
+    """Forward-mode gradient ETCs must match across backends (acoustic_ad only;
+    acoustic_prb has no render_forward)."""
+    require_pair(AD_PAIR)
+    name = config().name
+
+    def compute_forward():
+        cfg = config()
+        cfg.spp = EQUIV_SPP
+        cfg.initialize()
+        cfg.integrator_dict['type'] = 'acoustic_ad'
+        integrator = mi.load_dict(cfg.integrator_dict)
+
+        theta = mi.Float(0.0)
+        dr.enable_grad(theta)
+        dr.set_label(theta, 'theta')
+        cfg.update(theta)
+        # Push the gradient from theta into the scene parameters before
+        # render_forward so the forward AD traversal inside the loop sees it
+        # (mirrors the wiring of the skipped test11).
+        dr.forward(theta, dr.ADFlag.ClearEdges)
+
+        etc_fwd = integrator.render_forward(cfg.scene, seed=EQUIV_SEED,
+                                            spp=EQUIV_SPP, params=theta)
+        return dr.detach(etc_fwd)
+
+    ref  = render_on_variant(AD_PAIR[0], compute_forward)  # llvm
+    test = render_on_variant(AD_PAIR[1], compute_forward)  # metal
+
+    # Forward-mode gradients are signed and may contain near-cancellations, so
+    # compare with the relative+floor ETC helper (looser than primal) rather than
+    # the direct-sound peak check.
+    assert_etc_equivalent(ref, test, label=f"acoustic_ad/{name} (forward)",
+                          rtol=1e-1, atol_frac=5e-2)
 
 
 # -------------------------------------------------------------------
