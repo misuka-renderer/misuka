@@ -559,15 +559,18 @@ class AcousticADIntegrator(RBIntegrator):
             with dr.resume_grad():
                 # Launch the Monte Carlo sampling process in primal mode (1)
                 # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function.
-                self.sample(
-                    scene=scene,
-                    sampler=sampler.clone(),
-                    sensor=sensor,
-                    ray=ray,
-                    block=block,
-                    position_sample=position_sample,
-                    active=mi.Bool(True)
-                )
+                # Disable symbolic loops because we write to one external block
+                # and symbolic-loop AD can't differentiate scatters into external buffers.
+                with dr.scoped_set_flag(dr.JitFlag.SymbolicLoops, False):
+                    self.sample(
+                        scene=scene,
+                        sampler=sampler.clone(),
+                        sensor=sensor,
+                        ray=ray,
+                        block=block,
+                        position_sample=position_sample,
+                        active=mi.Bool(True)
+                    )
 
                 film.put_block(block)
                 result_img = film.develop()
@@ -611,15 +614,18 @@ class AcousticADIntegrator(RBIntegrator):
             with dr.resume_grad():
                 # Launch the Monte Carlo sampling process in primal mode (1)
                 # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function.
-                self.sample(
-                    scene=scene,
-                    sampler=sampler.clone(),
-                    sensor=sensor,
-                    ray=ray,
-                    block=block,
-                    position_sample=position_sample,
-                    active=mi.Bool(True)
-                )
+                # Disable symbolic loops because we write to one external block
+                # and symbolic-loop AD can't differentiate scatters into external buffers.
+                with dr.scoped_set_flag(dr.JitFlag.SymbolicLoops, False):
+                    self.sample(
+                        scene=scene,
+                        sampler=sampler.clone(),
+                        sensor=sensor,
+                        ray=ray,
+                        block=block,
+                        position_sample=position_sample,
+                        active=mi.Bool(True)
+                    )
 
                 film.put_block(block)
                 result_img = film.develop()
