@@ -70,10 +70,17 @@ def _variant_cleanup():
 
 
 def render_on_variant(variant, build_and_render):
-    """Set `variant`, run `build_and_render()` (which builds the scene + integrator
-    and returns a drjit/mitsuba result), copy the result to a host NumPy array, and
-    clean up. All variant-specific objects are created and destroyed inside the
-    chosen variant."""
+    """Set `variant`, run `build_and_render()` (which builds the scene + integrator,
+    renders, and must `dr.eval()` its result before returning -- see below),
+    copy the result to a host NumPy array, and clean up. All variant-specific
+    objects are created and destroyed inside the chosen variant.
+
+    `build_and_render` must force its result with `dr.eval()` *before*
+    returning it, not leave it lazily pending: Mitsuba objects it creates as
+    locals (the scene, in particular) are only kept alive by that function's
+    own frame, and become eligible for garbage collection the moment it
+    returns. A value still lazily pending at that point can end up evaluated
+    later against a since-collected scene and crash."""
     mi.set_variant(variant)
     try:
         result = build_and_render()
@@ -479,7 +486,9 @@ def test09_llvm_metal_equivalence_primal(config):
         cfg.initialize()
         cfg.integrator_dict['type'] = 'acoustic_path'
         integrator = mi.load_dict(cfg.integrator_dict, parallel=False)
-        return integrator.render(cfg.scene, seed=seed, spp=spp)
+        result = integrator.render(cfg.scene, seed=seed, spp=spp)
+        dr.eval(result)
+        return result
 
     ref  = render_on_variant(PRIMAL_PAIR[0], build_and_render)  # llvm
     test = render_on_variant(PRIMAL_PAIR[1], build_and_render)  # metal

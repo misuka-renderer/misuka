@@ -39,8 +39,9 @@ from os.path import join, exists
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 from mitsuba.scalar_rgb.test.util import find_resource
 
-# Cross-backend (LLVM <-> Metal) equivalence helpers live in the sibling test
-# module; pytest's default import mode puts this directory on sys.path.
+# Cross-backend equivalence helpers live in test_acoustic_path.py.
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_acoustic_path import (
     PRIMAL_PAIR, AD_PAIR, require_pair, render_on_variant,
     assert_direct_sound_present, assert_etc_equivalent, assert_grad_equivalent,
@@ -771,7 +772,9 @@ def test14_llvm_metal_equivalence_primal(integrator_name, config):
         cfg.initialize()
         cfg.integrator_dict['type'] = integrator_name
         integrator = mi.load_dict(cfg.integrator_dict)
-        return integrator.render(cfg.scene, seed=EQUIV_SEED, spp=EQUIV_SPP)
+        result = integrator.render(cfg.scene, seed=EQUIV_SEED, spp=EQUIV_SPP)
+        dr.eval(result)
+        return result
 
     ref  = render_on_variant(AD_PAIR[0], build_and_render)  # llvm
     test = render_on_variant(AD_PAIR[1], build_and_render)  # metal
@@ -807,7 +810,9 @@ def test15_llvm_metal_equivalence_backward(integrator_name, config):
 
         integrator.render_backward(cfg.scene, grad_in=etc_adj, seed=EQUIV_SEED,
                                    spp=EQUIV_SPP, params=theta)
-        return dr.grad(theta)
+        grad = dr.grad(theta)
+        dr.eval(grad)
+        return grad
 
     grad_llvm  = render_on_variant(AD_PAIR[0], compute_grad)
     grad_metal = render_on_variant(AD_PAIR[1], compute_grad)
@@ -842,7 +847,9 @@ def test16_llvm_metal_equivalence_forward(config):
 
         etc_fwd = integrator.render_forward(cfg.scene, seed=EQUIV_SEED,
                                             spp=EQUIV_SPP, params=theta)
-        return dr.detach(etc_fwd)
+        result = dr.detach(etc_fwd)
+        dr.eval(result)
+        return result
 
     ref  = render_on_variant(AD_PAIR[0], compute_forward)  # llvm
     test = render_on_variant(AD_PAIR[1], compute_forward)  # metal
