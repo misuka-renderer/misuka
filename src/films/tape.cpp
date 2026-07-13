@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fstream.h>

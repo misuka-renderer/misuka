@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import pytest
 import drjit as dr
 import mitsuba as mi

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // needed for render() and render_sample():
 #include <nanothread/nanothread.h>
 #include <mutex>

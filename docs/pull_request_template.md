@@ -22,4 +22,4 @@ Fixes # (issue)
 - [ ] I have added my changes to `docs/release-notes.rst`
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] I cleaned the commit history and removed any "Merge" commits
-- [ ] I give permission that the misuka project may redistribute my contributions under the terms of its [license](https://github.com/misuka-renderer/misuka/blob/master/LICENSE)
+- [ ] I grant the misuka project permission to redistribute, relicense, and sublicense my contributions under the project's [current or future license](https://github.com/misuka-renderer/misuka/blob/master/LICENSE), including licenses that permit commercial use

@@ -6,11 +6,14 @@ This repository is based on code from **Mitsuba 3**, originally developed by
 Wenzel Jakob and licensed under the terms listed at the bottom of this page.
 
 All modifications and additions made for **misuka** by the misuka contributors
-are licensed under the GNU Lesser General Public License (LGPL), version 3
-or (at your option) any later version.
+are licensed under the **PolyForm Noncommercial License 1.0.0**. This is a
+source-available, noncommercial-use license. Commercial use of misuka's own
+code requires a separate agreement with the misuka maintainers (listed under
+"Maintainers" in [`CONTRIBUTORS`](CONTRIBUTORS)).
 
-When using, modifying, or redistributing this software, you must comply with
-both licenses as they apply to the respective portions of the code.
+When using, modifying, or redistributing this software, you must comply
+with both licenses as they apply to the respective portions of the code,
+as determined by the File Level Licensing Rules below.
 
 ----------------------------------------------------------------------
 File Level Licensing Rules
@@ -18,42 +21,64 @@ File Level Licensing Rules
 
 1. New files created for misuka
    All files authored specifically for misuka and not derived from Mitsuba
-   code are licensed under the GNU Lesser General Public License (LGPL),
-   version 3 or any later version.
+   code (for example, the acoustic BSDF, integrator, sensor, and film
+   plugins, and the acoustic Python AD integrators) are licensed under the
+   PolyForm Noncommercial License 1.0.0. Such a file is one with no
+   counterpart in the upstream Mitsuba 3 repository
+   (https://github.com/mitsuba-renderer/mitsuba3).
+
+   Such files should carry an SPDX-style header as the first non-shebang
+   line of the file:
+
+       SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
+   Fallback for files without a header: absence of this header does NOT
+   change the license of a misuka-authored file, as defined above.
 
 2. Files originating from Mitsuba 3
    Files that come from the Mitsuba 3 codebase remain under the original
    Mitsuba 3 license.
 
 3. Modified Mitsuba files
-   For files derived from Mitsuba code that contain modifications by misuka
-   contributors:
-   - The original Mitsuba portions remain under the original Mitsuba license.
-   - Any modifications licensed under the LGPL must be clearly marked in the
-     file header.
-   - If no such note is present, the entire file remains under the original
-     Mitsuba license.
-
+   For files derived from Mitsuba code that contain modifications by
+   misuka contributors:
+   - The original Mitsuba portions remain under the original Mitsuba
+     license.
+   - Any modifications the contributor wishes to license under PolyForm
+     Noncommercial 1.0.0 must be clearly marked in the file header.
+   - If no such note is present, the entire file remains under the
+     original Mitsuba (BSD) license.
 
 ----------------------------------------------------------------------
-Code for misuka (LGPL)
+Code for misuka (PolyForm Noncommercial 1.0.0)
 ----------------------------------------------------------------------
 
-Copyright (c) 2025 The misuka contributors
+Copyright (c) 2025-2026 the misuka maintainers
 
-All modifications and additions to this software made for Misuka are licensed
-under the terms of the GNU Lesser General Public License (LGPL), version 3 or
-(at your option) any later version.
+All modifications and additions to this software made for misuka are
+licensed under the terms of the PolyForm Noncommercial License 1.0.0.
 
-You may obtain a copy of the LGPL at:
-https://www.gnu.org/licenses/lgpl-3.0.html
+You may obtain a copy of the PolyForm Noncommercial License 1.0.0 at:
+https://polyformproject.org/licenses/noncommercial/1.0.0
 
-This means:
-- You may use and redistribute this code under the terms of the LGPL.
-- You must make source code available for any changes to LGPL-covered parts.
-- You may link this library with proprietary software under the conditions
-  specified in the LGPL.
+Licensor: the misuka maintainers
+Software: misuka (the acoustic BSDF, integrator, sensor, and film plugins,
+the acoustic Python AD integrators, and other misuka-specific additions to
+Mitsuba 3, as identified under the "File Level Licensing Rules" above)
+Required Notice: Copyright (c) 2025-2026 the misuka maintainers
+(https://github.com/misuka-renderer/misuka)
 
+This means, in summary (see the link above for the binding text):
+- Any noncommercial purpose is permitted: personal use, research,
+  education, and use by charitable, educational, public-research, public
+  safety/health, environmental, or government institutions.
+- Commercial use is not permitted under this license and requires a
+  separate agreement with the misuka maintainers.
+- You must pass along a copy of these terms (or the URL for them) and the
+  Required Notice above to anyone who receives a copy of the software from
+  you.
+- The software is provided as is, without warranty, to the extent allowed
+  by law.
 
 ----------------------------------------------------------------------
 Original Code from Mitsuba 3

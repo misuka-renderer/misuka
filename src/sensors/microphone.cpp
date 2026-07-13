@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Plot acoustic energy-time curves (ETCs).
 
 The acoustic integrator tests (``test_acoustic_path.py``,

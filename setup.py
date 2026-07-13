@@ -45,7 +45,7 @@ setup(
     author_email="wenzel.jakob@epfl.ch",
     description="3: A Retargetable Forward and Inverse Renderer",
     url="https://github.com/mitsuba-renderer/mitsuba3",
-    license="BSD",
+    license="PolyForm-Noncommercial-1.0.0 AND BSD-3-Clause",
     long_description=long_description,
     long_description_content_type='text/markdown',
     cmake_args=[
