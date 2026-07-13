@@ -43,29 +43,29 @@ void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
         shape[2] = data.ndim() == 3 ? data.shape(2) : 1;
 
         auto dtype = data.dtype();
-        Struct::Type component_format;
+        sj::Type component_format;
         if (dtype == nb::dtype<fp16>())
-            component_format = Struct::Type::Float16;
+            component_format = sj::Type::Float16;
         else if (dtype == nb::dtype<float>())
-            component_format = Struct::Type::Float32;
+            component_format = sj::Type::Float32;
         else if (dtype == nb::dtype<double>())
-            component_format = Struct::Type::Float64;
+            component_format = sj::Type::Float64;
         else if (dtype == nb::dtype<int8_t>())
-            component_format = Struct::Type::Int8;
+            component_format = sj::Type::Int8;
         else if (dtype == nb::dtype<uint8_t>())
-            component_format = Struct::Type::UInt8;
+            component_format = sj::Type::UInt8;
         else if (dtype == nb::dtype<int16_t>())
-            component_format = Struct::Type::Int16;
+            component_format = sj::Type::Int16;
         else if (dtype == nb::dtype<uint16_t>())
-            component_format = Struct::Type::UInt16;
+            component_format = sj::Type::UInt16;
         else if (dtype == nb::dtype<int32_t>())
-            component_format = Struct::Type::Int32;
+            component_format = sj::Type::Int32;
         else if (dtype == nb::dtype<uint32_t>())
-            component_format = Struct::Type::UInt32;
+            component_format = sj::Type::UInt32;
         else if (dtype == nb::dtype<int64_t>())
-            component_format = Struct::Type::Int64;
+            component_format = sj::Type::Int64;
         else if (dtype == nb::dtype<uint64_t>())
-            component_format = Struct::Type::UInt64;
+            component_format = sj::Type::UInt64;
         else
             throw nb::type_error("Invalid component format");
 
@@ -98,6 +98,35 @@ void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
                        channel_names);
 
         memcpy(b->data(), data.data(), b->buffer_size());
+}
+
+char *base64_encode(char * MI_RESTRICT p, const uint8_t * MI_RESTRICT src, size_t size) {
+    const char *map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const size_t triplets = size / 3, remain = size - triplets * 3;
+
+    for (size_t i = 0; i < triplets; ++i) {
+        uint8_t c0 = src[0], c1 = src[1], c2 = src[2];
+        *p++ = map[c0 >> 2];
+        *p++ = map[((c0 & 0x3) << 4) + (c1 >> 4)];
+        *p++ = map[((c1 & 0xf) << 2) + (c2 >> 6)];
+        *p++ = map[c2 & 0x3f];
+        src += 3;
+    }
+
+    if (remain) {
+        uint8_t c0 = src[0];
+        *p++ = map[c0 >> 2];
+        if(remain == 1) {
+            *p++ = map[(c0 & 0x3) << 4];
+            *p++ = '=';
+        } else {
+            uint8_t c1 = src[1];
+            *p++ = map[((c0 & 0x3) << 4) + (c1 >> 4)];
+            *p++ = map[(c1 & 0xf) << 2];
+        }
+        *p++ = '=';
+    }
+    return p;
 }
 
 MI_PY_EXPORT(Bitmap) {
@@ -139,7 +168,7 @@ MI_PY_EXPORT(Bitmap) {
                 D(Bitmap, AlphaTransform, Unpremultiply));
 
     bitmap
-        .def(nb::init<Bitmap::PixelFormat, Struct::Type, const Vector2u &, size_t, std::vector<std::string>>(),
+        .def(nb::init<Bitmap::PixelFormat, sj::Type, const Vector2u &, size_t, std::vector<std::string>>(),
              "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, "channel_names"_a = std::vector<std::string>(),
              D(Bitmap, Bitmap))
         .def(nb::init<const Bitmap &>())
@@ -158,10 +187,9 @@ MI_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, premultiplied_alpha)
         .def_method(Bitmap, set_premultiplied_alpha)
         .def_method(Bitmap, clear)
-        .def("metadata", [](const Bitmap& b) {
-                return PropertiesV<Float>(b.metadata());
-            }, D(Bitmap, metadata), 
-            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"))
+        .def("metadata", [](Bitmap& b) -> Properties& { return b.metadata(); }, D(Bitmap, metadata),
+            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"),
+            nb::rv_policy::reference_internal)
         .def("resample", nb::overload_cast<Bitmap *, const ReconstructionFilter *,
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<ScalarFloat, ScalarFloat> &, Bitmap *>(&Bitmap::resample, nb::const_),
@@ -189,9 +217,9 @@ MI_PY_EXPORT(Bitmap) {
                    Bitmap::PixelFormat pixel_format = b.pixel_format();
                    if (!pf.is(nb::none()))
                        pixel_format = nb::cast<Bitmap::PixelFormat>(pf);
-                   Struct::Type component_format = b.component_format();
+                   sj::Type component_format = b.component_format();
                    if (!cf.is(nb::none()))
-                       component_format = nb::cast<Struct::Type>(cf);
+                       component_format = nb::cast<sj::Type>(cf);
                    bool srgb_gamma = b.srgb_gamma();
                    if (!srgb.is(nb::none()))
                        srgb_gamma = nb::cast<bool>(srgb);
@@ -221,6 +249,7 @@ MI_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, vflip)
         .def("struct_",
              nb::overload_cast<>(&Bitmap::struct_, nb::const_),
+             nb::rv_policy::reference_internal,
              D(Bitmap, struct))
         .def(nb::self == nb::self)
         .def(nb::self != nb::self);
@@ -268,40 +297,40 @@ MI_PY_EXPORT(Bitmap) {
         .def(
             "__dlpack__",
             [](Bitmap &bitmap, nb::object /*stream*/) {
-                Struct::Type component_format = bitmap.component_format();
+                sj::Type component_format = bitmap.component_format();
                 nb::dlpack::dtype dtype;
                 switch (component_format) {
-                    case Struct::Type::UInt8:
+                    case sj::Type::UInt8:
                         dtype = nb::dtype<uint8_t>();
                         break;
-                    case Struct::Type::UInt16:
+                    case sj::Type::UInt16:
                         dtype = nb::dtype<uint16_t>();
                         break;
-                    case Struct::Type::UInt32:
+                    case sj::Type::UInt32:
                         dtype = nb::dtype<uint32_t>();
                         break;
-                    case Struct::Type::UInt64:
+                    case sj::Type::UInt64:
                         dtype = nb::dtype<uint64_t>();
                         break;
-                    case Struct::Type::Int8:
+                    case sj::Type::Int8:
                         dtype = nb::dtype<int8_t>();
                         break;
-                    case Struct::Type::Int16:
+                    case sj::Type::Int16:
                         dtype = nb::dtype<int16_t>();
                         break;
-                    case Struct::Type::Int32:
+                    case sj::Type::Int32:
                         dtype = nb::dtype<int32_t>();
                         break;
-                    case Struct::Type::Int64:
+                    case sj::Type::Int64:
                         dtype = nb::dtype<int64_t>();
                         break;
-                    case Struct::Type::Float16:
+                    case sj::Type::Float16:
                         dtype = nb::dtype<fp16>();
                         break;
-                    case Struct::Type::Float32:
+                    case sj::Type::Float32:
                         dtype = nb::dtype<float>();
                         break;
-                    case Struct::Type::Float64:
+                    case sj::Type::Float64:
                         dtype = nb::dtype<double>();
                         break;
                     default:
@@ -325,9 +354,9 @@ MI_PY_EXPORT(Bitmap) {
             },
             "Interface for the DLPack protocol.")
         .def_prop_ro("__array_interface__", [](Bitmap &bitmap) -> nb::object {
-            if (bitmap.struct_()->size() == 0)
+            if (bitmap.struct_().size() == 0)
                 return nb::none();
-            auto field = bitmap.struct_()->operator[](0);
+            auto field = bitmap.struct_()[0];
             nb::dict result;
 
             if (bitmap.channel_count() == 1)
@@ -343,18 +372,18 @@ MI_PY_EXPORT(Bitmap) {
                 code[0] = '>';
             #endif
 
-            if (field.is_integer()) {
-                if (field.is_signed())
+            if (sj::type_is_integer(field.type)) {
+                if (sj::type_is_signed(field.type))
                     code[1] = 'i';
                 else
                     code[1] = 'u';
-            } else if (field.is_float()) {
+            } else if (sj::type_is_float(field.type)) {
                 code[1] = 'f';
             } else {
                 Throw("Internal error: unknown component type!");
             }
 
-            code[2] = (char) ('0' + field.size);
+            code[2] = (char) ('0' + sj::type_size(field.type));
             #if PY_MAJOR_VERSION > 3
                 result["typestr"] = code;
             #else
@@ -403,29 +432,34 @@ MI_PY_EXPORT(Bitmap) {
         "Initialize a Bitmap from any array that implements the buffer or "
         "DLPack protocol.");
 
-    bitmap.def("_repr_html_", [](const Bitmap &_bitmap) -> nb::object {
-        if (_bitmap.pixel_format() == Bitmap::PixelFormat::MultiChannel)
+    bitmap.def("_repr_html_", [](const Bitmap *b) -> nb::object {
+        if (b->pixel_format() == Bitmap::PixelFormat::MultiChannel)
             return nb::none();
 
-        ref<Bitmap> bitmap = _bitmap.convert(Bitmap::PixelFormat::RGB,
-                                             Struct::Type::UInt16, true);
+        ref<const Bitmap> bitmap = b;
+
+        if (bitmap->pixel_format() != Bitmap::PixelFormat::RGB ||
+            bitmap->component_format() != sj::Type::UInt8)
+            bitmap = bitmap->convert(Bitmap::PixelFormat::RGB,
+                                     sj::Type::UInt8, true);
+
         ref<MemoryStream> s = new MemoryStream(bitmap->buffer_size());
-        bitmap->write(s, Bitmap::FileFormat::PNG);
-        s->seek(0);
-        std::unique_ptr<char> tmp(new char[s->size()]);
-        s->read((void *) tmp.get(), s->size());
+        bitmap->write(s, Bitmap::FileFormat::JPEG, 99);
 
-        auto base64 = nb::module_::import_("base64");
-        auto bytes = base64.attr("b64encode")(nb::bytes(tmp.get(), s->size()));
-        std::stringstream s_bytes;
-        s_bytes << nb::str(bytes).c_str();
+        const char *prefix = "<img src=\"data:image/jpeg;base64, ",
+                   *suffix = "\">";
 
-        std::stringstream out;
-        out << "<img src=\"data:image/png;base64, ";
-        out << s_bytes.str().substr(2, s_bytes.str().size() - 3) << "\"";
-        out << "width=\"250vm\"";
-        out << " />";
+        size_t prefix_size = strlen(prefix),
+               suffix_size = strlen(suffix);
 
-        return nb::str(out.str().c_str());
+        std::unique_ptr<char[]> result(
+            new char[((s->size() + 2) / 3) * 4 + prefix_size + suffix_size]);
+
+        char *p = result.get();
+        memcpy(p, prefix, prefix_size); p += prefix_size;
+        p = base64_encode(p, s->raw_buffer(), s->size());
+        memcpy(p, suffix, suffix_size); p += suffix_size;
+
+        return nb::str(result.get(), p - result.get());
     });
 }

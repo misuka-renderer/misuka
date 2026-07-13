@@ -3,16 +3,17 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
-#include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/xml.h>
+#include <mitsuba/core/parser.h>
+#include <nanothread/nanothread.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <functional>
 
 #if !defined(_WIN32)
 #  include <signal.h>
@@ -21,6 +22,36 @@
 #endif
 
 using namespace mitsuba;
+
+/// Initialize the JIT backend a variant requires; return whether it is
+/// available. Scalar variants need no backend and always succeed.
+static bool init_variant_backend(std::string_view variant) {
+    if (string::starts_with(variant, "scalar_"))
+        return true;
+
+#if defined(MI_ENABLE_CUDA)
+    if (string::starts_with(variant, "cuda_")) {
+        jit_init(1u << (uint32_t) JitBackend::CUDA);
+        return jit_has_backend(JitBackend::CUDA);
+    }
+#endif
+
+#if defined(MI_ENABLE_LLVM)
+    if (string::starts_with(variant, "llvm_")) {
+        jit_init(1u << (uint32_t) JitBackend::LLVM);
+        return jit_has_backend(JitBackend::LLVM);
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    if (string::starts_with(variant, "metal_")) {
+        jit_init(1u << (uint32_t) JitBackend::Metal);
+        return jit_has_backend(JitBackend::Metal);
+    }
+#endif
+
+    return false;
+}
 
 static void help(int thread_count) {
     std::cout << util::info_build(thread_count) << std::endl;
@@ -37,7 +68,8 @@ Options:
     -m, --mode
         Request a specific mode/variant of the renderer
 
-        Default: )" MI_DEFAULT_VARIANT R"(
+        Default: the most capable variant whose backend is available at
+        runtime (preferring an RGB color representation).
 
         Available:
               )" << string::indent(MI_VARIANTS, 14) << R"(
@@ -54,10 +86,6 @@ Options:
     -s <index>, --sensor <index>
         Index of the sensor to render with (following the declaration order
         in the scene file). Default value: 0.
-
-    -u, --update
-        When specified, Mitsuba will update the scene's XML description
-        to the latest version.
 
     -a <path1>;<path2>;.., --append <path1>;<path2>
         Add one or more entries to the resource search path.
@@ -91,8 +119,11 @@ Options:
 )";
 }
 
-std::function<void(void)> develop_callback;
-std::mutex develop_callback_mutex;
+static std::function<void()> develop_callback_fn = nullptr;
+static void develop_callback() {
+    if (develop_callback_fn)
+        develop_callback_fn();
+}
 
 template <typename Float, typename Spectrum>
 void scene_static_accel_initialization() {
@@ -119,10 +150,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene);
 
-    /* critical section */ {
-        std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = [&]() { film->write(filename); };
-    }
+    develop_callback_fn = [film]() { film->develop(); };
 
     integrator->render(scene, (uint32_t) sensor_i,
                        0 /* seed */,
@@ -130,10 +158,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
                        false /* develop */,
                        true /* evaluate */);
 
-    /* critical section */ {
-        std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = nullptr;
-    }
+    develop_callback_fn = nullptr;
 
     film->write(filename);
 }
@@ -143,21 +168,14 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
 void hup_signal_handler(int signal) {
     if (signal != SIGHUP)
         return;
-    std::lock_guard<std::mutex> guard(develop_callback_mutex);
-    if (develop_callback)
-        develop_callback();
+    develop_callback();
 }
 #endif
 
 int main(int argc, char *argv[]) {
-    Jit::static_initialization();
-    Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
-
-    // Ensure that the mitsuba-render shared library is loaded
-    librender_nop();
 
     ArgParser parser;
     using StringVec    = std::vector<std::string>;
@@ -166,7 +184,6 @@ int main(int argc, char *argv[]) {
     auto arg_define    = parser.add(StringVec{ "-D", "--define" }, true);
     auto arg_sensor_i  = parser.add(StringVec{ "-s", "--sensor" }, true);
     auto arg_output    = parser.add(StringVec{ "-o", "--output" }, true);
-    auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
@@ -178,7 +195,7 @@ int main(int argc, char *argv[]) {
     auto arg_source    = parser.add(StringVec{ "-S" });
     auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
 
-    xml::ParameterList params;
+    parser::ParameterList params;
     std::string error_msg, mode;
 
 #if !defined(_WIN32)
@@ -216,7 +233,7 @@ int main(int argc, char *argv[]) {
 
         logger->set_log_level(log_level_mitsuba[std::min(log_level, 2)]);
 
-#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
+#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_METAL)
         ::LogLevel log_level_drjit[] = {
             ::LogLevel::Error,
             ::LogLevel::Warn,
@@ -229,7 +246,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         // Initialize nanothread with the requested number of threads
-        size_t thread_count = Thread::thread_count();
+        uint32_t thread_count = pool_size() + 1;
         if (*arg_threads) {
             thread_count = arg_threads->as_int();
             if (thread_count < 1) {
@@ -238,32 +255,38 @@ int main(int argc, char *argv[]) {
                 thread_count = 1;
             }
         }
-        Thread::set_thread_count(thread_count);
+        pool_set_size(nullptr, thread_count - 1);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
             auto sep = value.find('=');
             if (sep == std::string::npos)
                 Throw("-D/--define: expect key=value pair!");
-            params.emplace_back(value.substr(0, sep), value.substr(sep+1), false);
+            params.emplace_back(value.substr(0, sep), value.substr(sep+1));
             arg_define = arg_define->next();
         }
-        mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
-        bool cuda = string::starts_with(mode, "cuda_");
-        bool llvm = string::starts_with(mode, "llvm_");
+        if (*arg_mode) {
+            mode = arg_mode->as_string();
+            init_variant_backend(mode);
+        } else if (*arg_extra && !*arg_help) {
+            // Pick the most capable variant whose backend is available
+            for (const std::string &v : string::tokenize(MI_VARIANT_PRIORITY, "\n")) {
+                if (init_variant_backend(v)) {
+                    mode = v;
+                    break;
+                }
+            }
+        } else {
+            mode = "scalar_rgb";
+        }
 
-#if defined(MI_ENABLE_CUDA)
-        if (cuda)
-            jit_init((uint32_t) JitBackend::CUDA);
-#endif
+        bool cuda  = string::starts_with(mode, "cuda_");
+        bool llvm  = string::starts_with(mode, "llvm_");
+        bool metal = string::starts_with(mode, "metal_");
+        bool jit   = cuda || llvm || metal;
 
-#if defined(MI_ENABLE_LLVM)
-        if (llvm)
-            jit_init((uint32_t) JitBackend::LLVM);
-#endif
-
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (cuda || llvm) {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
+        if (jit) {
             if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
                 jit_set_flag(JitFlag::VCallDeduplicate, lev > 0);
@@ -301,12 +324,12 @@ int main(int argc, char *argv[]) {
         DRJIT_MARK_USED(arg_source);
 #endif
 
-        if (!cuda && !llvm &&
+        if (!jit &&
             (*arg_optim_lev || *arg_wavefront || *arg_source || *arg_vec_width))
-            Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA) mode!");
+            Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA/Metal) mode!");
 
         Profiler::static_initialization();
-        color_management_static_initialization(cuda, llvm);
+        color_management_static_initialization(cuda, llvm, metal);
 
         MI_INVOKE_VARIANT(mode, scene_static_accel_initialization);
 
@@ -314,7 +337,7 @@ int main(int argc, char *argv[]) {
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
-        ref<FileResolver> fr = thread->file_resolver();
+        ref<FileResolver> fr = file_resolver();
         fs::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
             fr->append(base_path);
@@ -329,21 +352,24 @@ int main(int argc, char *argv[]) {
         }
 
         if (!*arg_extra || *arg_help) {
-            help((int) Thread::thread_count());
+            help(pool_size() + 1);
         } else {
-            Log(Info, "%s", util::info_build((int) Thread::thread_count()));
+            Log(Info, "%s", util::info_build(pool_size() + 1));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
+            Log(Info, "Rendering using the \"%s\" variant.", mode);
 
 #if !defined(NDEBUG)
             Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
 #endif
         }
 
+        parser::ParserConfig config(mode);
+
         while (arg_extra && *arg_extra) {
             fs::path filename(arg_extra->as_string());
             ref<FileResolver> fr2 = new FileResolver(*fr);
-            thread->set_file_resolver(fr2);
+            set_file_resolver(fr2);
 
             // Add the scene file's directory to the search path.
             fs::path scene_dir = filename.parent_path();
@@ -351,18 +377,24 @@ int main(int argc, char *argv[]) {
                 fr2->append(scene_dir);
 
             if (*arg_output)
-                filename = arg_output->as_string();
+                filename = fs::path(arg_output->as_string());
 
-            // Try and parse a scene from the passed file.
-            std::vector<ref<Object>> parsed =
-                xml::load_file(arg_extra->as_string(), mode, params,
-                               *arg_update, true);
+            // Parse the XML file
+            parser::ParserState state = parser::parse_file(
+                config, arg_extra->as_string(), params);
 
-            if (parsed.size() != 1)
+            // Resolve references an optimize the scene representation
+            parser::transform_all(config, state);
+
+            // Instantiate scene objects in parallel
+            std::vector<ref<Object>> objects =
+                parser::instantiate(config, state);
+
+            if (objects.size() != 1)
                 Throw("Root element of the input file is expanded into "
                       "multiple objects, only a single object is expected!");
 
-            MI_INVOKE_VARIANT(mode, render, parsed[0].get(), sensor_i, filename);
+            MI_INVOKE_VARIANT(mode, render, objects[0].get(), sensor_i, filename);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
@@ -372,16 +404,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (!error_msg.empty()) {
-        /* Strip zero-width spaces from the message (Mitsuba uses these
-           to properly format chains of multiple exceptions) */
-        const std::string zerowidth_space = "\xe2\x80\x8b";
-        while (true) {
-            auto it = error_msg.find(zerowidth_space);
-            if (it == std::string::npos)
-                break;
-            error_msg = error_msg.substr(0, it) + error_msg.substr(it + 3);
-        }
-
 #if defined(_WIN32)
         HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_SCREEN_BUFFER_INFO console_info;
@@ -402,25 +424,24 @@ int main(int argc, char *argv[]) {
     color_management_static_shutdown();
     Profiler::static_shutdown();
     Bitmap::static_shutdown();
-    StructConverter::static_shutdown();
+    struct_jit::clear_cache();
     Logger::static_shutdown();
     Thread::static_shutdown();
-    Class::static_shutdown();
-    Jit::static_shutdown();
 
 
 #if defined(MI_ENABLE_CUDA)
-    if (string::starts_with(mode, "cuda_")) {
-        printf("%s\n", jit_var_whos());
+    if (string::starts_with(mode, "cuda_"))
         jit_shutdown();
-    }
 #endif
 
 #if defined(MI_ENABLE_LLVM)
-    if (string::starts_with(mode, "llvm_")) {
-        printf("%s\n", jit_var_whos());
+    if (string::starts_with(mode, "llvm_"))
         jit_shutdown();
-    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    if (string::starts_with(mode, "metal_"))
+        jit_shutdown();
 #endif
 
     return error_msg.empty() ? 0 : -1;

@@ -77,71 +77,63 @@ public:
 
 public:
     RegularSpectrum(const Properties &props) : Texture(props) {
-        // Check if both wavelength and frequency parameters are provided
-        bool has_wavelength = props.has_property("wavelength_min") || props.has_property("wavelength_max");
-        bool has_frequency = props.has_property("frequency_min") || props.has_property("frequency_max");
-        
-        if (has_wavelength && has_frequency) {
-            Throw("RegularSpectrum: Only one of wavelength or frequency parameters should be specified. "
-                  "Use frequency parameters for acoustic rendering.");
-        }
-        
-        if (!has_wavelength && !has_frequency) {
-            Throw("RegularSpectrum: Either wavelength parameters (wavelength_min/wavelength_max) or "
-                  "frequency parameters (frequency_min/frequency_max) must be specified.");
-        }
-        
-        ScalarVector2f wavelength_range;
-        if (has_frequency) {
-            // Use frequency nodes as wavelengths (semantically unclean but intended)
-            wavelength_range = ScalarVector2f(
-                props.get<ScalarFloat>("frequency_min"),
-                props.get<ScalarFloat>("frequency_max")
-            );
+        if (props.has_property("value")) {
+            const Properties::Spectrum *spec = props.try_get<Properties::Spectrum>("value");
+            if (!spec)
+                Throw("Failed to retrieve 'value' property as Properties::Spectrum");
+
+            if (!spec->is_regular())
+                Throw("RegularSpectrum requires regularly spaced wavelengths");
+
+            init(*spec);
         } else {
-            wavelength_range = ScalarVector2f(
-                props.get<ScalarFloat>("wavelength_min"),
-                props.get<ScalarFloat>("wavelength_max")
-            );
-        }
+            /* misuka: 'frequency_min'/'frequency_max' (in Hz) may be given as
+               an alternative to 'wavelength_min'/'wavelength_max' for acoustic
+               rendering. The frequencies are stored in the wavelength slots
+               (semantically unclean but intended). */
+            bool has_wavelength = props.has_property("wavelength_min") || props.has_property("wavelength_max");
+            bool has_frequency  = props.has_property("frequency_min")  || props.has_property("frequency_max");
 
-        if (props.type("values") == Properties::Type::String) {
-            std::vector<std::string> values_str =
-                string::tokenize(props.string("values"), " ,");
-            std::vector<ScalarFloat> data;
-            data.reserve(values_str.size());
-
-            for (const auto &s : values_str) {
-                try {
-                    data.push_back(string::stof<ScalarFloat>(s));
-                } catch (...) {
-                    Throw("Could not parse floating point value '%s'", s);
-                }
+            if (has_wavelength && has_frequency) {
+                Throw("RegularSpectrum: Only one of wavelength or frequency parameters should be specified. "
+                      "Use frequency parameters for acoustic rendering.");
             }
 
-            m_distr = ContinuousDistribution<Wavelength>(
-                wavelength_range, data.data(), data.size()
-            );
-        } else {
-            // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            size_t size = props.get<size_t>("size");
-            const double *ptr = static_cast<const double*>(props.pointer("values"));
-
-            if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = ContinuousDistribution<Wavelength>(wavelength_range, ptr, size);
-            } else {
-                std::vector<ScalarFloat> values(size);
-                for (size_t i=0; i < size; ++i)
-                    values[i] = (ScalarFloat) ptr[i];
-                m_distr = ContinuousDistribution<Wavelength>(
-                    wavelength_range, values.data(), size);
+            if (!has_wavelength && !has_frequency) {
+                Throw("RegularSpectrum: Either wavelength parameters (wavelength_min/wavelength_max) or "
+                      "frequency parameters (frequency_min/frequency_max) must be specified.");
             }
+
+            Properties::Spectrum spec(
+                props.get<std::string_view>("values"),
+                props.get<double>(has_frequency ? "frequency_min" : "wavelength_min"),
+                props.get<double>(has_frequency ? "frequency_max" : "wavelength_max")
+            );
+            init(spec);
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("range",  m_distr.range(), +ParamFlags::NonDifferentiable);
-        callback->put_parameter("values", m_distr.pdf(),   +ParamFlags::Differentiable);
+    void init(const Properties::Spectrum &spec) {
+        ScalarVector2d range(
+            spec.wavelengths.front(),
+            spec.wavelengths.back()
+        );
+
+        if constexpr (std::is_same_v<ScalarFloat, double>) {
+            m_distr = ContinuousDistribution<Wavelength>(
+                range, spec.values.data(), spec.values.size());
+        } else {
+            std::vector<ScalarFloat> values(spec.values.size());
+            for (size_t i = 0; i < spec.values.size(); ++i)
+                values[i] = (ScalarFloat) spec.values[i];
+            m_distr = ContinuousDistribution<Wavelength>(
+                ScalarVector2f(range), values.data(), values.size());
+        }
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        cb->put("range", m_distr.range(), ParamFlags::NonDifferentiable);
+        cb->put("values", m_distr.pdf(), ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
@@ -204,11 +196,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RegularSpectrum)
 private:
     ContinuousDistribution<Wavelength> m_distr;
+
+    MI_TRAVERSE_CB(Texture, m_distr)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RegularSpectrum, Texture)
-MI_EXPORT_PLUGIN(RegularSpectrum, "Regular interpolated spectrum")
+MI_EXPORT_PLUGIN(RegularSpectrum)
 NAMESPACE_END(mitsuba)

@@ -264,7 +264,7 @@ def test10_test_scene_bbox_update(variant_scalar_rgb):
     assert expected == scene.bbox()
 
 
-def test11_sample_silhouette_bijective(variants_vec_rgb):
+def test11_sample_silhouette_bijective(variants_all_ad_rgb):
     scene = mi.load_dict({
         'type': 'scene',
         'sphere' : {
@@ -317,7 +317,7 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
 
 
-def test_enable_embree_robust_flag(variants_any_llvm):
+def test12_enable_embree_robust_flag(variants_any_llvm):
 
     # We intersect rays against two adjacent triangles. The rays hit exactly
     # the edge between two triangles, which Embree will not count as an
@@ -344,3 +344,62 @@ def test_enable_embree_robust_flag(variants_any_llvm):
     scene = mi.load_dict({'type': 'scene', 'mesh': mesh,
                           'embree_use_robust_intersections': True})
     assert dr.all(scene.ray_intersect(ray).is_valid())
+
+
+@fresolver_append_path
+def test13_mitsuba_object_multiple_python_repr(variants_vec_rgb):
+    """Tests that a Object* can be accesed throught multiple Python objects of
+    different types."""
+
+    scene = mi.load_dict({
+        "type" : "scene",
+        "box" :  {
+            "type" : "obj",
+            "filename" : "resources/data/tests/obj/cbox_smallbox.obj"
+        },
+    })
+
+    box_as_shape = scene.shapes_dr()[0]
+    box_as_mesh = scene.shapes()[0]
+
+    assert type(box_as_mesh) == mi.Mesh
+    assert type(box_as_shape) == mi.Shape
+
+
+def test14_many_top_level_analytic_shapes(variants_vec_backends_once_rgb):
+    """Many same-kind top-level analytic shapes are grouped into a single
+    bottom-level acceleration structure on the GPU backends, yet each must be
+    recovered individually: ``si.shape`` for a ray hitting shape ``i`` must be
+    exactly ``scene.shapes()[i]``."""
+    from mitsuba import ScalarTransform4f as T
+
+    n = 8
+    d = {'type': 'scene'}
+    # Two interleaved kinds (spheres + disks) so the top level builds more than
+    # one per-kind BLAS; each shape sits at a distinct x so a +z ray isolates it.
+    for i in range(n):
+        x = float(i) - n / 2
+        if i % 2 == 0:
+            d[f'shape_{i}'] = {'type': 'sphere', 'radius': 0.3,
+                               'to_world': T().translate([x, 0, 0])}
+        else:
+            d[f'shape_{i}'] = {'type': 'disk',
+                               'to_world': T().translate([x, 0, 0]) @ T().scale(0.3)}
+    scene = mi.load_dict(d)
+    shapes = scene.shapes()
+    assert len(shapes) == n
+
+    cx = dr.arange(mi.Float, n) - n / 2
+    ray = mi.Ray3f(o=mi.Point3f(cx, 0, -10), d=mi.Vector3f(0, 0, 1),
+                   time=0.0, wavelengths=[])
+    si = scene.ray_intersect(ray)
+
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p.x, cx, atol=1e-3)
+    # Top-level hits carry no instance.
+    assert dr.all(si.instance == dr.zeros(mi.ShapePtr))
+    # The hit shape recovered for ray i must be exactly the i-th scene shape.
+    for i in range(n):
+        got = dr.gather(mi.ShapePtr, si.shape, mi.UInt32(i))
+        assert dr.all(got == shapes[i])
+

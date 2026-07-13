@@ -1,12 +1,13 @@
 #pragma once
 
 #include <mitsuba/core/fwd.h>
-// #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/config.h>
 #include <mitsuba/core/traits.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 struct BSDFContext;
+struct ShapeIR;
 template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
@@ -44,13 +45,53 @@ template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Shape>    struct PreliminaryIntersection;
 
+/// Shape type bit flags driving GPU intersection-function dispatch.
+enum class ShapeType : uint32_t {
+    /// Meshes (`ply`, `obj`, `serialized`)
+    Mesh = 1u << 0,
+
+    /// Rectangle: a particular type of mesh
+    Rectangle = Mesh | (1u << 1), // Tagged with an extra bit
+
+    /// B-Spline curves (`bsplinecurve`)
+    BSplineCurve = 1u << 2,
+
+    /// Linear curves (`linearcurve`)
+    LinearCurve = 1u << 3,
+
+    /// Cylinders (`cylinder`)
+    Cylinder = 1u << 4,
+
+    /// Disks (`disk`)
+    Disk = 1u << 5,
+
+    /// SDF Grids (`sdfgrid`)
+    SDFGrid = 1u << 6,
+
+    /// Spheres (`sphere`)
+    Sphere = 1u << 7,
+
+    /// Ellipsoids (`ellipsoids`)
+    Ellipsoids = 1u << 8,
+
+    /// Ellipsoid meshes (`ellipsoidsmesh`)
+    EllipsoidsMesh = Mesh | (1u << 9), // Tagged with an extra bit
+
+    /// Instance (`instance`)
+    Instance = 1u << 10,
+
+    /// ShapeGroup (`shapegroup`)
+    ShapeGroup = 1u << 11,
+
+    /// Invalid for default initialization
+    Invalid = 0
+};
+
+MI_DECLARE_ENUM_OPERATORS(ShapeType)
+
 template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float                     = Float_;
     using Spectrum                  = Spectrum_;
-
-    /// Strip away any masking-related wrappers from 'Float' and 'Spectrum'
-    using FloatU                 = underlying_t<Float>;
-    using SpectrumU              = underlying_t<Spectrum>;
 
     using Wavelength                = wavelength_t<Spectrum>;
     using UnpolarizedSpectrum       = unpolarized_spectrum_t<Spectrum>;
@@ -69,35 +110,35 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Interaction3f             = Interaction<Float, Spectrum>;
     using MediumInteraction3f       = MediumInteraction<Float, Spectrum>;
     using SurfaceInteraction3f      = SurfaceInteraction<Float, Spectrum>;
-    using PreliminaryIntersection3f = PreliminaryIntersection<Float, mitsuba::Shape<FloatU, SpectrumU>>;
+    using PreliminaryIntersection3f = PreliminaryIntersection<Float, mitsuba::Shape<Float, Spectrum>>;
 
-    using Scene                  = mitsuba::Scene<FloatU, SpectrumU>;
-    using Sampler                = mitsuba::Sampler<FloatU, SpectrumU>;
-    using MicrofacetDistribution = mitsuba::MicrofacetDistribution<FloatU, SpectrumU>;
-    using Shape                  = mitsuba::Shape<FloatU, SpectrumU>;
-    using ShapeGroup             = mitsuba::ShapeGroup<FloatU, SpectrumU>;
-    using ShapeKDTree            = mitsuba::ShapeKDTree<FloatU, SpectrumU>;
-    using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
-    using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;
-    using SamplingIntegrator     = mitsuba::SamplingIntegrator<FloatU, SpectrumU>;
-    using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<FloatU, SpectrumU>;
-    using AdjointIntegrator      = mitsuba::AdjointIntegrator<FloatU, SpectrumU>;
-    using BSDF                   = mitsuba::BSDF<FloatU, SpectrumU>;
-    using OptixDenoiser          = mitsuba::OptixDenoiser<FloatU, SpectrumU>;
-    using Sensor                 = mitsuba::Sensor<FloatU, SpectrumU>;
-    using ProjectiveCamera       = mitsuba::ProjectiveCamera<FloatU, SpectrumU>;
-    using Emitter                = mitsuba::Emitter<FloatU, SpectrumU>;
-    using Endpoint               = mitsuba::Endpoint<FloatU, SpectrumU>;
-    using Medium                 = mitsuba::Medium<FloatU, SpectrumU>;
-    using PhaseFunction          = mitsuba::PhaseFunction<FloatU, SpectrumU>;
-    using Film                   = mitsuba::Film<FloatU, SpectrumU>;
-    using ImageBlock             = mitsuba::ImageBlock<FloatU, SpectrumU>;
-    using ReconstructionFilter   = mitsuba::ReconstructionFilter<FloatU, SpectrumU>;
-    using Texture                = mitsuba::Texture<FloatU, SpectrumU>;
-    using Volume                 = mitsuba::Volume<FloatU, SpectrumU>;
-    using VolumeGrid             = mitsuba::VolumeGrid<FloatU, SpectrumU>;
+    using Scene                  = mitsuba::Scene<Float, Spectrum>;
+    using Sampler                = mitsuba::Sampler<Float, Spectrum>;
+    using MicrofacetDistribution = mitsuba::MicrofacetDistribution<Float, Spectrum>;
+    using Shape                  = mitsuba::Shape<Float, Spectrum>;
+    using ShapeGroup             = mitsuba::ShapeGroup<Float, Spectrum>;
+    using ShapeKDTree            = mitsuba::ShapeKDTree<Float, Spectrum>;
+    using Mesh                   = mitsuba::Mesh<Float, Spectrum>;
+    using Integrator             = mitsuba::Integrator<Float, Spectrum>;
+    using SamplingIntegrator     = mitsuba::SamplingIntegrator<Float, Spectrum>;
+    using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<Float, Spectrum>;
+    using AdjointIntegrator      = mitsuba::AdjointIntegrator<Float, Spectrum>;
+    using BSDF                   = mitsuba::BSDF<Float, Spectrum>;
+    using OptixDenoiser          = mitsuba::OptixDenoiser<Float, Spectrum>;
+    using Sensor                 = mitsuba::Sensor<Float, Spectrum>;
+    using ProjectiveCamera       = mitsuba::ProjectiveCamera<Float, Spectrum>;
+    using Emitter                = mitsuba::Emitter<Float, Spectrum>;
+    using Endpoint               = mitsuba::Endpoint<Float, Spectrum>;
+    using Medium                 = mitsuba::Medium<Float, Spectrum>;
+    using PhaseFunction          = mitsuba::PhaseFunction<Float, Spectrum>;
+    using Film                   = mitsuba::Film<Float, Spectrum>;
+    using ImageBlock             = mitsuba::ImageBlock<Float, Spectrum>;
+    using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float, Spectrum>;
+    using Texture                = mitsuba::Texture<Float, Spectrum>;
+    using Volume                 = mitsuba::Volume<Float, Spectrum>;
+    using VolumeGrid             = mitsuba::VolumeGrid<Float, Spectrum>;
 
-    using MeshAttribute          = mitsuba::MeshAttribute<FloatU, SpectrumU>;
+    using MeshAttribute          = mitsuba::MeshAttribute<Float, Spectrum>;
 
     using ObjectPtr              = dr::replace_scalar_t<Float, const Object *>;
     using BSDFPtr                = dr::replace_scalar_t<Float, const BSDF *>;
@@ -107,10 +148,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MeshPtr                = dr::replace_scalar_t<Float, const Mesh *>;
     using SensorPtr              = dr::replace_scalar_t<Float, const Sensor *>;
     using EmitterPtr             = dr::replace_scalar_t<Float, const Emitter *>;
+    using TexturePtr             = dr::replace_scalar_t<Float, const Texture *>;
 };
-
-#define MMI_USING_MEMBERS_MACRO2(x) \
-    using Base::x;
 
 /**
  * \brief Imports the desired methods and fields by generating a sequence of

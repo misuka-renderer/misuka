@@ -136,7 +136,6 @@ public:
                               border /* border */,
                               normalize /* normalize */,
                               false /* coalesce */,
-                              false /* compensate */,
                               warn /* warn_negative */,
                               warn /* warn_invalid */,
                               true /* y_only */);

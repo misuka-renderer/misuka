@@ -10,12 +10,19 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 
 #include <drjit/texture.h>
 
 #if defined(MI_ENABLE_EMBREE)
 #include <embree3/rtcore.h>
 #endif
+
+#if defined(MI_ENABLE_METAL)
+#include "../render/metal/shapes.h"
+#endif
+
+#include "../render/bbox_reduce.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -105,18 +112,18 @@ points and increasing radii::
 
         'curves': {
             'type': 'linearcurve',
-            'to_world': mi.ScalarTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
+            'to_world': mi.ScalarAffineTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
             'filename': 'curves.txt'
         },
 
-.. note:: The backfaces of the curves are culled. It is therefore impossible to
-          intersect the curve with a ray that's origin is inside of the curve.
- */
+.. note:: The backfaces of curves are always culled. It is therefore impossible
+          to intersect the curve with a ray that's origin is inside of the curve.
+*/
 
 template <typename Float, typename Spectrum>
 class LinearCurve final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, m_shape_type,
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_shape_type,
                    initialize, mark_dirty, get_children_string,
                    parameters_grad_enabled)
     MI_IMPORT_TYPES()
@@ -138,8 +145,8 @@ public:
                   "variants!");
 #endif
 
-        auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         std::string m_name = file_path.filename().string();
 
         // used for throwing an error later
@@ -221,7 +228,7 @@ public:
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
-            p = m_to_world.scalar().transform_affine(p);
+            p = m_to_world.scalar() * p;
 
             // Vertex radius
             InputFloat r;
@@ -334,7 +341,7 @@ public:
 
         // It seems that the `v_local` given by Embree and OptiX has already
         // taken into account the changing radius: `v_local` is shifted such
-        // that the normal can be easily computed as `si.p - c`, 
+        // that the normal can be easily computed as `si.p - c`,
         // where `c = (1 - c_local) * cp1 + v_local * cp2`
         UInt32 idx = dr::gather<UInt32>(m_indices, prim_idx, active);
         Point4f c0 = dr::gather<Point4f>(m_control_points, idx, active),
@@ -344,9 +351,14 @@ public:
 
         Vector3f u_rot, u_rad;
         std::tie(u_rot, u_rad) = local_frame(dr::normalize(p1 - p0));
-        
+
         Point3f c = p0 * (1.f - v_local) + p1 * v_local;
         si.n = si.sh_frame.n = dr::normalize(si.p - c);
+
+        // Embree and OptiX cull linear-curve backfaces at trace time; Metal's
+        // HW intersector reports both sides. Drop inside hits to match (a no-op
+        // on backends that already cull).
+        this->cull_backface(si, ray, active);
 
         if (need_uv) {
             Vector3f rad_vec = si.p - c;
@@ -361,17 +373,18 @@ public:
             si.uv = Point2f(u, v);
         }
 
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 
         return si;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("control_point_count", m_control_point_count, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("segment_indices",     m_indices,             +ParamFlags::NonDifferentiable);
-        callback->put_parameter("control_points",      m_control_points,      +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("control_point_count", m_control_point_count, ParamFlags::NonDifferentiable);
+        cb->put("segment_indices",     m_indices,             ParamFlags::NonDifferentiable);
+        cb->put("control_points",      m_control_points,      ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -386,53 +399,14 @@ public:
         return dr::grad_enabled(m_control_points);
     }
 
-#if defined(MI_ENABLE_EMBREE)
-    RTCGeometry embree_geometry(RTCDevice device) override {
-        dr::eval(m_control_points); // Make sure the buffer is evaluated
-        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
-
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4,
-                                   m_control_points.data(), 0, 4 * sizeof(InputFloat),
-                                   m_control_point_count);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,
-                                   m_indices.data(), 0, 1 * sizeof(ScalarIndex),
-                                   dr::width(m_indices));
-        rtcCommitGeometry(geom);
-        return geom;
+    void describe(ShapeIR &g) const override {
+        Base::describe(g);
+        g.kind = ShapeIR::Kind::LinearCurve;
+        g.cp_count = (size_t) m_control_point_count;
+        g.seg_count = (size_t) dr::width(m_indices);
+        g.cp_ptr  = m_control_points.data();
+        g.seg_ptr = m_indices.data();
     }
-#endif
-
-
-#if defined(MI_ENABLE_CUDA)
-    void optix_prepare_geometry() override { }
-
-    void optix_build_input(OptixBuildInput &build_input) const override {
-        dr::eval(m_control_points); // Make sure the buffer is evaluated
-        m_vertex_buffer_ptr = (CUdeviceptr*) m_control_points.data();
-        m_radius_buffer_ptr = (CUdeviceptr*) (m_control_points.data() + 3);
-        m_index_buffer_ptr  = (CUdeviceptr*) m_indices.data();
-
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_CURVES;
-        build_input.curveArray.curveType = OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR;
-        build_input.curveArray.numPrimitives        = (unsigned int) dr::width(m_indices);
-
-        build_input.curveArray.vertexBuffers        = (CUdeviceptr*) &m_vertex_buffer_ptr;
-        build_input.curveArray.numVertices          = m_control_point_count;
-        build_input.curveArray.vertexStrideInBytes  = sizeof( InputFloat ) * 4;
-
-        build_input.curveArray.widthBuffers         = (CUdeviceptr*) &m_radius_buffer_ptr;
-        build_input.curveArray.widthStrideInBytes   = sizeof( InputFloat ) * 4;
-
-        build_input.curveArray.indexBuffer          = (CUdeviceptr) m_index_buffer_ptr;
-        build_input.curveArray.indexStrideInBytes   = sizeof( ScalarIndex );
-
-        build_input.curveArray.normalBuffers        = 0;
-        build_input.curveArray.normalStrideInBytes  = 0;
-        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
-        build_input.curveArray.primitiveIndexOffset = 0;
-        build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
-    }
-#endif
 
     ScalarBoundingBox3f bbox() const override {
         return m_bbox;
@@ -448,7 +422,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(LinearCurve)
 
 private:
     template <bool Negate, ScalarSize N>
@@ -469,21 +443,25 @@ private:
     }
 
     void recompute_bbox() {
-        auto&& control_points = dr::migrate(m_control_points, AllocType::Host);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
-        const InputFloat *ptr = control_points.data();
-
         m_bbox.reset();
-        for (ScalarSize i = 0; i < m_control_point_count; ++i) {
-            ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
-            ScalarFloat r(ptr[4 * i + 3]);
-            m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
-            m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
-            m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
+        if (m_control_point_count == 0)
+            return;
+
+        if constexpr (dr::is_jit_v<Float>) {
+            m_bbox = device_reduce_bbox<ScalarPoint3f>(
+                m_control_points, m_control_point_count, 4, /* radius_offset = */ 3);
+        } else {
+            const InputFloat *ptr = m_control_points.data();
+            for (ScalarSize i = 0; i < m_control_point_count; ++i) {
+                ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
+                ScalarFloat r(ptr[4 * i + 3]);
+                m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
+                m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
+                m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
+                m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
+                m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
+                m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
+            }
         }
     }
 
@@ -511,15 +489,8 @@ private:
     mutable UInt32Storage m_indices;
     mutable FloatStorage m_control_points;
 
-#if defined(MI_ENABLE_CUDA)
-    // For OptiX build input
-    mutable void* m_vertex_buffer_ptr = nullptr;
-    mutable void* m_radius_buffer_ptr = nullptr;
-    mutable void* m_index_buffer_ptr = nullptr;
-#endif
+    MI_TRAVERSE_CB(Base, m_indices, m_control_points)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LinearCurve, Shape)
-MI_EXPORT_PLUGIN(LinearCurve, "Linear curve intersection primitive");
+MI_EXPORT_PLUGIN(LinearCurve)
 NAMESPACE_END(mitsuba)
-

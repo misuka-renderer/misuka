@@ -2,6 +2,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/profiler.h>
 #include <drjit/while_loop.h>
+#include <drjit/util.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -11,12 +12,12 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
                                         uint32_t channel_count,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
-                                        bool coalesce, bool compensate,
+                                        bool coalesce,
                                         bool warn_negative, bool warn_invalid,
                                         bool y_only)
     : m_offset(offset), m_size(0), m_channel_count(channel_count),
       m_rfilter(rfilter), m_normalize(normalize), m_coalesce(coalesce),
-      m_compensate(compensate), m_warn_negative(warn_negative),
+      m_warn_negative(warn_negative),
       m_warn_invalid(warn_invalid), m_y_only(y_only) {
 
     // Detect if a box filter is being used, and just discard it in that case
@@ -35,12 +36,13 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
                                         const ScalarPoint2i &offset,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
-                                        bool coalesce, bool compensate,
+                                        bool coalesce,
                                         bool warn_negative, bool warn_invalid,
                                         bool y_only)
     : m_offset(offset), m_rfilter(rfilter), m_normalize(normalize),
-      m_coalesce(coalesce), m_compensate(compensate),
-      m_warn_negative(warn_negative), m_warn_invalid(warn_invalid), m_y_only(y_only) {
+      m_coalesce(coalesce),
+      m_warn_negative(warn_negative), m_warn_invalid(warn_invalid),
+      m_y_only(y_only) {
 
     if (tensor.ndim() != 3)
         Throw("ImageBlock(const TensorXf&): expected a 3D tensor (height x width x channels)!");
@@ -78,9 +80,6 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
     m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
-
-    if (m_compensate)
-        m_tensor_compensation = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
 }
 
 MI_VARIANT void
@@ -97,20 +96,10 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
 
     m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
 
-    if (m_compensate)
-        m_tensor_compensation = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
-
     m_size = size;
 }
 
 MI_VARIANT typename ImageBlock<Float, Spectrum>::TensorXf &ImageBlock<Float, Spectrum>::tensor() {
-    if constexpr (dr::is_jit_v<Float>) {
-        if (m_compensate) {
-            Float &comp = m_tensor_compensation.array();
-            m_tensor.array() += comp;
-            comp = dr::zeros<Float>(comp.size());
-        }
-    }
     return m_tensor;
 }
 
@@ -120,15 +109,47 @@ MI_VARIANT const typename ImageBlock<Float, Spectrum>::TensorXf &ImageBlock<Floa
 
 MI_VARIANT void ImageBlock<Float, Spectrum>::accum(Float value, UInt32 index, Bool active) {
     if constexpr (dr::is_jit_v<Float>) {
-        if (m_compensate)
-            dr::scatter_add_kahan(m_tensor.array(),
-                                  m_tensor_compensation.array(),
-                                  value, index, active);
-        else
-            dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                               value, index, active);
+        dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                           value, index, active);
     } else {
         DRJIT_MARK_USED(value);
+        DRJIT_MARK_USED(index);
+        DRJIT_MARK_USED(active);
+    }
+}
+
+MI_VARIANT void ImageBlock<Float, Spectrum>::accum_packet(const Float *values,
+                                                          UInt32 index,
+                                                          Bool active) {
+    if constexpr (dr::is_jit_v<Float>) {
+        dr::scatter_reduce_packet_dynamic(
+            ReduceOp::Add, m_channel_count, m_tensor.array(),
+            values, index, active);
+    } else {
+        DRJIT_MARK_USED(values);
+        DRJIT_MARK_USED(index);
+        DRJIT_MARK_USED(active);
+    }
+}
+
+MI_VARIANT void ImageBlock<Float, Spectrum>::accum_packet(const Float *values,
+                                                          const Float &weight,
+                                                          UInt32 index,
+                                                          Bool active) {
+    if constexpr (dr::is_jit_v<Float>) {
+        // Multiply each channel by `weight` into a temporary buffer, then
+        // forward to the unweighted overload.
+        Float *weighted = (Float *) alloca(sizeof(Float) * m_channel_count);
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            new (weighted + k) Float(values[k] * weight);
+
+        accum_packet(weighted, index, active);
+
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            weighted[k].~Float();
+    } else {
+        DRJIT_MARK_USED(values);
+        DRJIT_MARK_USED(weight);
         DRJIT_MARK_USED(index);
         DRJIT_MARK_USED(active);
     }
@@ -213,7 +234,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         Point2u p = Point2u(dr::floor2int<Point2i>(pos) - m_offset);
 
         // Switch over to unsigned integers, compute pixel index
-        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
+        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x());
 
         // The sample could be out of bounds
         active &= dr::all(p < m_size);
@@ -223,12 +244,12 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             if (unlikely(!active))
                 return;
 
-            ScalarFloat *ptr = m_tensor.array().data() + index;
+            ScalarFloat *ptr = m_tensor.array().data() +
+                               (size_t) index * m_channel_count;
             for (uint32_t k = 0; k < m_channel_count; ++k)
                 *ptr++ += values[k];
         } else {
-            for (uint32_t k = 0; k < m_channel_count; ++k)
-                accum(values[k], index++, active);
+            accum_packet(values, index, active);
         }
 
         return;
@@ -276,13 +297,14 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
         // Base index of the top left corner
         UInt32 index =
-            dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
+            dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x());
 
-        if (m_y_only) {
-            index  = dr::fmadd(pos_0_u.y(), size.x(),
-                               Point2u(dr::maximum(dr::ceil2int<Point2i>(pos_f), ScalarPoint2i(0))).x());
-            index *= m_channel_count;
-        }
+        /* misuka: in y_only mode, the reconstruction filter is only applied
+           along the Y (time) axis; X addresses a single fixed column. */
+        if (m_y_only)
+            index = dr::fmadd(pos_0_u.y(), size.x(),
+                              UInt32(dr::maximum(dr::ceil2int<Point2i>(pos_f),
+                                                 ScalarPoint2i(0)).x()));
 
         // Compute the number of filter evaluations needed along each axis
         ScalarVector2u count;
@@ -350,49 +372,48 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     weights_x[i] *= factor;
             }
 
-            ScalarFloat *ptr = nullptr;
-            if constexpr (!JIT)
-                ptr = m_tensor.array().data();
-            else
-                (void) ptr;
-
             // Accumulate!
             for (uint32_t y = 0; y < count.y(); ++y) {
                 Mask active_1 = active && y < count_u.y();
 
                 if (m_y_only) {
+                    // misuka: single column, filter weight along Y only
                     Float weight = weights_y[y];
-                    for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        if constexpr (!JIT) {
-                            if (unlikely(!active_1))
-                                return;
-                            ptr[index] = dr::fmadd(values[k], weight, ptr[index + k]);
-                        } else {
-                            accum(values[k] * weight, index + k, active_1);
-                        }
-                    }
-                    index += size.x() * m_channel_count;
-                } else {
-                    for (uint32_t x = 0; x < count.x(); ++x) {
-                        Mask active_2 = active_1 && x < count_u.x();
 
-                        for (uint32_t k = 0; k < m_channel_count; ++k) {
-                            Float weight = weights_x[x] * weights_y[y];
-
-                            if constexpr (!JIT) {
-                                if (unlikely(!active_2))
-                                    return;
-                                ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
-                            } else {
-                                accum(values[k] * weight, index, active_2);
-                            }
-
-                            index++;
-                        }
+                    if constexpr (!JIT) {
+                        if (unlikely(!active_1))
+                            return;
+                        ScalarFloat *ptr = m_tensor.array().data() +
+                                           (size_t) index * m_channel_count;
+                        for (uint32_t k = 0; k < m_channel_count; ++k)
+                            ptr[k] = dr::fmadd(values[k], weight, ptr[k]);
+                    } else {
+                        accum_packet(values, weight, index, active_1);
                     }
 
-                    index += (size.x() - count.x()) * m_channel_count;
+                    index += size.x();
+                    continue;
                 }
+
+                for (uint32_t x = 0; x < count.x(); ++x) {
+                    Mask active_2 = active_1 && x < count_u.x();
+                    Float weight = weights_x[x] * weights_y[y];
+
+                    if constexpr (!JIT) {
+                        if (unlikely(!active_2))
+                            return;
+                        ScalarFloat *ptr = m_tensor.array().data() +
+                                           (size_t) index * m_channel_count;
+                        for (uint32_t k = 0; k < m_channel_count; ++k)
+                            ptr[k] = dr::fmadd(values[k], weight, ptr[k]);
+                    } else {
+                        accum_packet(values, weight, index, active_2);
+                    }
+
+                    index += 1;
+                }
+
+                index += size.x() - count.x();
             }
 
             // Destruct weight variables
@@ -419,13 +440,14 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
                     if (m_y_only) {
-                        for (uint32_t k = 0; k < m_channel_count; ++k)
-                            accum(values[k] * weight_y, index + k, active_1);
+                        // misuka: single column, filter weight along Y only
+                        accum_packet(values, weight_y, index, active_1);
 
-                        index += size.x() * m_channel_count;
                         ys++;
+                        index += size.x();
                         return;
                     }
+
                     UInt32 xs = 0;
 
                     std::tie(xs, index) = dr::while_loop(
@@ -441,15 +463,16 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
                             Mask active_2 =
                                 active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
-                            for (uint32_t k = 0; k < m_channel_count; ++k)
-                                accum(values[k] * weight, index++, active_2);
+
+                            accum_packet(values, weight, index, active_2);
 
                             xs++;
+                            index += 1;
                         },
                         "ImageBlock::put() [2]");
 
                     ys++;
-                    index += (size.x() - count.x()) * m_channel_count;
+                    index += size.x() - count.x();
                 },
                 "ImageBlock::put() [1]");
         }
@@ -480,12 +503,13 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         // Switch over to unsigned integers, compute pixel index
         UInt32 x = UInt32(pos_i_local.x()),
                y = UInt32(pos_i_local.y()),
-               index = dr::fmadd(y, size.x(), x) * m_channel_count;
+               index = dr::fmadd(y, size.x(), x);
 
-        if (m_y_only) {
-            index  = dr::fmadd(y, size.x(), UInt32(dr::floor2int<Point2i>(pos).x()));
-            index *= m_channel_count;
-        }
+        /* misuka: in y_only mode, the reconstruction filter is only applied
+           along the Y (time) axis; X addresses a single fixed column. */
+        if (m_y_only)
+            index = dr::fmadd(y, size.x(),
+                              UInt32(dr::floor2int<Point2i>(pos).x()));
 
         // Evaluate filters weights along the X and Y axes
         Point2f rel_f = Point2f(pos_i) + .5f - pos;
@@ -529,28 +553,27 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 Mask active_1 = active && y < size.y();
 
                 if (m_y_only) {
-                    Float weight = weights_y[ys];
+                    // misuka: single column, filter weight along Y only
+                    accum_packet(values, weights_y[ys], index, active_1);
 
-                    for (uint32_t k = 0; k < m_channel_count; ++k)
-                        accum(values[k] * weight, index + k, active_1);
-
-                    index += size.x() * m_channel_count;
-                } else {
-                    for (uint32_t xs = 0; xs < count; ++xs) {
-                        Mask active_2 = active_1 && x < size.x();
-                        Float weight = weights_y[ys] * weights_x[xs];
-
-                        for (uint32_t k = 0; k < m_channel_count; ++k)
-                            accum(values[k] * weight, index++, active_2);
-
-                        x++;
-                    }
-
-                    x -= count;
-                    index += (size.x() - count) * m_channel_count;
+                    y += 1;
+                    index += size.x();
+                    continue;
                 }
 
+                for (uint32_t xs = 0; xs < count; ++xs) {
+                    Mask active_2 = active_1 && x < size.x();
+                    Float weight = weights_y[ys] * weights_x[xs];
+
+                    accum_packet(values, weight, index, active_2);
+
+                    x++;
+                    index += 1;
+                }
+
+                x -= count;
                 y += 1;
+                index += size.x() - count;
             }
 
             // Destruct weight variables
@@ -575,16 +598,17 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                     Mask active_1 = active && (y + ys < size.y());
 
-                    UInt32 xs = 0;
-
                     if (m_y_only) {
-                        for (uint32_t k = 0; k < m_channel_count; ++k)
-                            accum(values[k] * weight_y, index + k, active_1);
+                        // misuka: single column, filter weight along Y only
+                        accum_packet(values, weight_y, index, active_1);
 
-                        index += size.x() * m_channel_count;
                         ys++;
+                        index += size.x();
                         return;
                     }
+
+                    UInt32 xs = 0;
+
                     std::tie(xs, index) = dr::while_loop(
                         std::make_tuple(xs, index),
                         [count](const UInt32 &xs, const UInt32 &) {
@@ -597,15 +621,16 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                                   weight = weight_x * weight_y;
 
                             Mask active_2 = active_1 && (x + xs < size.x());
-                            for (uint32_t k = 0; k < m_channel_count; ++k)
-                                accum(values[k] * weight, index++, active_2);
+
+                            accum_packet(values, weight, index, active_2);
 
                             xs++;
+                            index += 1;
                         },
                         "ImageBlock::put() [2]");
 
                     ys++;
-                    index += (size.x() - count) * m_channel_count;
+                    index += size.x() - count;
                 },
                 "ImageBlock::put() [1]");
         }
@@ -687,11 +712,13 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     UInt32 index =
         dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
 
-    if (m_y_only) {
-        index  = dr::fmadd(pos_0_u.y(), size.x(),
-                           Point2u(dr::maximum(dr::ceil2int<Point2i>(pos_f), ScalarPoint2i(0))).x());
-        index *= m_channel_count;
-    }
+    /* misuka: in y_only mode, the reconstruction filter is only applied
+       along the Y (time) axis; X addresses a single fixed column. */
+    if (m_y_only)
+        index = dr::fmadd(pos_0_u.y(), size.x(),
+                          UInt32(dr::maximum(dr::ceil2int<Point2i>(pos_f),
+                                             ScalarPoint2i(0)).x())) *
+                m_channel_count;
 
     // Compute the number of filter evaluations needed along each axis
     ScalarVector2u count;
@@ -761,6 +788,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             Mask active_1 = active && y < count_u.y();
 
             if (m_y_only) {
+                // misuka: single column, filter weight along Y only
                 Float weight = weights_y[y];
                 for (uint32_t k = 0; k < m_channel_count; ++k) {
                     values[k] = dr::fmadd(
@@ -768,23 +796,24 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
                         weight, values[k]);
                 }
                 index += size.x() * m_channel_count;
-            } else {
-                for (uint32_t x = 0; x < count.x(); ++x) {
-                    Mask active_2 = active_1 && x < count_u.x();
-
-                    Float weight = weights_x[x] * weights_y[y];
-
-                    for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        values[k] = dr::fmadd(
-                            dr::gather<Float>(m_tensor.array(), index, active_2),
-                            weight, values[k]);
-
-                        index++;
-                    }
-                }
-
-                index += (size.x() - count.x()) * m_channel_count;
+                continue;
             }
+
+            for (uint32_t x = 0; x < count.x(); ++x) {
+                Mask active_2 = active_1 && x < count_u.x();
+
+                Float weight = weights_x[x] * weights_y[y];
+
+                for (uint32_t k = 0; k < m_channel_count; ++k) {
+                    values[k] = dr::fmadd(
+                        dr::gather<Float>(m_tensor.array(), index, active_2),
+                        weight, values[k]);
+
+                    index++;
+                }
+            }
+
+            index += (size.x() - count.x()) * m_channel_count;
         }
 
         // Destruct weight variables
@@ -815,22 +844,21 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
                 Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                 Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
-                UInt32 xs = 0;
-
                 if (m_y_only) {
-                    Float weight = weight_y;
-
+                    // misuka: single column, filter weight along Y only
                     for (uint32_t k = 0; k < m_channel_count; ++k) {
                         dr_values.entry(k) = dr::fmadd(
                             dr::gather<Float>(m_tensor.array(), index + k, active_1),
-                            weight, dr_values.entry(k));
+                            weight_y, dr_values.entry(k));
                     }
 
-                    weight_sum += dr::select(active_1, weight, 0.f);
-                    index += size.x() * m_channel_count;
+                    weight_sum += dr::select(active_1, weight_y, 0.f);
                     ys++;
+                    index += size.x() * m_channel_count;
                     return;
                 }
+
+                UInt32 xs = 0;
 
                 std::tie(xs, index, weight_sum, dr_values) = dr::while_loop(
                     std::make_tuple(xs, index, weight_sum, dr_values),
@@ -888,7 +916,6 @@ MI_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
         << "  border_size = " << m_border_size << "," << std::endl
         << "  normalize = " << m_normalize << "," << std::endl
         << "  coalesce = " << m_coalesce << "," << std::endl
-        << "  compensate = " << m_compensate << "," << std::endl
         << "  warn_negative = " << m_warn_negative << "," << std::endl
         << "  warn_invalid = " << m_warn_invalid << "," << std::endl
         << "  y_only = " << m_y_only << "," << std::endl
@@ -899,6 +926,5 @@ MI_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(ImageBlock, Object)
 MI_INSTANTIATE_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

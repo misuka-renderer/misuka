@@ -5,8 +5,8 @@ import os as _os
 import drjit as _dr
 import logging
 
-if _sys.version_info < (3, 8):
-    raise ImportError("Mitsuba requires Python 3.8 or greater.")
+if _sys.version_info < (3, 9):
+    raise ImportError("Mitsuba requires Python 3.9 or greater.")
 
 mi_dir = _os.path.dirname(_os.path.realpath(__file__))
 drjit_expected_loc = _os.path.realpath(_os.path.join(mi_dir, "..", "drjit"))
@@ -29,6 +29,9 @@ if _dr.__version__ != DRJIT_VERSION_REQUIREMENT:
                       "Python packages for `drjit` and/or `mitsuba`."
                       % (DRJIT_VERSION_REQUIREMENT))
 del DRJIT_VERSION_REQUIREMENT
+
+# Import detail module before native extensions
+from . import detail
 
 with _dr.detail.scoped_rtld_deepbind():
     # Replaces 'mitsuba' in sys.modules with itself (mitsuba_alias)

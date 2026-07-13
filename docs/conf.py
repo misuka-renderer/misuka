@@ -90,7 +90,8 @@ rst_prolog = r"""
 .. |nbsp| unicode:: 0xA0
    :trim:
 
-.. |exposed| replace:: :abbr:`P (This parameters will be exposed as a scene parameter)`
+.. |exposed| replace:: :abbr:`P (This parameter will be exposed as a scene parameter)`
+.. |readonly| replace:: :abbr:`R (This parameter will be exposed as a scene parameter, but cannot be modified.)`
 .. |differentiable| replace:: :abbr:`∂ (This parameter is differentiable)`
 .. |discontinuous| replace:: :abbr:`D (This parameter might introduce discontinuities. Therefore it requires special handling during differentiation to prevent bias))`
 
@@ -275,7 +276,7 @@ nbsphinx_prolog = """
             <button id="nb_btn">Download notebook</button>
         </a>
 
-        <a href="https://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip" target="_blank">
+        <a href="https://d38rqfq1h7iukm.cloudfront.net/scenes/tutorials/scenes.zip" target="_blank">
             <button id="data_btn">Download data</button>
         </a>
     </div>

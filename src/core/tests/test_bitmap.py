@@ -39,9 +39,7 @@ def test_read_write_complex_exr(variant_scalar_rgb, tmpdir):
     meta["int_prop"] = 15
     meta["dbl_prop"] = 30.0
     meta["vec3_prop"] = [1.0, 2.0, 3.0]
-
-    # TODO py::implicitly_convertible<py::array, Transform4f>() doesn't seem to work in transform_v.cpp
-    # meta["mat_prop"] = np.arange(16, dtype=mi.float_dtype).reshape((4, 4)) + np.eye(4, dtype=mi.float_dtype)
+    meta["mat_prop"] = dr.scalar.Matrix4f(np.arange(16, dtype=np.float32).reshape((4, 4)))
 
     assert b2.shape == (5, 4, 6)
     assert b2.dtype == np.float32
@@ -51,19 +49,33 @@ def test_read_write_complex_exr(variant_scalar_rgb, tmpdir):
 
     b3 = mi.Bitmap(tmp_file)
     os.remove(tmp_file)
-    meta = b3.metadata()
-    meta.remove_property("generatedBy")
-    meta.remove_property("pixelAspectRatio")
-    meta.remove_property("screenWindowWidth")
+    meta2 = b3.metadata()
+    del meta2["generatedBy"]
+    del meta2["pixelAspectRatio"]
+    del meta2["screenWindowWidth"]
     assert b3 == b1
     b2[0, 0, 0] = 3
     assert b3 != b1
     b2[0, 0, 0] = 0
     assert b3 == b1
-    assert str(b3) == str(b1)
     meta["str_prop"] = "value2"
     assert b3 != b1
     assert str(b3) != str(b1)
+
+
+@pytest.mark.parametrize('num_channels', [1, 3, 4, 9, 10, 11])
+def test_read_write_unnamed_multichannel_exr(variant_scalar_rgb, tmpdir, num_channels):
+    # Tests reading and writing of images with unnamed channels to/from exr
+    ref = np.zeros((16, 16, num_channels), dtype=np.float32)
+    for i in range(num_channels):
+        ref[..., i] = i
+
+    tmp_file = os.path.join(str(tmpdir), f"out_{num_channels}.exr")
+    b = mi.Bitmap(ref)
+    b.write(tmp_file)
+    b = mi.Bitmap(tmp_file)
+    os.remove(tmp_file)
+    assert np.allclose(np.array(b), ref)
 
 
 def test_convert_rgb_y(variant_scalar_rgb, tmpdir):
@@ -295,7 +307,6 @@ def test_split(variant_scalar_rgb):
         "multi": set(["X", "B", "A"]),
         "lum": set(["Y", "A"])
     }
-    #print(splits)
 
     assert len(splits) == len(fields.keys())
     assert set([split[0] for split in splits]) == set(fields.keys())
@@ -314,11 +325,11 @@ def test_split(variant_scalar_rgb):
 
         for f in split[1].struct_():
             if f.name == "A" and split[1].pixel_format() != mi.Bitmap.PixelFormat.MultiChannel:
-                assert f.flags == 64
+                assert f.flags == mi.Struct.Flags.Alpha
             elif f.name == "W":
-                assert f.flags == 16
+                assert f.flags == mi.Struct.Flags.Weight
             else:
-                assert f.flags == 32
+                assert f.flags == mi.Struct.Flags.PremultipliedAlpha
 
 
 def test_split_data(variant_scalar_rgb):

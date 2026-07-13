@@ -3,40 +3,31 @@
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
-
-    // Do not log if no logger is available. This is consistent with the
-    // C++-side "Log" function in logger.h.
-    if (!Thread::thread()->logger())
+    Logger *logger = mitsuba::logger();
+    if (!logger)
         return;
 
-#if PY_VERSION_HEX >= 0x03090000
-    PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
-    PyCodeObject *f_code = PyFrame_GetCode(frame);
-#else
-    PyFrameObject *frame = PyThreadState_Get()->frame;
-    PyCodeObject *f_code = frame->f_code;
-#endif
+    nb::object frame = nb::steal(
+        (PyObject *) PyThreadState_GetFrame(PyThreadState_Get()));
+    nb::object f_code = nb::steal(
+        (PyObject *) PyFrame_GetCode((PyFrameObject *) frame.ptr()));
 
     std::string name =
-        nb::borrow<nb::str>(nb::handle(f_code->co_name)).c_str();
+        nb::borrow<nb::str>(f_code.attr("co_name")).c_str();
     std::string filename =
-        nb::borrow<nb::str>(nb::handle(f_code->co_filename)).c_str();
+        nb::borrow<nb::str>(f_code.attr("co_filename")).c_str();
     std::string fmt = "%s: %s";
-    int lineno = PyFrame_GetLineNumber(frame);
-
-#if PY_VERSION_HEX >= 0x03090000
-    Py_DECREF(f_code);
-    Py_DECREF(frame);
-#endif
+    int lineno = PyFrame_GetLineNumber((PyFrameObject *) frame.ptr());
 
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");
 
-    Thread::thread()->logger()->log(
-        level, nullptr /* class_ */,
+    logger->log(
+        level, nullptr /* class_ - nullptr so formatter uses file:line */,
         filename.c_str(), lineno,
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }
@@ -60,4 +51,6 @@ MI_PY_EXPORT(Logger) {
         .def_method(Logger, read_log);
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);
+    m.def("set_logger", &mitsuba::set_logger, "logger"_a);
+    m.def("logger", &mitsuba::logger);
 }

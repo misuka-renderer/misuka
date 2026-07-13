@@ -25,11 +25,11 @@ Spectral film (:monosp:`specfilm`)
 
  * - width, height
    - |int|
-   - Width and height of the camera sensor in pixels Default: 768, 576)
+   - Width and height of the camera sensor in pixels. (Default: 768, 576)
 
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images. The options are
+   - Specifies the desired floating point component format of output images. The options are
      :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
 
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
@@ -43,15 +43,6 @@ Spectral film (:monosp:`specfilm`)
    - If set to |true|, regions slightly outside of the film plane will also be sampled. This may
      improve the image quality at the edges, especially when using very large reconstruction
      filters. In general, this is not needed though. (Default: |false|, i.e. disabled)
-
- * - compensate
-   - |bool|
-   - If set to |true|, sample accumulation will be performed using Kahan-style
-     error-compensated accumulation. This can be useful to avoid roundoff error
-     when accumulating very many samples to compute reference solutions using
-     single precision variants of Mitsuba. This feature is currently only supported
-     in JIT variants and can make sample accumulation quite a bit more expensive.
-     (Default: |false|, i.e. disabled)
 
  * - (Nested plugin)
    - :paramtype:`rfilter`
@@ -155,12 +146,13 @@ public:
                        "perform a spectral simulation.");
 
         // Load all SRF and store both name and data
-        for (auto &[name, obj] : props.objects(false)) {
-            Texture *srf = dynamic_cast<Texture *>(obj.get());
-            if (srf != nullptr) {
+        for (auto &prop : props) {
+            if (prop.type() == Properties::Type::Spectrum) {
+                m_srfs.push_back(props.get_texture<Texture>(prop.name()));
+                m_names.push_back(std::string(prop.name()));
+            } else if (Texture *srf = prop.try_get<Texture>()) {
                 m_srfs.push_back(srf);
-                m_names.push_back(name);
-                props.mark_queried(name);
+                m_names.push_back(std::string(prop.name()));
             }
         }
 
@@ -168,34 +160,39 @@ public:
             Log(Error, "At least one SRF should be defined");
 
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.get<std::string_view>("component_format", "float16"));
 
         // The resulting bitmap is always OpenEXR MultiChannel
         m_file_format = Bitmap::FileFormat::OpenEXR;
         m_pixel_format = Bitmap::PixelFormat::MultiChannel;
 
         if (component_format == "float16")
-            m_component_format = Struct::Type::Float16;
+            m_component_format = sj::Type::Float16;
         else if (component_format == "float32")
-            m_component_format = Struct::Type::Float32;
+            m_component_format = sj::Type::Float32;
         else if (component_format == "uint32")
-            m_component_format = Struct::Type::UInt32;
+            m_component_format = sj::Type::UInt32;
         else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
 
-        m_compensate = props.get<bool>("compensate", false);
-
         m_flags = FilmFlags::Spectral | FilmFlags::Special;
+
+        if (props.has_property("compensate")) {
+            props.mark_queried("compensate");
+            Log(Warn, "The \"compensate\" (Kahan-style error-compensated "
+                      "accumulation) parameter has been removed and is now "
+                      "ignored.");
+        }
 
         compute_srf_sampling();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
         for (size_t i=0; i<m_srfs.size(); ++i)
-            callback->put_object(m_names[i], m_srfs[i].get(), +ParamFlags::NonDifferentiable);
+            cb->put(m_names[i], m_srfs[i], ParamFlags::NonDifferentiable);
     }
 
     void compute_srf_sampling() {
@@ -235,16 +232,20 @@ public:
         using DoubleStorage = dr::float64_array_t<FloatStorage>;
         DoubleStorage mis_data_dbl = DoubleStorage(mis_data);
 
-        auto && storage = dr::migrate(mis_data_dbl, AllocType::Host);
+        auto && storage = dr::migrate(mis_data_dbl, JitBackend::None);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
-        // Create new spectrum with the sampling information
-        auto props = Properties("regular");
-        props.set_pointer("values", storage.data());
-        props.set_long("size", n_points);
-        props.set_float("wavelength_min", (double) m_range.x());
-        props.set_float("wavelength_max", (double) m_range.y());
+        // Pass spectrum data using Properties::Spectrum
+        std::vector<double> storage_vec(storage.size());
+        for (size_t i = 0; i < storage.size(); ++i)
+            storage_vec[i] = storage[i];
+
+        Properties props("regular");
+        props.set("value", Properties::Spectrum(std::move(storage_vec),
+                                                (double) m_range.x(),
+                                                (double) m_range.y()));
+
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 
@@ -284,7 +285,6 @@ public:
                               border /* border */,
                               normalize /* normalize */,
                               dr::is_jit_v<Float> /* coalesce */,
-                              m_compensate /* compensate */,
                               false /* warn_negative */,
                               false /* warn_invalid */);
     }
@@ -317,7 +317,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_storage->put_block(block);
     }
-    
+
     void clear() override {
         if (m_storage)
             m_storage->clear();
@@ -391,7 +391,7 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
+        auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
 
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
@@ -409,9 +409,9 @@ public:
             struct_type_v<ScalarFloat>, m_storage->size(),
             m_storage->channel_count() - 1);
 
-        source->struct_()->operator[](m_channels.size() - 1).flags |= +Struct::Flags::Weight;
+        source->struct_()[m_channels.size() - 1].flags |= +sj::Flag::Weight;
         for (size_t i = 0; i < m_storage->channel_count() - 1; ++i) {
-            Struct::Field &dest_field = target->struct_()->operator[](i);
+            sj::Field &dest_field = target->struct_()[i];
             dest_field.name = m_channels[i];
         }
 
@@ -440,7 +440,7 @@ public:
             // Conversion is necessary before saving to disk
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
+                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
@@ -466,7 +466,6 @@ public:
             << "  crop_size = " << m_crop_size << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  sample_border = " << m_sample_border << "," << std::endl
-            << "  compensate = " << m_compensate << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
@@ -479,12 +478,11 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SpecFilm)
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
-    Struct::Type m_component_format;
-    bool m_compensate;
+    sj::Type m_component_format;
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
@@ -493,6 +491,5 @@ protected:
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SpecFilm, Film)
-MI_EXPORT_PLUGIN(SpecFilm, "Spectral Bands Film")
+MI_EXPORT_PLUGIN(SpecFilm)
 NAMESPACE_END(mitsuba)

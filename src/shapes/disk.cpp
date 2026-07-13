@@ -8,9 +8,14 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/disk.cuh"
+#endif
+
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    #include <mitsuba/render/shapedata.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -78,7 +83,7 @@ The following XML snippet instantiates an example of a textured disk shape:
             'type': 'diffuse',
             'reflectance': {
                 'type': 'checkerboard',
-                'to_uv': mi.ScalarTransform4f([2, 10, 0])
+                'to_uv': mi.ScalarAffineTransform4f([2, 10, 0])
             }
         }
  */
@@ -86,7 +91,7 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
                    m_discontinuity_types, m_shape_type, initialize, mark_dirty,
                    get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
@@ -98,7 +103,7 @@ public:
         if (props.get<bool>("flip_normals", false))
             m_to_world =
                 m_to_world.scalar() *
-                ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+                ScalarAffineTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
@@ -109,8 +114,6 @@ public:
     }
 
     void update() {
-        m_to_object = m_to_world.value().inverse();
-
         Vector3f dp_du = m_to_world.value() * Vector3f(1.f, 0.f, 0.f);
         Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 1.f, 0.f);
 
@@ -125,27 +128,27 @@ public:
         mark_dirty();
    }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
+            // LLVM/Embree reads these parameters from host memory; wait for
+            // in-flight kernels before overwriting (GPU uploads are queue-ordered).
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
+
+            m_to_world = m_to_world.value().update();
             update();
         }
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
         ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
         ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
@@ -175,7 +178,7 @@ public:
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p    = m_to_world.value().transform_affine(Point3f(p.x(), p.y(), 0.f));
+        ps.p    = m_to_world.value() * Point3f(p.x(), p.y(), 0.f);
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.time = time;
@@ -201,7 +204,7 @@ public:
         Point2f uniform_disk = warp::square_to_uniform_disk_concentric(uv);
         Point3f local = Point3f(uniform_disk.x(), uniform_disk.y(), 0.f);
 
-        Point3f p = m_to_world.value().transform_affine(local);
+        Point3f p = m_to_world.value() * local;
 
         Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
 
@@ -233,7 +236,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        const Transform4f& to_world = m_to_world.value();
+        const AffineTransform4f& to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         /// Sample a point on the shape surface
@@ -242,7 +245,7 @@ public:
         Float sin_theta, cos_theta;
         std::tie(sin_theta, cos_theta) = dr::sincos(theta);
         Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
-        ss.p = to_world.transform_affine(Point3f(local_p.x(), local_p.y(), 0.f));
+        ss.p = to_world * Point3f(local_p.x(), local_p.y(), 0.f);
 
         /// Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
@@ -250,20 +253,20 @@ public:
         /// Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
-        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
-            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        ss.silhouette_d  = dr::normalize(to_world *
+            Vector3f(local_p.y(), -local_p.x(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         // Normal direction `ss.n` must point outwards
         Vector3f inward_dir = -local_p;
-        inward_dir = to_world.transform_affine(inward_dir);
+        inward_dir = to_world * inward_dir;
         dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
         ss.n = frame_n;
 
         // Arc-length ratio
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(to_world.transform_affine(
-                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+                 dr::rcp(dr::norm(to_world *
+                     Vector3f(local_p.y(), -local_p.x(), 0.f)));
         ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
         ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         ss.shape = this;
@@ -298,7 +301,7 @@ public:
             Float sin_theta, cos_theta;
             std::tie(sin_theta, cos_theta) = dr::sincos(theta);
             Point3f local  = uv.x() * Point3f(cos_theta, sin_theta, 0.f);
-            Point3f p_diff = m_to_world.value().transform_affine(local);
+            Point3f p_diff = m_to_world.value() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -314,7 +317,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        const Transform4f &to_world = m_to_world.value();
+        const AffineTransform4f &to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         ss.uv = Point2f(1.f, si.uv.y());
@@ -325,15 +328,15 @@ public:
 
         Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
 
-        ss.p = to_world.transform_affine(local_p);
+        ss.p = to_world * local_p;
         ss.d = dr::normalize(ss.p - viewpoint);
 
-        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
-            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        ss.silhouette_d  = dr::normalize(to_world *
+            Vector3f(local_p.y(), -local_p.x(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         Vector3f inward_dir = -local_p;
-        inward_dir = to_world.transform_affine(inward_dir);
+        inward_dir = to_world * inward_dir;
         dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
         ss.n = frame_n;
 
@@ -368,11 +371,11 @@ public:
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
         SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
 
-        Point3f local_p = m_to_object.value().transform_affine(ss.p);
+        Point3f local_p = m_to_world.value().inverse() * ss.p;
         // Arc-length ratio
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(m_to_world.value().transform_affine(
-                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+                 dr::rcp(dr::norm(m_to_world.value() *
+                     Vector3f(local_p.y(), -local_p.x(), 0.f)));
 
         return ss;
     }
@@ -385,18 +388,18 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray = to_object.transform_affine(ray_);
+        Ray3fP ray = to_object * ray_;
         FloatP t = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -404,7 +407,7 @@ public:
         active = active && t >= 0.f && t <= ray.maxt
                         && local.x() * local.x() + local.y() * local.y() <= 1.f;
 
-        return { dr::select(active, t, dr::Infinity<FloatP>),
+        return { active, dr::select(active, t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
     }
 
@@ -414,13 +417,13 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray = to_object.transform_affine(ray_);
+        Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -446,8 +449,8 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        Transform4f to_world = m_to_world.value();
-        Transform4f to_object = m_to_object.value();
+        AffineTransform4f to_world = m_to_world.value();
+        AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
 
@@ -462,11 +465,11 @@ public:
                    in local space and transform it back in world space to get a
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
-                Point3f local = to_object.transform_affine(ray(pi.t));
+                Point3f local = to_object * ray(pi.t);
                 /* With FollowShape the local position should always be static as
                    the intersection point follows any motion of the sphere. */
                 local = dr::detach(local);
-                si.p = to_world.transform_affine(local);
+                si.p = to_world * local;
                 si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
                 prim_uv = dr::head<2>(local);
             } else {
@@ -488,6 +491,14 @@ public:
         }
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
+
+        // The Metal intersection function cannot forward prim_uv, so recompute
+        // it from si.p. Done after the diff branches, which would otherwise
+        // propagate Metal's zero value through ``replace_grad``.
+        if constexpr (dr::is_metal_v<Float>) {
+            Point3f local = to_object * si.p;
+            prim_uv = Point2f(local.x(), local.y());
+        }
 
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
                    has_flag(ray_flags, RayFlags::dPdUV))) {
@@ -511,6 +522,8 @@ public:
         si.sh_frame.n = m_frame.n;
 
         si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
+
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 
@@ -521,18 +534,15 @@ public:
         return dr::grad_enabled(m_to_world.value());
     }
 
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    void gpu_fill_data(void *out) const {
+        shapedata::DiskData &d = *(shapedata::DiskData *) out;
+        shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
+                                  d.to_object);
+    }
 
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
-
-            OptixDiskData data = { bbox(), m_to_object.scalar() };
-
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixDiskData));
-        }
+    void describe(ShapeIR &g) const override {
+        Base::template describe_with_data<Disk, shapedata::DiskData>(g);
     }
 #endif
 
@@ -547,13 +557,14 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Disk)
 private:
     Frame3f m_frame;
     Float m_du, m_dv;
     Float m_inv_surface_area;
+
+    MI_TRAVERSE_CB(Base, m_frame, m_du, m_dv, m_inv_surface_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Disk, Shape)
-MI_EXPORT_PLUGIN(Disk, "Disk intersection primitive");
+MI_EXPORT_PLUGIN(Disk)
 NAMESPACE_END(mitsuba)

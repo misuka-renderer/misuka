@@ -8,8 +8,11 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
-#include <thread>
+#include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <string>
+#include <thread>
 
 #include <nanothread/nanothread.h>
 #include <drjit-core/half.h>
@@ -62,13 +65,13 @@ extern "C" {
 
 NAMESPACE_BEGIN(mitsuba)
 
-Bitmap::Bitmap(PixelFormat pixel_format, Struct::Type component_format,
+Bitmap::Bitmap(PixelFormat pixel_format, sj::Type component_format,
                const Vector2u &size, size_t channel_count,
                const std::vector<std::string> &channel_names, uint8_t *data)
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
-    if (m_component_format == Struct::Type::UInt8)
+    if (m_component_format == sj::Type::UInt8)
         m_srgb_gamma = true;  // sRGB by default
     else
         m_srgb_gamma = false; // Linear by default
@@ -89,7 +92,7 @@ Bitmap::Bitmap(const Bitmap &bitmap)
     : Object(), m_pixel_format(bitmap.m_pixel_format),
       m_component_format(bitmap.m_component_format),
       m_size(bitmap.m_size),
-      m_struct(new Struct(*bitmap.m_struct)),
+      m_struct(bitmap.m_struct),
       m_srgb_gamma(bitmap.m_srgb_gamma),
       m_premultiplied_alpha(bitmap.m_premultiplied_alpha),
       m_owns_data(true) {
@@ -126,16 +129,16 @@ Bitmap::~Bitmap() {
 
 void Bitmap::set_srgb_gamma(bool value) {
     m_srgb_gamma = value;
-    for (auto &field : *m_struct) {
+    for (auto &field : m_struct) {
         std::string suffix = field.name;
         auto it = suffix.rfind(".");
         if (it != std::string::npos)
             suffix = suffix.substr(it + 1);
         if (suffix != "A" && suffix != "W") {
             if (value)
-                field.flags |= +Struct::Flags::Gamma;
+                field.flags |= +sj::Flag::Gamma;
             else
-                field.flags &= ~Struct::Flags::Gamma;
+                field.flags &= ~sj::Flag::Gamma;
         }
     }
 }
@@ -143,16 +146,16 @@ void Bitmap::set_srgb_gamma(bool value) {
 
 void Bitmap::set_premultiplied_alpha(bool value) {
     m_premultiplied_alpha = value;
-    for (auto &field : *m_struct) {
+    for (auto &field : m_struct) {
         std::string suffix = field.name;
         auto it = suffix.rfind(".");
         if (it != std::string::npos)
             suffix = suffix.substr(it + 1);
         if (suffix != "A" && suffix != "W") {
             if (value)
-                field.flags |= +Struct::Flags::PremultipliedAlpha;
+                field.flags |= +sj::Flag::PremultipliedAlpha;
             else
-                field.flags &= ~Struct::Flags::PremultipliedAlpha;
+                field.flags &= ~sj::Flag::PremultipliedAlpha;
         }
     }
 }
@@ -175,8 +178,12 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
         case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
         case PixelFormat::MultiChannel:
             if (channel_names.size() == 0) {
+                // Compute number of digits required for channel count - 1 to prepend zeros and ensure
+                // alphanumerical ordering of channel names
+                int num_digits = (int) std::floor(std::log10(std::max<size_t>(1, channel_count - 1))) + 1;
+                std::string channel_format = tfm::format("ch%%0%dd", num_digits);
                 for (size_t i = 0; i < channel_count; ++i)
-                    channels.push_back(tfm::format("ch%i", i));
+                    channels.push_back(tfm::format(channel_format.c_str(), i));
             } else {
                 if (channel_names.size() != channel_count)
                     Throw("Bitmap::rebuild_struct(): expected %u channel "
@@ -200,21 +207,21 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
         Throw("Bitmap::rebuild_struct(): channel count (%i) does not match "
               "pixel format (%s)!", channel_count, m_pixel_format);
 
-    m_struct = new Struct();
+    m_struct = sj::Struct();
     for (auto ch: channels) {
         bool is_alpha = ch == "A" && m_pixel_format != PixelFormat::MultiChannel;
-        uint32_t flags = +Struct::Flags::Empty;
+        uint32_t flags = 0u;
         if (!is_alpha && ch != "W" && m_srgb_gamma)
-            flags |= +Struct::Flags::Gamma;
+            flags |= +sj::Flag::Gamma;
         if (!is_alpha && ch != "W" && m_premultiplied_alpha)
-            flags |= +Struct::Flags::PremultipliedAlpha;
+            flags |= +sj::Flag::PremultipliedAlpha;
         if (is_alpha)
-            flags |= +Struct::Flags::Alpha;
+            flags |= +sj::Flag::Alpha;
         if (ch == "W")
-            flags |= +Struct::Flags::Weight;
-        if (Struct::is_integer(m_component_format))
-            flags |= +Struct::Flags::Normalized;
-        m_struct->append(ch, m_component_format, flags);
+            flags |= +sj::Flag::Weight;
+        if (sj::type_is_integer(m_component_format))
+            flags |= +sj::Flag::Normalized;
+        m_struct.append(ch, m_component_format, flags);
     }
 }
 
@@ -225,17 +232,17 @@ size_t Bitmap::buffer_size() const {
 size_t Bitmap::bytes_per_pixel() const {
     size_t result;
     switch (m_component_format) {
-        case Struct::Type::Int8:
-        case Struct::Type::UInt8:   result = 1; break;
-        case Struct::Type::Int16:
-        case Struct::Type::UInt16:  result = 2; break;
-        case Struct::Type::Int32:
-        case Struct::Type::UInt32:  result = 4; break;
-        case Struct::Type::Int64:
-        case Struct::Type::UInt64:  result = 8; break;
-        case Struct::Type::Float16: result = 2; break;
-        case Struct::Type::Float32: result = 4; break;
-        case Struct::Type::Float64: result = 8; break;
+        case sj::Type::Int8:
+        case sj::Type::UInt8:   result = 1; break;
+        case sj::Type::Int16:
+        case sj::Type::UInt16:  result = 2; break;
+        case sj::Type::Int32:
+        case sj::Type::UInt32:  result = 4; break;
+        case sj::Type::Int64:
+        case sj::Type::UInt64:  result = 8; break;
+        case sj::Type::Float16: result = 2; break;
+        case sj::Type::Float32: result = 4; break;
+        case sj::Type::Float64: result = 8; break;
         default: Throw("Unknown component format: %d", m_component_format);
     }
     return result * channel_count();
@@ -268,7 +275,7 @@ resample(Bitmap *target, const Bitmap *source,
     if (!rfilter) {
         // Upsample using a 2-lobed Lanczos reconstruction filter
         Properties props("lanczos");
-        props.set_int("lobes", 2);
+        props.set("lobes", 2);
         rfilter = PluginManager::instance()->create_object<ReconstructionFilter>(props);
     }
 
@@ -353,17 +360,17 @@ void Bitmap::resample(
         Throw("Bitmap::resample(): Incompatible temporary bitmap specified!");
 
     switch (m_component_format) {
-        case Struct::Type::Float16:
+        case sj::Type::Float16:
             mitsuba::resample<dr::half, false>(target, this, rfilter, bc,
                                                clamp, temp);
             break;
 
-        case Struct::Type::Float32:
+        case sj::Type::Float32:
             mitsuba::resample<float, false>(target, this, rfilter, bc,
                                             clamp, temp);
             break;
 
-        case Struct::Type::Float64:
+        case sj::Type::Float64:
             mitsuba::resample<double, false>(target, this, rfilter, bc,
                                              clamp, temp);
             break;
@@ -388,11 +395,11 @@ ref<Bitmap> Bitmap::resample(
 }
 
 ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
-                            Struct::Type component_format,
+                            sj::Type component_format,
                             bool srgb_gamma, Bitmap::AlphaTransform alpha_transform) const {
     ref<Bitmap> result = new Bitmap(
         pixel_format, component_format, m_size,
-        m_pixel_format == PixelFormat::MultiChannel ? m_struct->field_count() : 0);
+        m_pixel_format == PixelFormat::MultiChannel ? m_struct.size() : 0);
 
     switch (alpha_transform) {
         case Bitmap::AlphaTransform::Empty:
@@ -417,7 +424,7 @@ void Bitmap::convert(Bitmap *target) const {
         Throw("Bitmap::convert(): Incompatible target size!"
               " This: %s vs target: %s)", m_size, target->size());
 
-    ref<Struct> target_struct = new Struct(*(target->struct_()));
+    sj::Struct target_struct(target->struct_());
 
     bool source_is_rgb = m_pixel_format == PixelFormat::RGB ||
                          m_pixel_format == PixelFormat::RGBW ||
@@ -428,8 +435,8 @@ void Bitmap::convert(Bitmap *target) const {
     bool source_is_y   = m_pixel_format == PixelFormat::Y ||
                          m_pixel_format == PixelFormat::YA;
 
-    for (auto &field: *target_struct) {
-        if (m_struct->has_field(field.name))
+    for (auto &field: target_struct) {
+        if (m_struct.contains(field.name))
             continue;
         if (!field.blend.empty())
             continue;
@@ -444,8 +451,8 @@ void Bitmap::convert(Bitmap *target) const {
 
         // Set alpha/weight to 1.0 by default
         if (suffix == "A" || suffix == "W") {
-            field.default_ = 1.0;
-            field.flags |= +Struct::Flags::Default;
+            field.value = 1.0;
+            field.flags |= +sj::Flag::Default;
             continue;
         }
 
@@ -458,7 +465,7 @@ void Bitmap::convert(Bitmap *target) const {
                 };
                 continue;
             } else if (source_is_y) {
-                field.name = prefix + "Y";
+                field.source = prefix + "Y";
                 continue;
             }
         } else if (suffix == "G") {
@@ -470,7 +477,7 @@ void Bitmap::convert(Bitmap *target) const {
                 };
                 continue;
             } else if (source_is_y) {
-                field.name = prefix + "Y";
+                field.source = prefix + "Y";
                 continue;
             }
         } else if (suffix == "B") {
@@ -482,7 +489,7 @@ void Bitmap::convert(Bitmap *target) const {
                 };
                 continue;
             } else if (source_is_y) {
-                field.name = prefix + "Y";
+                field.source = prefix + "Y";
                 continue;
             }
         } else if (suffix == "X") {
@@ -506,7 +513,7 @@ void Bitmap::convert(Bitmap *target) const {
                 };
                 continue;
             } else if (source_is_y) {
-                field.blend = {{ 1.0, prefix + "Y" }};
+                field.source = prefix + "Y";
                 continue;
             }
         } else if (suffix == "Z") {
@@ -527,8 +534,9 @@ void Bitmap::convert(Bitmap *target) const {
               m_struct, target_struct, field.name);
     }
 
-    StructConverter conv(m_struct, target_struct, true);
-    bool rv = conv.convert_2d(m_size.x(), m_size.y(), uint8_data(), target->uint8_data());
+    const sj::Converter &conv =
+        sj::make_converter(m_struct, target_struct, true, true, sj::Type::Float32);
+    bool rv = conv.convert(uint8_data(), target->uint8_data(), m_size.x(), m_size.y());
     if (!rv)
         Throw("Bitmap::convert(): conversion kernel indicated a failure!");
 }
@@ -544,32 +552,32 @@ void Bitmap::accumulate(const Bitmap *source,
         Throw("Bitmap::accumulate(): source and target are incompatible!");
 
     switch (m_component_format) {
-        case Struct::Type::UInt8:
+        case sj::Type::UInt8:
             accumulate_2d((const uint8_t *) source->data(), source->size(), (uint8_t *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
-        case Struct::Type::UInt16:
+        case sj::Type::UInt16:
             accumulate_2d((const uint16_t *) source->data(), source->size(), (uint16_t *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
-        case Struct::Type::UInt32:
+        case sj::Type::UInt32:
             accumulate_2d((const uint32_t *) source->data(), source->size(), (uint32_t *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
-        case Struct::Type::Float16:
+        case sj::Type::Float16:
             accumulate_2d((const dr::half *) source->data(), source->size(), (dr::half *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
-        case Struct::Type::Float32:
+        case sj::Type::Float32:
             accumulate_2d((const float *) source->data(), source->size(), (float *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
-        case Struct::Type::Float64:
+        case sj::Type::Float64:
             accumulate_2d((const double *) source->data(), source->size(), (double *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
@@ -589,11 +597,11 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
 
     using FieldMap = std::unordered_multimap<
           std::string,
-          std::pair<std::string, const Struct::Field *>>;
+          std::pair<std::string, const sj::Field *>>;
 
     FieldMap fields;
-    for (size_t i = 0; i < m_struct->field_count(); ++i) {
-        const Struct::Field &field = (*m_struct)[i];
+    for (size_t i = 0; i < m_struct.size(); ++i) {
+        const sj::Field &field = m_struct[i];
         auto it = field.name.rfind(".");
 
         std::string prefix, suffix;
@@ -666,15 +674,16 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         target->set_srgb_gamma(m_srgb_gamma);
         target->set_premultiplied_alpha(m_premultiplied_alpha);
 
-        ref<Struct> target_struct = new Struct(*target->struct_());
+        sj::Struct target_struct(target->struct_());
 
         for (auto it2 = range.first; it2 != range.second; ++it2)
-            target_struct->field(it2->second.first).name =
+            target_struct[it2->second.first].name =
                 it2->second.second->name;
 
-        StructConverter conv(m_struct, target_struct, true);
-        bool rv = conv.convert_2d(m_size.x(), m_size.y(), uint8_data(),
-                                  target->uint8_data());
+        const sj::Converter &conv =
+            sj::make_converter(m_struct, target_struct, true, true, sj::Type::Float32);
+        bool rv = conv.convert(uint8_data(), target->uint8_data(),
+                               m_size.x(), m_size.y());
         if (!rv)
             Throw("Bitmap::split(): conversion kernel indicated a failure!");
 
@@ -828,7 +837,7 @@ bool Bitmap::operator==(const Bitmap &bitmap) const {
         m_size != bitmap.m_size ||
         m_srgb_gamma != bitmap.m_srgb_gamma ||
         m_premultiplied_alpha != bitmap.m_premultiplied_alpha ||
-        *m_struct != *bitmap.m_struct ||
+        m_struct != bitmap.m_struct ||
         m_metadata != bitmap.m_metadata))
         return false;
     return memcmp(uint8_data(), bitmap.uint8_data(), buffer_size()) == 0;
@@ -843,19 +852,19 @@ std::string Bitmap::to_string() const {
         << "  srgb_gamma = " << m_srgb_gamma << "," << std::endl
         << "  struct = " << string::indent(m_struct) << "," << std::endl;
 
-    std::vector<std::string> keys = m_metadata.property_names();
-    if (!keys.empty()) {
+    if (!m_metadata.empty()) {
         oss << "  metadata = {" << std::endl;
-        for (auto it = keys.begin(); it != keys.end(); ) {
-            std::string value = m_metadata.as_string(*it);
+        size_t i = 0;
+        for (auto &kv : m_metadata) {
+            std::string value = m_metadata.as_string(kv.name());
             if (value.length() > 50) {
                 value = value.substr(0, 50);
                 if (value[0] == '\"')
                     value += '\"';
                 value += ".. [truncated]";
             }
-            oss << "    " << *it << " => " << value;
-            if (++it != keys.end())
+            oss << "    " << kv.name() << " => " << value;
+            if (++i < m_metadata.size())
                 oss << ",";
             oss << std::endl;
         }
@@ -951,40 +960,40 @@ void Bitmap::read_exr(Stream *stream) {
 
     // Load metadata if present
     for (auto it = header.begin(); it != header.end(); ++it) {
-        std::string name = it.name();
+        std::string_view name = it.name();
         const Imf::Attribute *attr = &it.attribute();
-        std::string type_name = attr->typeName();
+        std::string_view type_name = attr->typeName();
 
         if (type_name == "string") {
             auto v = static_cast<const Imf::StringAttribute *>(attr);
-            m_metadata.set_string(name, v->value());
+            m_metadata.set(name, v->value());
         } else if (type_name == "int") {
             auto v = static_cast<const Imf::IntAttribute *>(attr);
-            m_metadata.set_long(name, v->value());
+            m_metadata.set(name, v->value());
         } else if (type_name == "float") {
             auto v = static_cast<const Imf::FloatAttribute *>(attr);
-            m_metadata.set_float(name, Properties::Float(v->value()));
+            m_metadata.set(name, (double)(v->value()));
         } else if (type_name == "double") {
             auto v = static_cast<const Imf::DoubleAttribute *>(attr);
-            m_metadata.set_float(name, Properties::Float(v->value()));
+            m_metadata.set(name, (double)(v->value()));
         } else if (type_name == "v3f") {
             auto v = static_cast<const Imf::V3fAttribute *>(attr);
             Imath::V3f vec = v->value();
-            m_metadata.set_array3f(name, Vector3f(vec.x, vec.y, vec.z));
+            m_metadata.set(name, Vector3f(vec.x, vec.y, vec.z));
         } else if (type_name == "m44f") {
             auto v = static_cast<const Imf::M44fAttribute *>(attr);
             Matrix4f M;
             for (size_t i = 0; i < 4; ++i)
                 for (size_t j = 0; j < 4; ++j)
                     M(i, j) = v->value().x[i][j];
-            m_metadata.set_transform(name, Transform4f(M));
+            m_metadata.set(name, AffineTransform4f(M));
         } else if (type_name == "m33f") {
             auto v = static_cast<const Imf::M33fAttribute *>(attr);
-            Matrix3f M;
+            Matrix4f M = dr::identity<Matrix4f>();
             for (size_t i = 0; i < 3; ++i)
                 for (size_t j = 0; j < 3; ++j)
                     M(i, j) = v->value().x[i][j];
-            m_metadata.set_transform3f(name, Transform3f(M));
+            m_metadata.set(name, AffineTransform4f(M));
         }
     }
 
@@ -992,13 +1001,13 @@ void Bitmap::read_exr(Stream *stream) {
     m_srgb_gamma = false;
     m_premultiplied_alpha = true;
     m_pixel_format = PixelFormat::MultiChannel;
-    m_struct = new Struct();
+    m_struct = sj::Struct();
     Imf::PixelType pixel_type = channels.begin().channel().type;
 
     switch (pixel_type) {
-        case Imf::HALF:  m_component_format = Struct::Type::Float16; break;
-        case Imf::FLOAT: m_component_format = Struct::Type::Float32; break;
-        case Imf::UINT:  m_component_format = Struct::Type::UInt32;  break;
+        case Imf::HALF:  m_component_format = sj::Type::Float16; break;
+        case Imf::FLOAT: m_component_format = sj::Type::Float32; break;
+        case Imf::UINT:  m_component_format = sj::Type::UInt32;  break;
         default: Throw("read_exr(): Invalid component type (must be "
                        "float16, float32, or uint32)");
     }
@@ -1054,42 +1063,42 @@ void Bitmap::read_exr(Stream *stream) {
 
     // Order channel names based on RGB/XYZ[A] suffix
     for (auto const &name: channels_sorted) {
-        uint32_t flags = +Struct::Flags::Empty;
+        uint32_t flags = 0u;
         // Tag alpha channels to be able to perform operations depending on alpha
         auto c_class = channel_class(name);
         if (c_class == A)
-            flags |= +Struct::Flags::Alpha;
+            flags |= +sj::Flag::Alpha;
 
         // Currently we don't support alpha transformations for multi-layer images
         // So it is okay to just set this for all non-alpha channels
         if (c_class != A)
-            flags |= +Struct::Flags::PremultipliedAlpha;
-        m_struct->append(name, m_component_format, flags);
+            flags |= +sj::Flag::PremultipliedAlpha;
+        m_struct.append(name, m_component_format, flags);
     }
 
     // Attempt to detect a standard combination of color channels
     m_pixel_format = PixelFormat::MultiChannel;
     bool luminance_chroma_format = false;
     if (found[R] && found[G] && found[B]) {
-        if (m_struct->field_count() == 3)
+        if (m_struct.size() == 3)
             m_pixel_format = PixelFormat::RGB;
-        else if (found[A] && m_struct->field_count() == 4)
+        else if (found[A] && m_struct.size() == 4)
             m_pixel_format = PixelFormat::RGBA;
     } else if (found[X] && found[Y] && found[Z]) {
-        if (m_struct->field_count() == 3)
+        if (m_struct.size() == 3)
             m_pixel_format = PixelFormat::XYZ;
-        else if (found[A] && m_struct->field_count() == 4)
+        else if (found[A] && m_struct.size() == 4)
             m_pixel_format = PixelFormat::XYZA;
     } else if (found[Y] && found[RY] && found[BY]) {
-        if (m_struct->field_count() == 3)
+        if (m_struct.size() == 3)
             m_pixel_format = PixelFormat::RGB;
-        else if (found[A] && m_struct->field_count() == 4)
+        else if (found[A] && m_struct.size() == 4)
             m_pixel_format = PixelFormat::RGBA;
         luminance_chroma_format = true;
     } else if (found[Y]) {
-        if (m_struct->field_count() == 1)
+        if (m_struct.size() == 1)
             m_pixel_format = PixelFormat::Y;
-        else if (found[A] && m_struct->field_count() == 2)
+        else if (found[A] && m_struct.size() == 2)
             m_pixel_format = PixelFormat::YA;
     }
 
@@ -1134,7 +1143,7 @@ void Bitmap::read_exr(Stream *stream) {
 
     // Tell OpenEXR where the image data should be put
     Imf::FrameBuffer framebuffer;
-    for (auto const &field: *m_struct) {
+    for (auto const &field: m_struct) {
         const Imf::Channel &channel = channels[field.name];
         Vector2i sampling(channel.xSampling, channel.ySampling);
         Imf::Slice slice;
@@ -1151,10 +1160,10 @@ void Bitmap::read_exr(Stream *stream) {
 
             uint8_t *ptr_nested = bitmap->uint8_data() -
                 (data_window.min.x / sampling.x() +
-                 data_window.min.y / sampling.y() * (size_t) channel_size.x()) * field.size;
+                 data_window.min.y / sampling.y() * (size_t) channel_size.x()) * sj::type_size(field.type);
 
-            slice = Imf::Slice(pixel_type, (char *) ptr_nested, field.size,
-                               field.size * channel_size.x(), sampling.x(),
+            slice = Imf::Slice(pixel_type, (char *) ptr_nested, sj::type_size(field.type),
+                               sj::type_size(field.type) * channel_size.x(), sampling.x(),
                                sampling.y());
 
             resample_buffers.emplace_back(field.name, std::move(bitmap));
@@ -1202,9 +1211,9 @@ void Bitmap::read_exr(Stream *stream) {
             m_size.x(), m_size.y());
 
         buf.second = buf.second->resample(m_size);
-        const Struct::Field &field = m_struct->field(buf.first);
+        const sj::Field &field = m_struct[buf.first];
 
-        size_t comp_size = field.size;
+        size_t comp_size = sj::type_size(field.type);
         uint8_t *dst = uint8_data() + field.offset;
         uint8_t *src = buf.second->uint8_data();
 
@@ -1251,14 +1260,14 @@ void Bitmap::read_exr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((dr::half *)    m_data.get()); break;
-            case Struct::Type::Float32: convert((float *)       m_data.get()); break;
-            case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
+            case sj::Type::Float16: convert((dr::half *)    m_data.get()); break;
+            case sj::Type::Float32: convert((float *)       m_data.get()); break;
+            case sj::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
         }
 
         for (int i = 0; i < 3; ++i) {
-            std::string &name = m_struct->operator[](i).name;
+            std::string &name = m_struct[i].name;
             name = set_suffix(name, std::string(1, "RGB"[i]));
         }
     }
@@ -1277,7 +1286,7 @@ void Bitmap::read_exr(Stream *stream) {
             m_pixel_format =
                 m_pixel_format == PixelFormat::RGB ? PixelFormat::XYZ : PixelFormat::XYZA;
             for (int i = 0; i < 3; ++i) {
-                std::string &name = m_struct->operator[](i).name;
+                std::string &name = m_struct[i].name;
                 name = set_suffix(name, std::string(1, "XYZ"[i]));
             }
         } else {
@@ -1322,9 +1331,9 @@ void Bitmap::read_exr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((dr::half *)    m_data.get()); break;
-            case Struct::Type::Float32: convert((float *)       m_data.get()); break;
-            case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
+            case sj::Type::Float16: convert((dr::half *)    m_data.get()); break;
+            case sj::Type::Float32: convert((float *)       m_data.get()); break;
+            case sj::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
         }
     }
@@ -1337,9 +1346,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generatedBy"))
-        metadata.set_string("generatedBy", "Mitsuba version " MI_VERSION);
-
-    std::vector<std::string> keys = metadata.property_names();
+        metadata.set("generatedBy", "Mitsuba version " MI_VERSION);
 
     Imf::Header header(
         (int) m_size.x(),  // width
@@ -1354,40 +1361,35 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
     if (quality > 0)
         Imf::addDwaCompressionLevel(header, float(quality));
 
-    for (auto it = keys.begin(); it != keys.end(); ++it) {
+    for (auto &prop : metadata) {
         using Type = Properties::Type;
 
-        Type type = metadata.type(*it);
-        if (*it == "pixelAspectRatio" || *it == "screenWindowWidth" ||
-            *it == "screenWindowCenter")
+        if (prop.name() == "pixelAspectRatio" ||
+            prop.name() == "screenWindowWidth" ||
+            prop.name() == "screenWindowCenter")
             continue;
 
-        switch (type) {
+        const char *name = prop.name().data();
+
+        switch (prop.type()) {
             case Type::String:
-                header.insert(it->c_str(), Imf::StringAttribute(metadata.string(*it)));
+                header.insert(name, Imf::StringAttribute(std::string(prop.get<std::string_view>())));
                 break;
-            case Type::Long:
-                header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(*it)));
+            case Type::Integer:
+                header.insert(name, Imf::IntAttribute(prop.get<int>()));
                 break;
             case Type::Float:
-                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<double>(*it)));
+                header.insert(name, Imf::DoubleAttribute(prop.get<double>()));
                 break;
-            case Type::Array3f: {
-                    Vector3f val = metadata.get<Vector3f>(*it);
-                    header.insert(it->c_str(), Imf::V3fAttribute(
+            case Type::Vector: {
+                    Vector3f val = prop.get<Vector3f>();
+                    header.insert(name, Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
-            case Type::Transform3f: {
-                   Matrix3f val = metadata.get<ScalarTransform3f>(*it).matrix;
-                    header.insert(it->c_str(), Imf::M33fAttribute(Imath::M33f(
-                        (float) val(0, 0), (float) val(0, 1), (float) val(0, 2),
-                        (float) val(1, 0), (float) val(1, 1), (float) val(1, 2),
-                        (float) val(2, 0), (float) val(2, 1), (float) val(2, 2))));
-                } break;
-            case Type::Transform4f: {
-                    Matrix4f val = metadata.get<ScalarTransform4f>(*it).matrix;
-                    header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
+            case Type::Transform: {
+                    Matrix4f val = prop.get<ScalarAffineTransform4f>().matrix;
+                    header.insert(name, Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),
                         (float) val(0, 2), (float) val(0, 3),
                         (float) val(1, 0), (float) val(1, 1),
@@ -1399,7 +1401,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                 }
                 break;
             default:
-                header.insert(it->c_str(), Imf::StringAttribute(metadata.as_string(*it)));
+                header.insert(name, Imf::StringAttribute(metadata.as_string(prop.name())));
                 break;
         }
     }
@@ -1412,18 +1414,18 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
             Imath::V2f(1.f / 3.f, 1.f / 3.f)));
     }
 
-    size_t pixel_stride = m_struct->size(),
+    size_t pixel_stride = m_struct.nbytes(),
            row_stride = pixel_stride * m_size.x();
 
     Imf::ChannelList &channels = header.channels();
     Imf::FrameBuffer framebuffer;
     const uint8_t *ptr = uint8_data();
-    for (auto field : *m_struct) {
+    for (auto field : m_struct) {
         Imf::PixelType comp_type;
         switch (field.type) {
-            case Struct::Type::Float32: comp_type = Imf::FLOAT; break;
-            case Struct::Type::Float16: comp_type = Imf::HALF; break;
-            case Struct::Type::UInt32: comp_type = Imf::UINT; break;
+            case sj::Type::Float32: comp_type = Imf::FLOAT; break;
+            case sj::Type::Float16: comp_type = Imf::HALF; break;
+            case sj::Type::UInt32: comp_type = Imf::UINT; break;
             default: Throw("Unexpected field type!");
         }
 
@@ -1554,7 +1556,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     jpeg_start_decompress(&cinfo);
 
     m_size = Vector2u(cinfo.output_width, cinfo.output_height);
-    m_component_format = Struct::Type::UInt8;
+    m_component_format = sj::Type::UInt8;
     m_srgb_gamma = true;
     m_premultiplied_alpha = false;
 
@@ -1607,9 +1609,9 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     else
         Throw("write_jpeg(): Unsupported pixel format!");
 
-    if (m_component_format != Struct::Type::UInt8)
+    if (m_component_format != sj::Type::UInt8)
         Throw("write_jpeg(): Unsupported component format %s, expected %s",
-              m_component_format, Struct::Type::UInt8);
+              m_component_format, sj::Type::UInt8);
 
     memset(&jbuf, 0, sizeof(jbuf_out_t));
     cinfo.err = jpeg_std_error(&jerr);
@@ -1743,8 +1745,8 @@ void Bitmap::read_png(Stream *stream) {
     }
 
     switch (bit_depth) {
-        case 8: m_component_format = Struct::Type::UInt8; break;
-        case 16: m_component_format = Struct::Type::UInt16; break;
+        case 8: m_component_format = sj::Type::UInt8; break;
+        case 16: m_component_format = sj::Type::UInt16; break;
         default: Throw("read_png(): Unsupported bit depth: %i", bit_depth);
     }
 
@@ -1759,7 +1761,7 @@ void Bitmap::read_png(Stream *stream) {
     png_get_text(png_ptr, info_ptr, &text_ptr, &text_idx);
 
     for (int i = 0; i < text_idx; ++i, text_ptr++)
-        m_metadata.set_string(text_ptr->key, text_ptr->text);
+        m_metadata.set(text_ptr->key, text_ptr->text);
 
     auto fs = dynamic_cast<FileStream *>(stream);
     Log(Debug, "Loading PNG file \"%s\" (%ix%i, %s, %s) ..",
@@ -1801,8 +1803,8 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     }
 
     switch (m_component_format) {
-        case Struct::Type::UInt8: bit_depth = 8; break;
-        case Struct::Type::UInt16: bit_depth = 16; break;
+        case sj::Type::UInt8: bit_depth = 8; break;
+        case sj::Type::UInt16: bit_depth = 16; break;
         default:
             Throw("write_png(): Unsupported component type!");
             return;
@@ -1833,22 +1835,28 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generated_by"))
-        metadata.set_string("generated_by", "Mitsuba version " MI_VERSION);
+        metadata.set("generated_by", "Mitsuba version " MI_VERSION);
 
-    std::vector<std::string> keys = metadata.property_names();
-    std::vector<std::string> values(keys.size());
+    size_t metadata_count = metadata.size();
+    std::vector<std::string> keys, values;
+    keys.reserve(metadata_count);
+    values.reserve(metadata_count);
 
-    text = new png_text[keys.size()];
-    memset(text, 0, sizeof(png_text) * keys.size());
+    for (auto &kv : metadata) {
+        keys.emplace_back(kv.name());
+        values.push_back(metadata.as_string(kv.name()));
+    }
 
-    for (size_t i = 0; i<keys.size(); ++i) {
-        values[i] = metadata.as_string(keys[i]);
+    text = new png_text[metadata_count];
+    memset(text, 0, sizeof(png_text) * metadata_count);
+
+    for (size_t i = 0; i < metadata_count; ++i) {
         text[i].key = const_cast<char *>(keys[i].c_str());
         text[i].text = const_cast<char *>(values[i].c_str());
         text[i].compression = PNG_TEXT_COMPRESSION_NONE;
     }
 
-    png_set_text(png_ptr, info_ptr, text, (int) keys.size());
+    png_set_text(png_ptr, info_ptr, text, (int) metadata_count);
 
     if (m_srgb_gamma)
         png_set_sRGB_gAMA_and_cHRM(png_ptr, info_ptr, PNG_sRGB_INTENT_ABSOLUTE);
@@ -1861,7 +1869,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     png_write_info(png_ptr, info_ptr);
 
     #if defined(LITTLE_ENDIAN)
-        if (m_component_format == Struct::Type::UInt16 || m_component_format == Struct::Type::Int16)
+        if (m_component_format == sj::Type::UInt16 || m_component_format == sj::Type::Int16)
             png_set_swap(png_ptr); // Swap the byte order on little endian machines
     #endif
 
@@ -1919,7 +1927,7 @@ void Bitmap::read_ppm(Stream *stream) {
     m_pixel_format = PixelFormat::RGB;
     m_srgb_gamma = true;
     m_premultiplied_alpha = false;
-    m_component_format = int_values[2] <= 0xFF ? Struct::Type::UInt8 : Struct::Type::UInt16;
+    m_component_format = int_values[2] <= 0xFF ? sj::Type::UInt8 : sj::Type::UInt16;
     rebuild_struct();
 
     auto fs = dynamic_cast<FileStream *>(stream);
@@ -1936,11 +1944,11 @@ void Bitmap::read_ppm(Stream *stream) {
 void Bitmap::write_ppm(Stream *stream) const {
     ScopedPhase phase(ProfilerPhase::BitmapWrite);
     if (m_pixel_format != PixelFormat::RGB ||
-        (m_component_format != Struct::Type::UInt8 && m_component_format != Struct::Type::UInt16))
+        (m_component_format != sj::Type::UInt8 && m_component_format != sj::Type::UInt16))
         Throw("write_ppm(): Only 8 or 16-bit RGB images are supported");
     stream->write_line(
         tfm::format("P6\n%i\n%i\n%i", m_size.x(), m_size.y(),
-                    m_component_format == Struct::Type::UInt8 ? 0xFF : 0xFFFF));
+                    m_component_format == sj::Type::UInt8 ? 0xFF : 0xFFFF));
     stream->write(uint8_data(), buffer_size());
 }
 
@@ -2065,7 +2073,7 @@ void Bitmap::read_rgbe(Stream *stream) {
     if (!format_recognized)
         Throw("read_rgbe(): unrecognized format!");
 
-    m_component_format = Struct::Type::Float32;
+    m_component_format = sj::Type::Float32;
     m_srgb_gamma = false;
     m_premultiplied_alpha = false;
 
@@ -2147,7 +2155,7 @@ void Bitmap::read_rgbe(Stream *stream) {
 
 void Bitmap::write_rgbe(Stream *stream) const {
     ScopedPhase phase(ProfilerPhase::BitmapWrite);
-    if (m_component_format != Struct::Type::Float32)
+    if (m_component_format != sj::Type::Float32)
         Throw("write_rgbe(): component format must be Float32!");
 
     std::string format_name;
@@ -2160,10 +2168,9 @@ void Bitmap::write_rgbe(Stream *stream) const {
 
     stream->write_line("#?RGBE");
 
-    std::vector<std::string> keys = m_metadata.property_names();
-    for (auto key : keys) {
-        stream->write_line(tfm::format("# Metadata [%s]:", key));
-        std::istringstream iss(m_metadata.as_string(key));
+    for (auto &kv : m_metadata) {
+        stream->write_line(tfm::format("# Metadata [%s]:", kv.name()));
+        std::istringstream iss(m_metadata.as_string(kv.name()));
         std::string buf;
         while (std::getline(iss, buf))
             stream->write_line(tfm::format("#   %s", buf));
@@ -2221,7 +2228,7 @@ void Bitmap::read_pfm(Stream *stream) {
 
     bool color = header[1] == 'F';
     m_pixel_format = color ? PixelFormat::RGB : PixelFormat::Y;
-    m_component_format = Struct::Type::Float32;
+    m_component_format = sj::Type::Float32;
     m_srgb_gamma = false;
     m_premultiplied_alpha = false;
 
@@ -2270,7 +2277,7 @@ void Bitmap::read_pfm(Stream *stream) {
 
 void Bitmap::write_pfm(Stream *stream) const {
     ScopedPhase phase(ProfilerPhase::BitmapWrite);
-    if (m_component_format != Struct::Type::Float32)
+    if (m_component_format != sj::Type::Float32)
         Throw("write_pfm(): component format must be Float32!");
     if (m_pixel_format != PixelFormat::RGB && m_pixel_format != PixelFormat::RGBA &&
         m_pixel_format != PixelFormat::Y)
@@ -2356,7 +2363,7 @@ void Bitmap::read_bmp(Stream *stream) {
             Throw("read_bmp(): Compressed files are currently not supported!");
 
         m_size = Vector2u(width, dr::abs(height));
-        m_component_format = Struct::Type::UInt8;
+        m_component_format = sj::Type::UInt8;
         m_srgb_gamma = true;
         m_premultiplied_alpha = true;
 
@@ -2430,7 +2437,7 @@ void Bitmap::read_tga(Stream *stream) {
         m_size = Vector2u((uint32_t) width, (uint32_t) height);
         m_srgb_gamma = true;
         m_premultiplied_alpha = false;
-        m_component_format = Struct::Type::UInt8;
+        m_component_format = sj::Type::UInt8;
 
         bool do_vflip = !(descriptor & (1 << 5));
         bool greyscale = color_type == 3 || color_type == 11;
@@ -2553,7 +2560,5 @@ void Bitmap::static_initialization() {
 }
 
 void Bitmap::static_shutdown() { }
-
-MI_IMPLEMENT_CLASS(Bitmap, Object)
 
 NAMESPACE_END(mitsuba)

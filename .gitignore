@@ -3,8 +3,11 @@
 *.sublime-workspace
 
 # VS & VSCode
-/.vscode
-/.vs
+/\.vscode
+/\.vs
+
+# JetBrains
+/\.idea
 
 # Jupyter
 /.ipynb_checkpoints
@@ -20,6 +23,9 @@ __pycache__
 
 # macOS
 \.DS_Store
+
+# Clangd
+/\.cache
 
 # Default build directory
 /build*

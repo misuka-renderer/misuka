@@ -1,44 +1,22 @@
 #pragma once
 
+#include <mitsuba/render/bsdf.h>
 #include <drjit/call.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
+#include <mitsuba/render/fwd.h>
+#include <mitsuba/render/scene_ir.h>
 #include <drjit/packet.h>
-#include <unordered_map>
+#include <tsl/robin_map.h>
 
 #if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-
-/// Enumeration of all shape types in Mitsuba
-enum class ShapeType : uint32_t {
-    /// Meshes (`ply`, `obj`, `serialized`)
-    Mesh = 0u,
-    /// B-Spline curves (`bsplinecurve`)
-    BSplineCurve = 1u,
-    /// Cylinders (`cylinder`)
-    Cylinder = 2u,
-    /// Disks (`disk`)
-    Disk = 3u,
-    /// Linear curves (`linearcurve`)
-    LinearCurve = 4u,
-    /// Rectangles (`rectangle`)
-    Rectangle = 5u,
-    /// SDF Grids (`sdfgrid`)
-    SDFGrid = 6u,
-    /// Spheres (`sphere`)
-    Sphere = 7u,
-    /// Instance (`instance`)
-    Instance = 8u,
-    /// Other shapes
-    Other = 9u
-};
-MI_DECLARE_ENUM_OPERATORS(ShapeType)
 
 /**
  * \brief This list of flags is used to control the behavior of discontinuity
@@ -183,7 +161,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
           d(0), silhouette_d(0), prim_index(0), scene_index(0), flags(0),
           projection_index(0), shape(nullptr), foreshortening(0), offset(0) {}
 
-    /// Is the current boundary segment valid=
+    /// Is the current boundary segment valid?
     Mask is_valid() const {
         return discontinuity_type != (uint32_t) DiscontinuityFlags::Empty;
     }
@@ -191,16 +169,16 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /**
      * \brief Spawn a ray on the silhouette point in the direction of \ref d
      *
-     * The ray origin is offset in the direction of the segment (\ref d) aswell
-     * as in the in the direction of the silhouette normal (\ref n). Without this
+     * The ray origin is offset in the direction of the segment (\ref d) as well
+     * as in the direction of the silhouette normal (\ref n). Without this
      * offsetting, during a ray intersection, the ray could potentially find
      * an intersection point at its origin due to numerical instabilities in
      * the intersection routines.
      */
-    Ray3f spawn_ray() const {
+    Ray3f spawn_ray(Wavelength wavelengths = dr::zeros<Wavelength>()) const {
         Vector3f o_offset = (1 + dr::max(dr::abs(p))) *
                             (d * offset + n * math::ShapeEpsilon<Float>);
-        return Ray3f(p + o_offset, d);
+        return Ray3f(p + o_offset, d, 0.f, wavelengths);
     }
 
     //! @}
@@ -217,9 +195,21 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
  * This class provides core functionality for sampling positions on surfaces,
  * computing ray intersections, and bounding shapes within ray intersection
  * acceleration data structures.
+ *
+ * Two types of attributes can be associated with a shape:
+ * 1. Texture attributes (\c Shape::add_texture_attribute), which must be
+ *    a \c Texture instance but can have arbitrary resolution. The UV
+ *    parametrization of the shape is used to look up texture attribute values.
+ * 2. Mesh attributes (\c Mesh::add_attribute), which can only be added
+ *    to mesh-type Shapes. They must be either per-vertex or per-face attributes,
+ *    their name must start with "vertex_" (resp. "face_"), and their size
+ *    must match the number of vertices (resp. faces) of the mesh.
+ *
+ * Once registered, attributes are queried with the \c Shape::eval_attribute*
+ * methods.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Shape : public Object {
+class MI_EXPORT_LIB Shape : public JitObject<Shape<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
 
@@ -472,7 +462,7 @@ public:
     precompute_silhouette(const ScalarPoint3f &viewpoint) const;
 
     /**
-     * \brief Samples a boundary segement on the shape's silhouette using
+     * \brief Samples a boundary segment on the shape's silhouette using
      * precomputed information computed in \ref precompute_silhouette.
      *
      * This method is meant to be used for silhouettes that are shared between
@@ -516,7 +506,7 @@ public:
      *
      * If the intersection is deemed relevant (e.g. the closest to the ray
      * origin), detailed intersection information can later be obtained via the
-     * \ref create_surface_interaction() method.
+     * \ref compute_surface_interaction() method.
      *
      * \param ray
      *     The ray to be tested for an intersection
@@ -608,11 +598,12 @@ public:
      *     The ray to be tested for an intersection
      *
      * \return
-     *     A tuple containing the following field: \c t, \c uv, \c shape_index,
-     *     \c prim_index. The \c shape_index should be only used by the
+     *     A tuple containing the following field: \c valid, \c t, \c uv,
+     *     \c shape_index, \c prim_index. The \c shape_index should be only used by the
      *     \ref ShapeGroup class and be set to \c (uint32_t)-1 otherwise.
      */
-    virtual std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>
+    virtual std::tuple<bool, ScalarFloat, ScalarPoint2f,
+                       ScalarUInt32, ScalarUInt32>
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const;
     virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
@@ -624,7 +615,8 @@ public:
         using Point2fP##N = Point<FloatP##N, 2>;                                \
         using Point3fP##N = Point<FloatP##N, 3>;                                \
         using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                         \
-        virtual std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>      \
+        virtual std::tuple<MaskP##N, FloatP##N, Point2fP##N,                    \
+                           UInt32P##N, UInt32P##N>                              \
         ray_intersect_preliminary_packet(const Ray3fP##N &ray,                  \
                                          ScalarIndex prim_index = 0,            \
                                          MaskP##N active = true) const;         \
@@ -680,12 +672,41 @@ public:
     virtual Float surface_area() const;
 
     /**
+     * \brief Add a texture attribute with the given \c name.
+     *
+     * If an attribute with the same name already exists, it is replaced.
+     *
+     * Note that \c Mesh shapes can additionally handle per-vertex
+     * and per-face attributes via the \c Mesh::add_attribute method.
+     *
+     * \param name
+     *     Name of the attribute
+     * \param texture
+     *     Texture to store. The dimensionality of the attribute
+     *     is simply the channel count of the texture.
+     */
+    virtual void add_texture_attribute(std::string_view name, Texture *texture);
+
+    /// Return the texture attribute associated with \c name.
+    Texture *texture_attribute(std::string_view name);
+
+    /// Return the texture attribute associated with \c name.
+    const Texture *texture_attribute(std::string_view name) const;
+
+    /**
+     * \brief Remove a texture texture with the given \c name.
+     *
+     * Throws an exception if the attribute was not registered.
+     */
+    virtual void remove_attribute(std::string_view name);
+
+    /**
      * \brief Returns whether this shape contains the specified attribute.
      *
      * \param name
      *     Name of the attribute
      */
-    virtual Mask has_attribute(const std::string &name, Mask active = true) const;
+    virtual Mask has_attribute(std::string_view name, Mask active = true) const;
 
     /**
      * \brief Evaluate a specific shape attribute at the given surface interaction.
@@ -703,7 +724,7 @@ public:
      * \return
      *     An unpolarized spectral power distribution or reflectance value
      */
-    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
+    virtual UnpolarizedSpectrum eval_attribute(std::string_view name,
                                                const SurfaceInteraction3f &si,
                                                Mask active = true) const;
 
@@ -723,7 +744,7 @@ public:
      * \return
      *     An scalar intensity or reflectance value
      */
-    virtual Float eval_attribute_1(const std::string &name,
+    virtual Float eval_attribute_1(std::string_view name,
                                    const SurfaceInteraction3f &si,
                                    Mask active = true) const;
 
@@ -741,11 +762,27 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An trichromatic intensity or reflectance value
+     *     A trichromatic intensity or reflectance value
      */
-    virtual Color3f eval_attribute_3(const std::string &name,
+    virtual Color3f eval_attribute_3(std::string_view name,
                                      const SurfaceInteraction3f &si,
                                      Mask active = true) const;
+
+    /**
+     * \brief Evaluate a dynamically sized shape attribute at the given surface interaction.
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     A dynamic array of attribute values
+     */
+    virtual dr::DynamicArray<Float> eval_attribute_x(std::string_view name,
+                                                     const SurfaceInteraction3f &si,
+                                                     Mask active = true) const;
 
     /**
      * \brief Parameterize the mesh using UV values
@@ -766,23 +803,24 @@ public:
     //! @{ \name Miscellaneous
     // =============================================================
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /// Is this shape a triangle mesh?
-    bool is_mesh() const { return (shape_type() == +ShapeType::Mesh); };
+    bool is_mesh() const { return shape_type() & ShapeType::Mesh; }
+
+    /// Is this shape a \ref ShapeType::Ellipsoids or \ref ShapeType::EllipsoidsMesh
+    bool is_ellipsoids() const {
+        uint32_t st = shape_type();
+        st &= ~ShapeType::Mesh;
+        return (st & ShapeType::Ellipsoids) | (st & ShapeType::EllipsoidsMesh);
+    }
 
     /// Returns the shape type \ref ShapeType of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
 
-    /// Is this shape a shapegroup?
-    bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
+    /// Is this shape a shape group?
+    bool is_shape_group() const { return (shape_type() == +ShapeType::ShapeGroup); };
 
     /// Is this shape an instance?
-    bool is_instance() const { return (shape_type() == +ShapeType::Instance); };
+    bool is_instance() const { return shape_type() == +ShapeType::Instance; };
 
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
@@ -799,6 +837,9 @@ public:
 
     /// Return the shape's BSDF
     BSDF *bsdf(Mask /*unused*/ = true) { return m_bsdf.get(); }
+
+    /// Set the shape's BSDF
+    virtual void set_bsdf(BSDF *bsdf);
 
     /// Is this shape also an area emitter?
     bool is_emitter() const { return (bool) m_emitter; }
@@ -834,96 +875,38 @@ public:
      */
     virtual ScalarSize effective_primitive_count() const;
 
-
-#if defined(MI_ENABLE_EMBREE)
-    /// Return the Embree version of this shape
-    virtual RTCGeometry embree_geometry(RTCDevice device);
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-    /**
-     * \brief Populates the GPU data buffer, used in the OptiX Hitgroup sbt records.
-     *
-     * \remark
-     *      Actual implementations of this method should allocate the field \ref
-     *      m_optix_data_ptr on the GPU and populate it with the OptiX representation
-     *      of the class.
-     *
-     * The default implementation throws an exception.
-     */
-    virtual void optix_prepare_geometry();
+    /// Does this shape have flipped normals?
+    virtual bool has_flipped_normals() const;
 
     /**
-     * \brief Fills the OptixBuildInput associated with this shape.
+     * \brief Describe this shape's geometry to the ray-tracing backends.
      *
-     * \param build_input
-     *     A reference to the build input to be filled. The field
-     *     build_input.type has to be set, along with the associated members. For
-     *     now, Mitsuba only supports the types \ref OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES
-     *     and \ref OPTIX_BUILD_INPUT_TYPE_TRIANGLES.
+     * Fills a backend-neutral \ref ShapeIR descriptor that each backend's
+     * scene builder consumes to construct its acceleration structures. Called
+     * once per shape at build/update time.
      *
-     * The default implementation assumes that an implicit Shape (custom primitive
-     * build type) is begin constructed, with its GPU data stored at \ref m_optix_data_ptr.
+     * The default implementation describes a single-primitive custom
+     * (bounding-box) shape whose AABB is the shape's bounding box.
      */
-    virtual void optix_build_input(OptixBuildInput& build_input) const;
+    virtual void describe(ShapeIR &g) const;
 
-    /**
-     * \brief Prepares and fills the \ref OptixInstance(s) associated with this
-     * shape. This process includes generating the OptiX instance acceleration
-     * structure (IAS) represented by this shape, and pushing OptixInstance
-     * structs to the provided instances vector.
-     *
-     * \remark
-     *     This method is currently only implemented for the \ref Instance
-     *     and \ref ShapeGroup plugin.
-     *
-     * \param context
-     *     The OptiX context that was used to construct the rest of the scene's
-     *     OptiX representation.
-     *
-     * \param instances
-     *     The array to which new OptixInstance should be appended.
-     *
-     * \param instance_id
-     *     The instance id, used internally inside OptiX to detect when a Shape
-     *     is part of an Instance.
-     *
-     * \param transf
-     *     The current to_world transformation (should allow for recursive instancing).
-     *
-     * The default implementation throws an exception.
-     */
-    virtual void optix_prepare_ias(const OptixDeviceContext& /*context*/,
-                                   std::vector<OptixInstance>& /*instances*/,
-                                   uint32_t /*instance_id*/,
-                                   const ScalarTransform4f& /*transf*/);
+    /// Describe a custom shape and register a \c fill_data callback that emits
+    /// one \c PodT per primitive via \c Derived::gpu_fill_data().
+    template <typename Derived, typename PodT>
+    void describe_with_data(ShapeIR &g) const {
+        Shape::describe(g);
+        g.pdata_size = sizeof(PodT);
+        g.fill_data = [](const void *ctx, void *out) {
+            static_cast<const Derived *>(ctx)->gpu_fill_data(out);
+        };
+    }
 
-    /**
-     * \brief Creates and appends the HitGroupSbtRecord(s) associated with this
-     * shape to the provided array.
-     *
-     * \remark
-     *     This method can append multiple hitgroup records to the array
-     *     (see the \ref Shapegroup plugin for an example).
-     *
-     * \param hitgroup_records
-     *     The array of hitgroup records where the new HitGroupRecords should be
-     *     appended.
-     *
-     * \param program_groups
-     *     The array of available program groups (used to pack the OptiX header
-     *     at the beginning of the record).
-     *
-     * The default implementation creates a new HitGroupSbtRecord and fills its
-     * \ref data field with \ref m_optix_data_ptr. It then calls \ref
-     * optixSbtRecordPackHeader with one of the OptixProgramGroup of the \ref
-     * program_groups array (the actual program group index is inferred by the
-     * type of the Shape, see \ref get_shape_descr_idx()).
-     */
-    virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                             const OptixProgramGroup *program_groups,
-                                             const std::unordered_map<size_t, size_t> &program_index_mapping);
-#endif
+    /// Invalidate hits whose geometric normal faces along the ray, enforcing the
+    /// single-sided contract on backends (Metal) that report both faces.
+    void cull_backface(SurfaceInteraction3f &si, const Ray3f &ray, Mask active) const {
+        Mask backface = active & (dr::dot(si.n, ray.d) > 0.f);
+        si.t = dr::select(backface, dr::Infinity<Float>, si.t);
+    }
 
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
@@ -949,11 +932,11 @@ public:
     //! @}
     // =============================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Shape)
 
 protected:
     Shape(const Properties &props);
-    inline Shape() { }
+    inline Shape() : JitObject<Shape>("") { }
 
 protected:
     virtual void initialize();
@@ -964,32 +947,29 @@ protected:
     ref<Sensor> m_sensor;
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
-    std::string m_id;
-    ShapeType m_shape_type = ShapeType::Other;
+    ShapeType m_shape_type = ShapeType::Invalid;
 
     uint32_t m_discontinuity_types = (uint32_t) DiscontinuityFlags::Empty;
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
 
-    std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
+    tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
+                   std::equal_to<>> m_texture_attributes;
 
-    field<Transform4f, ScalarTransform4f> m_to_world;
-    field<Transform4f, ScalarTransform4f> m_to_object;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
 
     /// True if the shape is used in a \c ShapeGroup
     bool m_is_instance = false;
-
-#if defined(MI_ENABLE_CUDA)
-    /// OptiX hitgroup data buffer
-    void* m_optix_data_ptr = nullptr;
-#endif
 
 protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
 
-    /// True if the shape has called iniatlize() at least once
+    /// True if the shape has called initialize() at least once
     bool m_initialized = false;
+
+    MI_DECLARE_TRAVERSE_CB(m_bsdf, m_emitter, m_sensor, m_interior_medium,
+                           m_exterior_medium, m_texture_attributes, m_to_world)
 };
 
 // -----------------------------------------------------------------------
@@ -1031,22 +1011,22 @@ NAMESPACE_END(mitsuba)
     using typename Base::Point2fP##N;                                                       \
     using typename Base::Point3fP##N;                                                       \
     using typename Base::Ray3fP##N;                                                         \
-    std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                              \
+    std::tuple<MaskP##N, FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                    \
     ray_intersect_preliminary_packet(                                                       \
         const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) const override {     \
         (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float>)                                                \
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                      \
             return ray_intersect_preliminary_impl<FloatP##N>(ray, prim_index, active);      \
         else                                                                                \
-            Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
+            Throw("ray_intersect_preliminary_packet() CUDA/Metal not supported");           \
     }                                                                                       \
     MaskP##N ray_test_packet(const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) \
         const override {                                                                    \
         (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float>)                                                \
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                      \
             return ray_test_impl<FloatP##N>(ray, prim_index, active);                       \
         else                                                                                \
-            Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
+            Throw("ray_intersect_preliminary_packet() CUDA/Metal not supported");           \
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
@@ -1055,7 +1035,7 @@ NAMESPACE_END(mitsuba)
         const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {             \
         MI_MASK_ARGUMENT(active);                                                           \
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();              \
-        std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =                         \
+        std::tie(pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =               \
             ray_intersect_preliminary_impl<Float>(ray, prim_index, active);                 \
         pi.shape = this;                                                                    \
         return pi;                                                                          \
@@ -1065,7 +1045,7 @@ NAMESPACE_END(mitsuba)
         return ray_test_impl<Float>(ray, prim_index, active);                               \
     }                                                                                       \
     using typename Base::ScalarRay3f;                                                       \
-    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>                      \
+    std::tuple<bool, ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>                \
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {               \
         return ray_intersect_preliminary_impl<ScalarFloat>(ray, 0, true);                   \
     }                                                                                       \
@@ -1077,15 +1057,16 @@ NAMESPACE_END(mitsuba)
     MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of shapes
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(Shape)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_CALL_METHOD(compute_surface_interaction)
     DRJIT_CALL_METHOD(has_attribute)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
+    DRJIT_CALL_METHOD(eval_attribute_x)
     DRJIT_CALL_METHOD(eval_parameterization)
     DRJIT_CALL_METHOD(ray_intersect_preliminary)
     DRJIT_CALL_METHOD(ray_intersect)
@@ -1107,13 +1088,21 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_GETTER(exterior_medium)
     DRJIT_CALL_GETTER(silhouette_discontinuity_types)
     DRJIT_CALL_GETTER(silhouette_sampling_weight)
+    DRJIT_CALL_GETTER(has_flipped_normals)
     DRJIT_CALL_GETTER(shape_type)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
-    auto is_mesh() const { return shape_type() == (uint32_t) mitsuba::ShapeType::Mesh; }
+    auto is_mesh() const { return (shape_type() & +mitsuba::ShapeType::Mesh) != 0; }
+    auto is_shape_group() const { return shape_type() == +mitsuba::ShapeType::ShapeGroup; }
+    auto is_ellipsoids() const {
+        auto st = shape_type();
+        st &= ~mitsuba::ShapeType::Mesh;
+        return ((st & (uint32_t) mitsuba::ShapeType::Ellipsoids) |
+                (st & (uint32_t) mitsuba::ShapeType::EllipsoidsMesh)) != 0;
+    }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
-MI_CALL_TEMPLATE_END(Shape)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

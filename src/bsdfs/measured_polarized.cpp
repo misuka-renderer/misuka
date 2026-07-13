@@ -120,8 +120,8 @@ public:
         if (!is_spectral_v<Spectrum> && m_wavelength == -1.f)
             Throw("In non-spectral modes, the measured polarized plugin can only render a specific wavelength specified by the `wavelength` parameter.");
 
-        auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         m_name = file_path.filename().string();
 
         ref<TensorFile> tf = new TensorFile(file_path);
@@ -133,18 +133,18 @@ public:
         auto pbrdf   = tf->field("M");
 
         if (!(theta_h.shape.size() == 2 &&
-              theta_h.dtype == Struct::Type::Float32 &&
+              theta_h.dtype == sj::Type::Float32 &&
 
               theta_d.shape.size() == 2 &&
-              theta_d.dtype == Struct::Type::Float32 &&
+              theta_d.dtype == sj::Type::Float32 &&
 
               phi_d.shape.size() == 2 &&
-              phi_d.dtype == Struct::Type::Float32 &&
+              phi_d.dtype == sj::Type::Float32 &&
 
               wvls.shape.size() == 1 &&
-              wvls.dtype == Struct::Type::UInt16 &&
+              wvls.dtype == sj::Type::UInt16 &&
 
-              pbrdf.dtype == Struct::Type::Float32 &&
+              pbrdf.dtype == sj::Type::Float32 &&
               pbrdf.shape.size() == 6 &&
               pbrdf.shape[0] == phi_d.shape[1] &&
               pbrdf.shape[1] == theta_d.shape[1] &&
@@ -392,14 +392,15 @@ private:
         return std::make_tuple(pd, th, td);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MeasuredPolarized)
 private:
     std::string m_name;
     ScalarFloat m_wavelength;
     ScalarFloat m_alpha_sample;
     Interpolator  m_interpolator;
+
+    MI_TRAVERSE_CB(Base, m_interpolator)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MeasuredPolarized, BSDF)
-MI_EXPORT_PLUGIN(MeasuredPolarized, "Measured polarized material")
+MI_EXPORT_PLUGIN(MeasuredPolarized)
 NAMESPACE_END(mitsuba)

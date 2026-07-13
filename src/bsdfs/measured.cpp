@@ -82,8 +82,8 @@ public:
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0];
 
-        auto fs            = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs            = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         m_name             = file_path.filename().string();
 
         ref<TensorFile> tf = new TensorFile(file_path);
@@ -117,37 +117,37 @@ public:
         }
 
         if (!(description.shape.size() == 1 &&
-              description.dtype == Struct::Type::UInt8 &&
+              description.dtype == sj::Type::UInt8 &&
 
               theta_i.shape.size() == 1 &&
-              theta_i.dtype == Struct::Type::Float32 &&
+              theta_i.dtype == sj::Type::Float32 &&
 
               phi_i.shape.size() == 1 &&
-              phi_i.dtype == Struct::Type::Float32 &&
+              phi_i.dtype == sj::Type::Float32 &&
 
               (!is_spectral || (
                   wavelengths.shape.size() == 1 &&
-                  wavelengths.dtype == Struct::Type::Float32
+                  wavelengths.dtype == sj::Type::Float32
               )) &&
 
               ndf.shape.size() == 2 &&
-              ndf.dtype == Struct::Type::Float32 &&
+              ndf.dtype == sj::Type::Float32 &&
 
               sigma.shape.size() == 2 &&
-              sigma.dtype == Struct::Type::Float32 &&
+              sigma.dtype == sj::Type::Float32 &&
 
               vndf.shape.size() == 4 &&
-              vndf.dtype == Struct::Type::Float32 &&
+              vndf.dtype == sj::Type::Float32 &&
               vndf.shape[0] == phi_i.shape[0] &&
               vndf.shape[1] == theta_i.shape[0] &&
 
               luminance.shape.size() == 4 &&
-              luminance.dtype == Struct::Type::Float32 &&
+              luminance.dtype == sj::Type::Float32 &&
               luminance.shape[0] == phi_i.shape[0] &&
               luminance.shape[1] == theta_i.shape[0] &&
               luminance.shape[2] == luminance.shape[3] &&
 
-              spectra.dtype == Struct::Type::Float32 &&
+              spectra.dtype == sj::Type::Float32 &&
               spectra.shape.size() == 5 &&
               spectra.shape[0] == phi_i.shape[0] &&
               spectra.shape[1] == theta_i.shape[0] &&
@@ -159,7 +159,7 @@ public:
 
               jacobian.shape.size() == 1 &&
               jacobian.shape[0] == 1 &&
-              jacobian.dtype == Struct::Type::UInt8))
+              jacobian.dtype == sj::Type::UInt8))
               Throw("Invalid file structure: %s", tf);
 
         m_isotropic = phi_i.shape[0] <= 2;
@@ -467,7 +467,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Measured)
 private:
     template <typename Value> Value u2theta(Value u) const {
         return dr::square(u) * (dr::Pi<Float> / 2.f);
@@ -495,8 +495,9 @@ private:
     bool m_isotropic;
     bool m_jacobian;
     int m_reduction;
+
+    MI_TRAVERSE_CB(Base, m_ndf, m_sigma, m_vndf, m_luminance, m_spectra)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Measured, BSDF)
-MI_EXPORT_PLUGIN(Measured, "Measured material")
+MI_EXPORT_PLUGIN(Measured)
 NAMESPACE_END(mitsuba)

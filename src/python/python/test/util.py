@@ -4,8 +4,9 @@ test decorators, etc).
 """
 
 import os
+import sys
 from functools import wraps
-from inspect import getframeinfo, stack, signature, _empty
+from inspect import signature, _empty
 
 import pytest
 import drjit as dr
@@ -34,11 +35,10 @@ def fresolver_append_path(func):
 
     par = os.path.dirname
 
-    # Get the path to the source file from which this function is
-    # being called.
-    # Source: https://stackoverflow.com/a/24439444/3792942
-    caller = getframeinfo(stack()[1][0])
-    caller_path = par(os.path.realpath(caller.filename))
+    # Get the path to the source file from which this function is being called.
+    # We previously used inspect.staack() here, which is needlessly expensive.
+    caller_filename = sys._getframe(1).f_code.co_filename
+    caller_path = par(os.path.realpath(caller_filename))
 
     # Heuristic to find the project's root directory
     def is_root(path):
@@ -56,8 +56,7 @@ def fresolver_append_path(func):
     @wraps(func)
     def f(*args, **kwargs):
         # New file resolver
-        thread = mi.Thread.thread()
-        fres_old = thread.file_resolver()
+        fres_old = mi.file_resolver()
         fres = mi.FileResolver(fres_old)
 
         # Append current test directory and project root to the
@@ -65,13 +64,13 @@ def fresolver_append_path(func):
         fres.append(caller_path)
         fres.append(root_path)
 
-        thread.set_file_resolver(fres)
+        mi.set_file_resolver(fres)
 
         # Run actual function
         res = func(*args, **kwargs)
 
         # Restore previous file resolver
-        thread.set_file_resolver(fres_old)
+        mi.set_file_resolver(fres_old)
 
         return res
 

@@ -2,25 +2,26 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/vector.h>
+#include <drjit/python.h>
 
 MI_PY_EXPORT(ImageBlock) {
     MI_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
-    MI_PY_CLASS(ImageBlock, Object)
+    auto image_block = MI_PY_CLASS(ImageBlock, Object)
         .def(nb::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
                       const ReconstructionFilter *, bool, bool, bool,
-                      bool, bool, bool, bool>(),
+                      bool, bool, bool>(),
              "size"_a, "offset"_a, "channel_count"_a, "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
-             "coalesce"_a = dr::is_jit_v<Float>, "compensate"_a = false,
+             "coalesce"_a = dr::is_jit_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>,
              "y_only"_a = false)
         .def(nb::init<const TensorXf &, const ScalarPoint2i &,
                       const ReconstructionFilter *, bool, bool, bool,
-                      bool, bool, bool, bool>(),
+                      bool, bool, bool>(),
              "tensor"_a, "offset"_a = ScalarPoint2i(0), "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
-             "coalesce"_a = dr::is_jit_v<Float>, "compensate"_a = false,
+             "coalesce"_a = dr::is_jit_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>,
              "y_only"_a = false)
@@ -52,8 +53,6 @@ MI_PY_EXPORT(ImageBlock) {
         .def_method(ImageBlock, set_size, "size"_a)
         .def_method(ImageBlock, coalesce)
         .def_method(ImageBlock, set_coalesce)
-        .def_method(ImageBlock, compensate)
-        .def_method(ImageBlock, set_compensate)
         .def_method(ImageBlock, width)
         .def_method(ImageBlock, height)
         .def_method(ImageBlock, rfilter)
@@ -69,4 +68,6 @@ MI_PY_EXPORT(ImageBlock) {
         .def("tensor", nb::overload_cast<>(&ImageBlock::tensor),
              nb::rv_policy::reference_internal,
              D(ImageBlock, tensor));
+
+    drjit::bind_traverse(image_block);
 }

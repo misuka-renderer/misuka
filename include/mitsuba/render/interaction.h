@@ -120,8 +120,8 @@ struct Interaction {
 
     /**
      * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
-     * from the standard zero-initialization convention. In this particular class, the ``t``
-     * field should be set to an infinite value to mark invalid intersection records.
+     * from the standard zero-initialization convention. In this particular class, the \c t
+     * field should be set to an infinite value to mark invalid interaction records.
      */
     virtual void zero_(size_t size = 1) {
         t           = dr::full<Float>(dr::Infinity<Float>, size);
@@ -495,7 +495,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      *      Flags specifying which information should be computed
      */
     void finalize_surface_interaction(
-        const PreliminaryIntersection<Float, Shape> &pi, const Ray3f &ray,
+        const PreliminaryIntersection<Float, Shape> & /*pi*/, const Ray3f &ray,
         uint32_t ray_flags, Mask active) {
         dr::masked(t, !active) = dr::Infinity<Float>;
         active &= is_valid();
@@ -503,7 +503,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         dr::masked(shape, !active)    = nullptr;
         dr::masked(instance, !active) = nullptr;
 
-        prim_index  = pi.prim_index;
         time        = ray.time;
         wavelengths = ray.wavelengths;
 
@@ -625,7 +624,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
  * given ray, and cache preliminary information about the intersection if that is the case.
  *
  * If the intersection is deemed relevant, detailed intersection information can later be
- * obtained via the  \ref create_surface_interaction() method.
+ * obtained via the  \ref compute_surface_interaction() method.
  */
 template <typename Float_, typename Shape_>
 struct PreliminaryIntersection {
@@ -650,7 +649,11 @@ struct PreliminaryIntersection {
     //! @{ \name Fields
     // =============================================================
 
-    /// Distance traveled along the ray
+    /// Whether the ray query found a hit. This mask already includes the
+    /// activity mask passed to the query.
+    Mask valid = false;
+
+    /// Distance traveled along the ray. Invalid lanes are set to infinity.
     Float t = dr::Infinity<Float>;
 
     /// 2D coordinates on the primitive surface parameterization
@@ -676,11 +679,12 @@ struct PreliminaryIntersection {
     // =============================================================
 
     /**
-     * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
-     * from the standard zero-initialization convention. In this particular class, the ``t``
-     * field should be set to an infinite value to mark invalid intersection records.
+     * This callback method is invoked by dr::zeros<>, and takes care of fields
+     * that deviate from the standard zero-initialization convention. It clears
+     * \c valid and sets \c t to infinity for invalid intersection records.
      */
     void zero_(size_t size = 1) {
+        valid       = dr::zeros<Mask>(size);
         t           = dr::full<Float>(dr::Infinity<Float>, size);
         prim_uv     = dr::zeros<Point2f>(size);
         prim_index  = dr::zeros<Index>(size);
@@ -697,7 +701,7 @@ struct PreliminaryIntersection {
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return t != dr::Infinity<Float>;
+        return valid;
     }
 
     /**
@@ -741,8 +745,8 @@ struct PreliminaryIntersection {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index,
-                 shape, instance);
+    DRJIT_STRUCT(PreliminaryIntersection, valid, t, prim_uv, prim_index,
+                 shape_index, shape, instance);
 };
 
 // -----------------------------------------------------------------------------
@@ -819,6 +823,7 @@ std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, 
         os << "PreliminaryIntersection[invalid]";
     } else {
         os << "PreliminaryIntersection[" << std::endl
+           << "  valid = " << pi.valid << "," << std::endl
            << "  t = " << pi.t << "," << std::endl
            << "  prim_uv = " << pi.prim_uv << "," << std::endl
            << "  prim_index = " << pi.prim_index << "," << std::endl

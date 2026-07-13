@@ -172,10 +172,10 @@ public:
         /// No transformation (default)
         Empty,
 
-        // Premultiply channels by alpha
+        /// Premultiply alpha channel
         Premultiply,
 
-        // Unpremultiply (divide) channels by alpha
+        /// Unpremultiply alpha channel
         Unpremultiply
     };
 
@@ -213,7 +213,7 @@ public:
      *    implementation will allocate memory itself.
      */
     Bitmap(PixelFormat pixel_format,
-           Struct::Type component_format,
+           sj::Type component_format,
            const Vector2u &size,
            size_t channel_count = 0,
            const std::vector<std::string> &channel_names = {},
@@ -254,7 +254,7 @@ public:
     PixelFormat pixel_format() const { return m_pixel_format; }
 
     /// Return the component format of this bitmap
-    Struct::Type component_format() const { return m_component_format; }
+    sj::Type component_format() const { return m_component_format; }
 
     /// Return a pointer to the underlying bitmap storage
     void *data() { return m_data.get(); }
@@ -281,7 +281,7 @@ public:
     size_t pixel_count() const { return m_size.x() * (size_t) m_size.y(); }
 
     /// Return the number of channels used by this bitmap
-    size_t channel_count() const { return m_struct->field_count(); }
+    size_t channel_count() const { return m_struct.size(); }
 
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
@@ -322,10 +322,10 @@ public:
     void clear();
 
     /// Return a \c Struct instance describing the contents of the bitmap (const version)
-    const Struct *struct_() const { return m_struct.get(); }
+    const sj::Struct &struct_() const { return m_struct; }
 
     /// Return a \c Struct instance describing the contents of the bitmap
-    Struct *struct_() { return m_struct.get(); }
+    sj::Struct &struct_() { return m_struct; }
 
     /**
      * Write an encoded form of the bitmap to a stream using the specified file format
@@ -493,7 +493,7 @@ public:
      * values, etc.)
      *
      * Note that the alpha channel is assumed to be linear in both
-     * the source and target bitmap, hence it won't be affected by
+     * the source and target bitmap, therefore it won't be affected by
      * any gamma-related transformations.
      *
      * \remark This <tt>convert()</tt> variant usually returns a new
@@ -512,7 +512,7 @@ public:
      *      the output values.
      */
     ref<Bitmap> convert(PixelFormat pixel_format,
-                        Struct::Type component_format,
+                        sj::Type component_format,
                         bool srgb_gamma,
                         Bitmap::AlphaTransform alpha_transform = Bitmap::AlphaTransform::Empty) const;
 
@@ -593,7 +593,7 @@ public:
     /// Free the resources used by static_initialization()
     static void static_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Bitmap)
  protected:
      /// Rebuild the 'm_struct' field based on the pixel format etc.
      void rebuild_struct(size_t channel_count = 0, const std::vector<std::string> &channel_names = {});
@@ -645,13 +645,15 @@ public:
  protected:
      std::unique_ptr<uint8_t[]> m_data;
      PixelFormat m_pixel_format;
-     Struct::Type m_component_format;
+     sj::Type m_component_format;
      Vector2u m_size;
-     ref<Struct> m_struct;
+     sj::Struct m_struct;
      bool m_srgb_gamma;
      bool m_premultiplied_alpha;
      bool m_owns_data;
      Properties m_metadata;
+
+    MI_TRAVERSE_CB(Object, m_size)
 };
 
 

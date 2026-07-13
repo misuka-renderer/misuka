@@ -17,7 +17,6 @@ set(MI_NB_DOMAIN drjit)
 include_directories(
   ${PNG_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
-  ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
   ${OPENEXR_INCLUDE_DIRS}
   ${JPEG_INCLUDE_DIRS}
@@ -76,7 +75,7 @@ install(TARGETS ${nanobind_lib_name}
 )
 
 nanobind_add_module(mitsuba_ext
-  NB_DOMAIN drjit
+  NB_DOMAIN ${MI_NB_DOMAIN}
   NB_SHARED
   ${MI_DIST_FLAGS}
   main.cpp
@@ -85,7 +84,7 @@ nanobind_add_module(mitsuba_ext
 )
 
 nanobind_add_module(mitsuba_alias
-  NB_DOMAIN drjit
+  NB_DOMAIN ${MI_NB_DOMAIN}
   NB_SHARED
   ${MI_DIST_FLAGS}
   alias.cpp
@@ -96,9 +95,13 @@ target_compile_definitions(mitsuba_ext PRIVATE "-DDRJIT_UNROLL= ")
 
 target_link_libraries(mitsuba_ext PRIVATE mitsuba)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
-  target_link_libraries(mitsuba_ext PRIVATE asmjit)
-endif()
+target_link_libraries(mitsuba_ext PRIVATE struct-jit)
+
+# Ships Struct-JIT's nanobind bindings as part of Dr.Jit
+set(SJIT_PY_BINDINGS ${CMAKE_SOURCE_DIR}/ext/struct-jit/src/python/main.cpp)
+target_sources(mitsuba_ext PRIVATE ${SJIT_PY_BINDINGS})
+set_source_files_properties(${SJIT_PY_BINDINGS} PROPERTIES
+  COMPILE_DEFINITIONS SJIT_PYTHON_EMBED)
 
 set_target_properties(mitsuba_ext
   PROPERTIES
@@ -118,7 +121,7 @@ set_target_properties(mitsuba_alias
 
 target_include_directories(mitsuba_alias
   PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
 
 install(TARGETS mitsuba_alias
@@ -184,6 +187,7 @@ file(WRITE
   "[pytest]\n"
   "minversion = 3.0\n"
   "testpaths = \"${MI_TEST_BASE}\"\n"
+  "norecursedirs = \"${MI_TEST_BASE}/python\"\n"
 )
 
 if (MSVC)
@@ -207,6 +211,13 @@ endforeach()
 
 set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src ${MI_ALL_VARIANTS})
 
+# We usually build Dr.Jit along with Mitsuba (except building wheels in the
+# cloud, as indicated by SKBUILD). In that case, Mitsuba stub generation
+# must depend on Dr.Jit's python bindings being compiled.
+if (NOT SKBUILD)
+  list(APPEND MI_STUB_DEPENDS drjit-python)
+endif()
+
 # ----------------------------------------------------------
 #   Copy targets for python (no rpath on Windows)
 # ----------------------------------------------------------
@@ -216,7 +227,7 @@ if (MSVC)
   add_custom_target(copy-targets-python ALL)
   set_target_properties(copy-targets-python PROPERTIES FOLDER python)
 
-  list(APPEND MI_STUB_DEPENDS copy-targets-python)
+  list(APPEND MI_STUB_DEPENDS copy-targets-python copy-targets-drjit)
 endif()
 
 # ----------------------------------------------------------
@@ -235,7 +246,7 @@ set(STUB_ARGS
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "python.xml")
+                         "python.ad" "python.chi2" "python.math_py" "python.util" "parser")
 
   nanobind_add_stub(
     mitsuba-stub
@@ -295,6 +306,7 @@ endif()
 if (UNIX)
   include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/nanogui/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/struct-jit/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/ext/nanothread/include
@@ -318,6 +330,7 @@ if (UNIX)
     `find ${MKDOC_PATH}/core -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/ui -name '*.h' ! -name fwd.h -print`
+    ${MKDOC_PATH}/render/fwd.h
     -o ${MKDOC_PATH}/python/docstr.h
   )
 endif()

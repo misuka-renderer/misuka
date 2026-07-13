@@ -14,10 +14,9 @@ spectrum_dicts = {
 }
 
 lookat_transforms = [
-    mi.scalar_rgb.ScalarTransform4f().look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
-    mi.scalar_rgb.ScalarTransform4f().look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
+    [[0, 1, 0, 0], [0, 0, -1, 1], [-1, 0, 0, 0], [0, 0, 0, 1]], # look_at([0, 1, 0], [0, 0, 0], [1, 0, 0])
+    [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 1], [0, 0, 0, 1]], # look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
 ]
-
 
 def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
     spectrum = mi.load_dict(spectrum_dicts[s_key])
@@ -43,6 +42,7 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
+    lookat = mi.ScalarTransform4f(lookat)
     cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
@@ -96,6 +96,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
     # Check the correctness of the sample_ray() method
 
+    lookat = mi.ScalarTransform4f(lookat)
     cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     cos_cutoff_angle_rad = dr.cos(cutoff_angle_rad)
     beam_width_rad = cutoff_angle_rad * 0.75
@@ -128,7 +129,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     spec = dr.select(angle <= cutoff_angle_rad, spec, 0)
 
     assert dr.allclose(
-        res, spec / mi.warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
+        mi.unpolarized_spectrum(res), spec / mi.warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
     assert dr.allclose(ray.time, eval_t)
     assert dr.all(local_dir.z >= cos_cutoff_angle_rad)
     assert dr.allclose(ray.wavelengths, wav)
@@ -143,6 +144,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
 def test_eval_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
+    lookat = mi.ScalarTransform4f(lookat)
     cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
@@ -170,6 +172,7 @@ def test_eval_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelengt
 def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
     # Check the correctness of the eval() method
 
+    lookat = mi.ScalarTransform4f(lookat)
     emitter, spectrum = create_emitter_and_spectrum(
         lookat, cutoff_angle, spectrum_key)
 
@@ -177,3 +180,37 @@ def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
     it = dr.zeros(mi.SurfaceInteraction3f, 3)
     it.wi = [0, 1, 0]
     assert dr.allclose(emitter.eval(it), 0.)
+
+
+def test_update_falloff(variant_scalar_spectral):
+    cutoff_angle = 20.0
+    emitter, spectrum = create_emitter_and_spectrum(mi.ScalarTransform4f(), cutoff_angle)
+
+    params = mi.traverse(emitter)
+    assert 'cutoff_angle' in params
+    assert 'beam_width' in params
+    assert dr.allclose(params['cutoff_angle'], 20.0)
+    assert dr.allclose(params['beam_width'], 15.0)
+
+    # Test eval at angle 25 deg (> 20 deg cutoff) -> should be zero
+    angle_rad_25 = 25.0 * dr.pi / 180.0
+    it_pos_25 = [2.0 * dr.sin(angle_rad_25), 0.0, 2.0 * dr.cos(angle_rad_25)]
+
+    it = dr.zeros(mi.SurfaceInteraction3f)
+    it.p = it_pos_25
+    it.time = 0.3
+    it.wavelengths = spectrum.sample_spectrum(it, mi.sample_shifted(0.7))[0]
+
+    _, res = emitter.sample_direction(it, [0, 0])
+    assert dr.allclose(res, 0.0)
+
+    # Update cutoff to 30 deg and beam width to 20 deg
+    params['cutoff_angle'] = 30.0
+    params['beam_width'] = 20.0
+    params.update()
+    assert dr.allclose(params['cutoff_angle'], 30.0)
+    assert dr.allclose(params['beam_width'], 20.0)
+
+    # Now evaluate again at 25 deg -> should be non-zero
+    _, res = emitter.sample_direction(it, [0, 0])
+    assert not dr.allclose(res, 0.0)
