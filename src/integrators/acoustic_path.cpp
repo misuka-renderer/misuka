@@ -696,7 +696,7 @@ public:
             << "\n  rr_depth = " << m_rr_depth << "\n  max_energy_loss = "
             << (m_throughput_threshold == 0.f
                     ? std::string("disabled")
-                    : (std::to_string(-10.0f * log10(m_throughput_threshold)) +
+                    : (std::to_string(-10.0f * static_cast<float>(log10(m_throughput_threshold))) +
                        " dB"))
             << "\n  hide_emitters = " << m_hide_emitters << "\n]";
         return oss.str();
