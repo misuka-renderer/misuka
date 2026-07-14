@@ -12,7 +12,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "Misuka"
 dynamic = ["version"]
-description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
+description = "misuka: A differentiable room acoustic renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
