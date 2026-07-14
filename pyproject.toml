@@ -107,10 +107,10 @@ content-type = "text/markdown"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 text = '''
-![Misuka logo](https://raw.githubusercontent.com/misuka-renderer/misuka/blob/master/docs/images/misuka_logo.png)
+![Misuka logo](https://raw.githubusercontent.com/misuka-renderer/misuka/master/docs/images/misuka_logo.png)
 '''
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 path = "README.md"
-start-after = "Misuka Logo\">\n"
+start-after = "misuka logo\">\n"
 pattern = "(.*)"
