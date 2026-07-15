@@ -10,9 +10,9 @@ build-backend = "scikit_build_core.build"
 
 
 [project]
-name = "Mitsuba"
+name = "Misuka"
 dynamic = ["version"]
-description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
+description = "misuka: A differentiable room acoustic renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
@@ -20,13 +20,13 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 authors = [
-    { name = "Wenzel Jakob", email = "wenzel.jakob@epfl.ch" }
+    { name = "Tobias J{\"u}terbock", email = "a.jueterbock@tu-berlin.de" }
 ]
 license = "PolyForm-Noncommercial-1.0.0 AND BSD-3-Clause"
 license-files = ["LICENSE"]
 
 [project.urls]
-Homepage = "https://github.com/mitsuba-renderer/mitsuba3"
+Homepage = "https://github.com/misuka-renderer/misuka"
 
 [project.scripts]
 mitsuba = "mitsuba.cli:_main"
@@ -62,7 +62,7 @@ skip = "*-musllinux* pp*"
 manylinux-aarch64-image = "manylinux2014"
 
 # Try to import the package to see if it was built correctly (compromise)
-test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_rgb')\""]
+test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_acoustic')\""]
 
 # Needed for full C++17 support
 [tool.cibuildwheel.macos.environment]
@@ -107,10 +107,10 @@ content-type = "text/markdown"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 text = '''
-![Mitsuba banner](https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-data/master/docs/images/banners/banner_01.jpg)
+![Misuka logo](https://raw.githubusercontent.com/misuka-renderer/misuka/master/docs/images/misuka_logo.png)
 '''
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 path = "README.md"
-start-after = "Mitsuba banner\">\n"
+start-after = "misuka logo\">\n"
 pattern = "(.*)"
