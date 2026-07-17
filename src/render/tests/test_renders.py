@@ -68,6 +68,11 @@ def list_all_render_test_configs():
     """
     configs = []
     for variant in mi.variants():
+        # This upstream render-regression test only knows about the standard
+        # color modes (and their reference images). Acoustic variants have no
+        # color mode nor reference images, so skip them entirely.
+        if not any(color_mode in variant for color_mode in color_modes):
+            continue
         is_jit = "cuda" in variant or "llvm" in variant or "metal" in variant
         is_polarized = "polarized" in variant
 
