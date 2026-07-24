@@ -20,7 +20,7 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 authors = [
-    { name = "Tobias J{\"u}terbock", email = "a.jueterbock@tu-berlin.de" }
+    { name = "Tobias Jüterbock", email = "a.jueterbock@tu-berlin.de" }
 ]
 license = "PolyForm-Noncommercial-1.0.0 AND BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -112,5 +112,5 @@ text = '''
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 path = "README.md"
-start-after = "misuka logo\">\n"
+start-at = "# misuka\n"
 pattern = "(.*)"
