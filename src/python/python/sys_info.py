@@ -99,7 +99,7 @@ if __name__ == '__main__':
     cpu_info = get_cpu_info()
     gpu_info = get_gpu_info()
 
-    is_mitsuba_custom_build = exists(join(dir, '../../../mitsuba.conf'))
+    is_mitsuba_custom_build = exists(join(dir, '../../../misuka.conf'))
 
     if sys.platform.startswith('darwin'):
         os_version = run_and_match('sw_vers -productVersion', r'(.*)')

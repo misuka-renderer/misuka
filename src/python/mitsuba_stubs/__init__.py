@@ -31,7 +31,7 @@ v = stub_variant()
 if v not in mi.variants():
     raise ImportError(f'Based on chosen set of Mitsuba variants, variant {v} '
                        'is required for stub generation. Please modify your '
-                       'mitsuba.conf file to include this variant and recompile '
+                       'misuka.conf file to include this variant and recompile '
                        'Mitsuba.')
 
 # Mitsuba variant has static initialization that requires JIT to initialize
