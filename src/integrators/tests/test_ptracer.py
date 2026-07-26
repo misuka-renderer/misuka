@@ -184,10 +184,10 @@ def test05_render_crop_film(variants_all):
 
     if False:
         from misuka.core import Bitmap
-        Bitmap(image1).write(f'test05_{mitsuba.variant()}_full.exr')
-        Bitmap(image1_cropped).write(f'test05_{mitsuba.variant()}_full_cropped.exr')
-        Bitmap(image2).write(f'test05_{mitsuba.variant()}_cropped.exr')
-        Bitmap(image3).write(f'test05_{mitsuba.variant()}_loaded.exr')
+        Bitmap(image1).write(f'test05_{mi.variant()}_full.exr')
+        Bitmap(image1_cropped).write(f'test05_{mi.variant()}_full_cropped.exr')
+        Bitmap(image2).write(f'test05_{mi.variant()}_cropped.exr')
+        Bitmap(image3).write(f'test05_{mi.variant()}_loaded.exr')
 
     # Since we trace the exact same rays regardless of crops, even the noise
     # pattern should be identical
