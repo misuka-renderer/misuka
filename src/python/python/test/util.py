@@ -31,7 +31,7 @@ def fresolver_append_path(func):
     execution has finished.
     """
 
-    import mitsuba as mi
+    import misuka as mi
 
     par = os.path.dirname
 
@@ -112,7 +112,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
        Absolute tolerance for the comparison of the returned values.
     """
     import numpy as np
-    import mitsuba as mi
+    import misuka as mi
 
     # Ensure scalar variant is enabled when calling this kernel
     assert mi.variant().startswith('scalar_')

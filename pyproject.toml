@@ -29,7 +29,7 @@ license-files = ["LICENSE"]
 Homepage = "https://github.com/mitsuba-renderer/mitsuba3"
 
 [project.scripts]
-mitsuba = "mitsuba.cli:_main"
+misuka = "misuka.cli:_main"
 
 
 [tool.scikit-build]
@@ -62,7 +62,7 @@ skip = "*-musllinux* pp*"
 manylinux-aarch64-image = "manylinux2014"
 
 # Try to import the package to see if it was built correctly (compromise)
-test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_rgb')\""]
+test-command = ["python -c \"import misuka as mi; mi.set_variant('scalar_rgb')\""]
 
 # Needed for full C++17 support
 [tool.cibuildwheel.macos.environment]

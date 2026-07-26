@@ -1,6 +1,6 @@
 def _main():
     import os, sys, subprocess
-    import mitsuba  # This import will check runtime requirements (ex: DrJit version)
+    import misuka  # This import will check runtime requirements (ex: DrJit version)
 
     for p in sys.path:
         mi_package = os.path.join(p, "misuka")

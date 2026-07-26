@@ -15,7 +15,7 @@ if __name__ == '__main__':
     dir = dirname(realpath(__file__))
 
     import drjit as dr
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant('scalar_rgb')
 
     # --------------------------------------------------------------------------
