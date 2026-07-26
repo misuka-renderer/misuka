@@ -10,17 +10,17 @@ def test01_import_mitsuba_variants():
     assert mi.variant() == variant
 
     # Importing specific variant
-    mi_var = _import(f'mitsuba.{variant}')
-    assert mi_var.__name__ == f"mitsuba"
+    mi_var = _import(f'misuka.{variant}')
+    assert mi_var.__name__ == f"misuka"
 
     # Should be able to access the variants from misuka itself
     mi_var2 = getattr(mi, variant)
-    assert mi_var2.__name__ == f"mitsuba"
+    assert mi_var2.__name__ == f"misuka"
 
     # Change the current variant
     mi.set_variant('scalar_rgb')
     assert mi.variant() == 'scalar_rgb'
-    assert mi_var.__name__ == f"mitsuba"
+    assert mi_var.__name__ == f"misuka"
 
 
 def test02_import_submodules():
@@ -87,14 +87,14 @@ def test07_reload():
     from importlib import reload
 
     import misuka
-    mitsuba.set_variant('scalar_rgb')
-    mitsuba.Float()
+    misuka.set_variant('scalar_rgb')
+    misuka.Float()
 
-    reload(mitsuba)
+    reload(misuka)
 
-    mitsuba.set_variant('scalar_rgb')
-    mitsuba.Float()
-    assert mitsuba.variant() == 'scalar_rgb'
+    misuka.set_variant('scalar_rgb')
+    misuka.Float()
+    assert misuka.variant() == 'scalar_rgb'
 
 
 def test08_sys_module_size():
