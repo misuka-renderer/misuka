@@ -242,7 +242,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     }));
 
     /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.scalar_rgb.test.util import function`
+     * `from misuka.scalar_rgb.test.util import function`
      * For that we `__path__` needs to be populated. We do it by using the
      * `__file__` attribute of a Python file which is located in the same
      * directory as this module */

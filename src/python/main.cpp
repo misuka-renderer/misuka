@@ -186,7 +186,7 @@ NB_MODULE(mitsuba_ext, m) {
     }));
 
     /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.test.util import function`
+     * `from misuka.test.util import function`
      * For that `__path__` needs to be populated. We do it by using the
      * `__file__` attribute of a Python file which is located in the same
      * directory as this module */
