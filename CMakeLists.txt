@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.13...3.18)
 
 project(mitsuba
   DESCRIPTION
-    "Mitsuba"
+    "misuka"
   LANGUAGES
     CXX C
 )
@@ -158,7 +158,7 @@ endif()
 
 list(LENGTH MI_VARIANTS MI_VARIANTS_COUNT)
 
-message(STATUS "Mitsuba: building the following variants:")
+message(STATUS "misuka: building the following variants:")
 foreach (MI_VARIANT ${MI_VARIANTS})
   string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
   list(GET MI_VARIANT 0 MI_VARIANT_NAME)
@@ -277,7 +277,7 @@ if ((MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY) AND
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
-    message(STATUS "Mitsuba: enabling the address sanitizer.")
+    message(STATUS "misuka: enabling the address sanitizer.")
   endif()
 
   if (MI_SANITIZE_MEMORY)
@@ -285,7 +285,7 @@ if ((MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY) AND
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=memory")
-    message(STATUS "Mitsuba: enabling the memory sanitizer.")
+    message(STATUS "misuka: enabling the memory sanitizer.")
   endif()
 endif()
 
@@ -324,7 +324,7 @@ include_directories(include
 )
 
 if (MI_ENABLE_CUDA)
-  message(STATUS "Mitsuba: using OptiX for GPU ray tracing.")
+  message(STATUS "misuka: using OptiX for GPU ray tracing.")
   add_definitions(-DMI_ENABLE_CUDA=1)
 endif()
 
@@ -333,16 +333,16 @@ if (MI_ENABLE_LLVM)
 endif()
 
 if (MI_ENABLE_METAL)
-  message(STATUS "Mitsuba: using Metal for GPU ray tracing.")
+  message(STATUS "misuka: using Metal for GPU ray tracing.")
   add_definitions(-DMI_ENABLE_METAL=1)
 endif()
 
 if (MI_ENABLE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})
   add_definitions(-DMI_ENABLE_EMBREE=1)
-  message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
+  message(STATUS "misuka: using Embree for CPU ray tracing.")
 else()
-  message(STATUS "Mitsuba: using built-in implementation for CPU ray tracing.")
+  message(STATUS "misuka: using built-in implementation for CPU ray tracing.")
 endif()
 
 if (MI_ENABLE_AUTODIFF)
