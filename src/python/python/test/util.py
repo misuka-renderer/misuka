@@ -137,7 +137,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
     args_np = [rng.random(width) if d == 1 else rng.random((width, d)) for d in arg_dims]
 
     # Evaluate non-vectorized kernel
-    from mitsuba import Float, Vector2f, Vector3f
+    from misuka import Float, Vector2f, Vector3f
     types = [Float, Vector2f, Vector3f]
     results_scalar = []
     for i in range(width):
