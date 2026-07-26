@@ -2,7 +2,7 @@ from importlib import import_module as _import
 import pytest
 
 def test01_import_mitsuba_variants():
-    import mitsuba as mi
+    import misuka as mi
 
     # Set an arbitrary variant
     variant = mi.variants()[-1]
@@ -13,7 +13,7 @@ def test01_import_mitsuba_variants():
     mi_var = _import(f'mitsuba.{variant}')
     assert mi_var.__name__ == f"mitsuba"
 
-    # Should be able to access the variants from mitsuba itself
+    # Should be able to access the variants from misuka itself
     mi_var2 = getattr(mi, variant)
     assert mi_var2.__name__ == f"mitsuba"
 
@@ -24,7 +24,7 @@ def test01_import_mitsuba_variants():
 
 
 def test02_import_submodules():
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant(mi.variants()[-1])
 
     # Check C++ submodules
@@ -36,26 +36,26 @@ def test02_import_submodules():
     assert mi.chi2.ChiSquareTest is not None
 
     # Import nested submodules
-    import mitsuba.test.util
+    import misuka.test.util
     assert mi.test.util.fresolver_append_path is not None
 
 
 def test03_import_from_submodules():
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant('scalar_rgb')
 
     Float = mi.Float
     assert Float == float
 
-    from mitsuba.chi2 import ChiSquareTest
+    from misuka.chi2 import ChiSquareTest
     assert ChiSquareTest is not None
 
-    from mitsuba.test.util import fresolver_append_path
+    from misuka.test.util import fresolver_append_path
     assert fresolver_append_path is not None
 
 
 def test04_python_extensions():
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant('scalar_rgb')
 
     # Check that python/python/__init__.py is executed properly
@@ -64,7 +64,7 @@ def test04_python_extensions():
 
 
 def test05_check_all_variants():
-    import mitsuba as mi
+    import misuka as mi
     for v in mi.variants():
         mi.set_variant(v)
 
@@ -74,7 +74,7 @@ def test05_check_all_variants():
 
 
 def test06_register_ad_integrators():
-    import mitsuba as mi
+    import misuka as mi
 
     for variant in mi.variants():
         if not '_ad_' in variant:
@@ -86,7 +86,7 @@ def test06_register_ad_integrators():
 def test07_reload():
     from importlib import reload
 
-    import mitsuba
+    import misuka
     mitsuba.set_variant('scalar_rgb')
     mitsuba.Float()
 
@@ -98,10 +98,10 @@ def test07_reload():
 
 
 def test08_sys_module_size():
-    # Make sure the size of sys.modules doesn't change when importing from mitsuba
+    # Make sure the size of sys.modules doesn't change when importing from misuka
     import sys
 
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant("scalar_rgb")
 
     for k, v in sys.modules.items():
@@ -114,14 +114,14 @@ def test08_sys_module_size():
 def test09_import_torch_order(order):
     if order == 0:
         pytest.importorskip("torch")
-        import mitsuba as mi
+        import misuka as mi
         mi.set_variant(mi.variants()[0])
     if order == 1:
-        import mitsuba as mi
+        import misuka as mi
         pytest.importorskip("torch")
         mi.set_variant(mi.variants()[0])
     if order == 2:
-        import mitsuba as mi
+        import misuka as mi
         mi.set_variant(mi.variants()[0])
         pytest.importorskip("torch")
 
@@ -138,7 +138,7 @@ def test09_import_torch_order(order):
 
 
 def test10_variant_switching_vcall():
-    import mitsuba as mi
+    import misuka as mi
 
     # Switch variants between two scenes and try to render the second scene.
     # This will only work if the two scenes do not share the same JIT vectorized
