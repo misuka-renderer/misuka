@@ -4853,7 +4853,7 @@
     weights. This is feature is useful for differentiable rendering, where
     one needs to evaluate the reverse-mode derivative of the put() method.
 
-    .. py:method:: __init__(self, size, offset, channel_count, rfilter=None, border=False, normalize=False, coalesce=True, compensate=False, warn_negative=False, warn_invalid=False)
+    .. py:method:: __init__(self, size, offset, channel_count, rfilter=None, border=False, normalize=False, coalesce=True, compensate=False, warn_negative=False, warn_invalid=False, y_only=False)
 
         Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2u`):
             *no description available*
@@ -4883,6 +4883,9 @@
             *no description available*
 
         Parameter ``warn_invalid`` (bool):
+            *no description available*
+
+        Parameter ``y_only`` (bool):
             *no description available*
 
 
@@ -5732,7 +5735,7 @@
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
-    :value: True
+    :value: False
 
 .. py:data:: mitsuba.MI_ENABLE_EMBREE
     :type: bool
@@ -5744,7 +5747,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.6.2
+    :value: 3.6.4
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -5756,7 +5759,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 2
+    :value: 4
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -8012,152 +8015,6 @@
 
 .. py:class:: mitsuba.ObjectPtr
 
-.. py:class:: mitsuba.OptixDenoiser
-
-    Base class: :py:obj:`mitsuba.Object`
-
-    Wrapper for the OptiX AI denoiser
-
-    The OptiX AI denoiser is wrapped in this object such that it can work
-    directly with Mitsuba types and its conventions.
-
-    The denoiser works best when applied to noisy renderings that were
-    produced with a Film which used the `box` ReconstructionFilter. With a
-    filter that spans multiple pixels, the denoiser might identify some
-    local variance as a feature of the scene and will not denoise it.
-
-    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False)
-
-        Constructs an OptiX denoiser
-        
-        Parameter ``input_size`` (:py:obj:`mitsuba.ScalarVector2u`):
-            Resolution of noisy images that will be fed to the denoiser.
-        
-        Parameter ``albedo`` (bool):
-            Whether or not albedo information will also be given to the
-            denoiser.
-        
-        Parameter ``normals`` (bool):
-            Whether or not shading normals information will also be given to
-            the Denoiser.
-        
-        Returns:
-            A callable object which will apply the OptiX denoiser.
-
-        Parameter ``temporal`` (bool):
-            *no description available*
-
-        
-    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, denoise_alpha=True, albedo, normals, to_sensor=None, flow, previous_denoised)
-
-        Overloaded function.
-
-        1. ``__call__(self, noisy: drjit.llvm.ad.TensorXf, denoise_alpha: bool = True, albedo: drjit.llvm.ad.TensorXf, normals: drjit.llvm.ad.TensorXf, to_sensor: object | None = None, flow: drjit.llvm.ad.TensorXf, previous_denoised: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf``
-
-        Apply denoiser on inputs which are TensorXf objects.
-
-        Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
-            The noisy input. (tensor shape: (width, height, 3 | 4))
-
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is true.
-
-        Parameter ``albedo`` (drjit.llvm.ad.TensorXf):
-            Albedo information of the noisy rendering. This parameter is
-            optional unless the OptixDenoiser was built with albedo support.
-            (tensor shape: (width, height, 3))
-
-        Parameter ``normals`` (drjit.llvm.ad.TensorXf):
-            Shading normal information of the noisy rendering. The normals
-            must be in the coordinate frame of the sensor which was used to
-            render the noisy input. This parameter is optional unless the
-            OptixDenoiser was built with normals support. (tensor shape:
-            (width, height, 3))
-
-        Parameter ``to_sensor`` (object | None):
-            A Transform4f which is applied to the ``normals`` parameter before
-            denoising. This should be used to transform the normals into the
-            correct coordinate frame. This parameter is optional, by default
-            no transformation is applied.
-
-        Parameter ``flow`` (drjit.llvm.ad.TensorXf):
-            With temporal denoising, this parameter is the optical flow
-            between the previous frame and the current one. It should capture
-            the 2D motion of each individual pixel. When this parameter is
-            unknown, it can been set to a zero-initialized TensorXf of the
-            correct size and still produce convincing results. This parameter
-            is optional unless the OptixDenoiser was built with temporal
-            denoising support. (tensor shape: (width, height, 2))
-
-        Parameter ``previous_denoised`` (drjit.llvm.ad.TensorXf):
-            With temporal denoising, the previous denoised frame should be
-            passed here. For the very first frame, the OptiX documentation
-            recommends passing the noisy input for this argument. This
-            parameter is optional unless the OptixDenoiser was built with
-            temporal denoising support. (tensor shape: (width, height, 3 | 4))
-
-        Returns → drjit.llvm.ad.TensorXf:
-            The denoised input.
-
-        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, denoise_alpha: bool = True, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
-
-        Apply denoiser on inputs which are Bitmap objects.
-
-        Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
-            The noisy input. When passing additional information like albedo
-            or normals to the denoiser, this Bitmap object must be a
-            MultiChannel bitmap.
-
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is true.
-
-        Parameter ``albedo_ch``:
-            The name of the channel in the ``noisy`` parameter which contains
-            the albedo information of the noisy rendering. This parameter is
-            optional unless the OptixDenoiser was built with albedo support.
-
-        Parameter ``normals_ch``:
-            The name of the channel in the ``noisy`` parameter which contains
-            the shading normal information of the noisy rendering. The normals
-            must be in the coordinate frame of the sensor which was used to
-            render the noisy input. This parameter is optional unless the
-            OptixDenoiser was built with normals support.
-
-        Parameter ``to_sensor`` (object | None):
-            A Transform4f which is applied to the ``normals`` parameter before
-            denoising. This should be used to transform the normals into the
-            correct coordinate frame. This parameter is optional, by default
-            no transformation is applied.
-
-        Parameter ``flow_ch``:
-            With temporal denoising, this parameter is name of the channel in
-            the ``noisy`` parameter which contains the optical flow between
-            the previous frame and the current one. It should capture the 2D
-            motion of each individual pixel. When this parameter is unknown,
-            it can been set to a zero-initialized TensorXf of the correct size
-            and still produce convincing results. This parameter is optional
-            unless the OptixDenoiser was built with temporal denoising
-            support.
-
-        Parameter ``previous_denoised_ch``:
-            With temporal denoising, this parameter is name of the channel in
-            the ``noisy`` parameter which contains the previous denoised
-            frame. For the very first frame, the OptiX documentation
-            recommends passing the noisy input for this argument. This
-            parameter is optional unless the OptixDenoiser was built with
-            temporal denoising support.
-
-        Parameter ``noisy_ch``:
-            The name of the channel in the ``noisy`` parameter which contains
-            the shading normal information of the noisy rendering.
-
-        Returns → drjit.llvm.ad.TensorXf:
-            The denoised input.
-
 .. py:class:: mitsuba.PCG32
 
     Implementation of PCG32, a member of the PCG family of random number generators
@@ -8551,7 +8408,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.UInt64:
+        Returns → drjit::DiffArray<(JitBackend)2, unsigned long>:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.eval_pdf(self, ctx, mi, wo, active=True)
@@ -12164,6 +12021,15 @@
         Return the shape, to which the emitter is currently attached
 
         Returns → :py:obj:`mitsuba.Shape`:
+            *no description available*
+
+    .. py:method:: mitsuba.Sensor.kappa()
+
+        Return the kappa parameter of the sensor
+
+        This method will only be implemented in acoustic films.
+
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:property:: mitsuba.Sensor.m_film
@@ -17563,6 +17429,56 @@
         Returns → object:
             *no description available*
 
+.. py:function:: mitsuba.acoustic.apply_air_attenuation(etc, sampling_rate, speed_of_sound_ms, air_attenuation_decay, n_time_bins, n_frequencies)
+
+    Apply air attenuation to an energy time curve (ETC).
+
+    Parameter ``etc`` (collections.abc.Sequence[float]):
+        *no description available*
+
+    Parameter ``sampling_rate`` (float):
+        *no description available*
+
+    Parameter ``speed_of_sound_ms`` (float):
+        *no description available*
+
+    Parameter ``air_attenuation_decay`` (collections.abc.Sequence[float]):
+        *no description available*
+
+    Parameter ``n_time_bins`` (int):
+        *no description available*
+
+    Parameter ``n_frequencies`` (int):
+        *no description available*
+
+    Returns → list[float]:
+        *no description available*
+
+.. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity, atmospheric_pressure, saturation_vapor_pressure, co2_ppm, method='auto')
+
+    Return the speed of sound in air. Chooses calculation method based on input parameters.
+
+    Parameter ``temperature`` (float):
+        *no description available*
+
+    Parameter ``relative_humidity`` (float):
+        *no description available*
+
+    Parameter ``atmospheric_pressure`` (float):
+        *no description available*
+
+    Parameter ``saturation_vapor_pressure`` (float):
+        *no description available*
+
+    Parameter ``co2_ppm`` (float):
+        *no description available*
+
+    Parameter ``method`` (str):
+        *no description available*
+
+    Returns → float:
+        *no description available*
+
 .. py:class:: mitsuba.ad.Adam
 
     Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
@@ -17612,7 +17528,7 @@
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (dict | None):
+        Parameter ``params`` (dict):
             *no description available*
 
         
@@ -18008,7 +17924,7 @@
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (dict | None):
+        Parameter ``params`` (dict):
             *no description available*
 
         
@@ -18028,6 +17944,995 @@
 
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
+
+.. py:class:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.RBIntegrator`
+
+    .. _integrator-acoustic_ad:
+
+    Acoustic AD Integrator (:monosp:`acoustic_ad`)
+    ---------------------------------------------------
+
+    .. pluginparameters::
+
+     * - speed_of_sound
+         - |float|
+         - Speed of sound in meters per second. (Default: 343.0)
+
+     * - max_time
+         - |float|
+         - Stopping criterion for the maximum propagation time in seconds.
+           Paths whose accumulated travel distance exceeds ``max_time *
+           speed_of_sound`` are terminated.
+
+     * - max_depth
+         - |int|
+         - Specifies the longest path depth (where -1
+           corresponds to :math:`\infty`). A value of 1 will only render directly
+           audible sound sources. 2 will lead to first-order reflections, and so
+           on. (Default: -1)
+
+     * - rr_depth
+         - |int|
+         - Russian roulette path termination is not yet supported. Setting this
+           to any value other than the default raises an error. Use
+           ``max_energy_loss`` instead. (Default: 100000)
+
+     * - max_energy_loss
+         - |float|
+         - Maximum energy loss in dB before a path is terminated. Set to -1 to
+           disable this criterion. (Default: 60.0)
+
+     * - hide_emitters
+         - |bool|
+         - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+           contribution from sound sources. (Default: no, i.e. |false|)
+
+     * - is_detached
+         - |bool|
+         - Whether the sampling strategy should be detached from the optimized
+           parameters. (Default: |true|)
+
+     * - track_time_derivatives
+         - |bool|
+         - Whether to track derivatives with respect to time/distance.
+           (Default: |true|)
+
+    This is the base class for differentiable acoustic integrators. It extends
+    the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
+    differentiation (AD) support, enabling gradient-based optimization of scene
+    parameters such as material properties.
+
+    Like the acoustic path tracer, it simulates sound propagation by tracing
+    paths from the sensor (microphone) to the emitters (sound sources), and
+    computes an energy-based impulse response (echogram) by accumulating path
+    contributions into time bins determined by the total path length and the
+    speed of sound.
+
+    This class is not meant to be used in practice, but mostly exists for
+    debugging purposes and as a reference implementation.
+    Instead, use :ref:`acoustic_prb <integrator-acoustic_prb>` for
+    differentiable rendering of static scenes or
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` for
+    non-static scenes.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
+
+        Overloaded function.
+
+        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+
+        Render the scene
+
+        This function renders the scene from the viewpoint of ``sensor``. All
+        other parameters are optional and control different aspects of the
+        rendering process. In particular:
+
+        Parameter ``seed`` (int):
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g.,
+            an increasing sequence) if subsequent ``render``() calls should
+            produce statistically independent images.
+
+        Parameter ``spp`` (int):
+            Set this parameter to a nonzero value to override the number of
+            samples per pixel. This value then takes precedence over whatever
+            was specified in the construction of ``sensor->sampler()``. This
+            parameter may be useful in research applications where an image
+            must be rendered multiple times using different quality levels.
+
+        Parameter ``develop`` (bool):
+            If set to ``True``, the implementation post-processes the data
+            stored in ``sensor->film()``, returning the resulting image as a
+            TensorXf. Otherwise, it returns an empty tensor.
+
+        Parameter ``evaluate`` (bool):
+            This parameter is only relevant for JIT variants of Mitsuba (LLVM,
+            CUDA). If set to ``True``, the rendering step evaluates the
+            generated image and waits for its completion. A log message also
+            denotes the rendering time. Otherwise, the returned tensor
+            (``develop=true``) or modified film (``develop=false``) represent
+            the rendering task as an unevaluated computation graph.
+
+        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+
+        Render the scene
+
+        This function is just a thin wrapper around the previous render()
+        overload. It accepts a sensor *index* instead and renders the scene
+        using sensor 0 by default.
+
+        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.sample_rays(scene, sensor, sampler)
+
+        Sample a set of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous positions on the Imageblock associated with each ray.
+          The first value contains the frequency index, the second value is not used.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+            *no description available*
+
+        Returns → ~typing.Tuple[~:py:obj:`mitsuba.RayDifferential3f`, ~:py:obj:`mitsuba.Color3f`, ~:py:obj:`mitsuba.Vector2f`, ~drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
+
+        Given a sensor and a desired number of samples per pixel, this function
+        computes the necessary number of Monte Carlo samples and then suitably
+        seeds the sampler underlying the sensor.
+
+        Returns the created sampler and the final number of samples per pixel
+        (which may differ from the requested amount depending on the type of
+        ``Sampler`` being used)
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor to render the scene from a different viewpoint.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator during the primal rendering step. It is crucial that you
+            specify different seeds (e.g., an increasing sequence) if subsequent
+            calls should produce statistically independent images (e.g. to
+            de-correlate gradient-based optimization steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            primal rendering step. The value provided within the original scene
+            specification takes precedence if ``spp=0``.
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Parameter ``aovs`` (list):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+
+        Evaluates the forward-mode derivative of the rendering step.
+
+        Forward-mode differentiation propagates gradients from scene parameters
+        through the simulation, producing a *gradient image* (i.e., the derivative
+        of the rendered image with respect to those scene parameters). The gradient
+        image is very helpful for debugging, for example to inspect the gradient
+        variance or visualize the region of influence of a scene parameter. It is
+        not particularly useful for simultaneous optimization of many parameters,
+        since multiple differentiation passes are needed to obtain separate
+        derivatives for each scene parameter. See ``Integrator.render_backward()``
+        for an efficient way of obtaining all parameter derivatives at once, or
+        simply use the ``mi.render()`` abstraction that hides both
+        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+        a unified interface.
+
+        Before calling this function, you must first enable gradient tracking and
+        furthermore associate concrete input gradients with one or more scene
+        parameters, or the function will just return a zero-valued gradient image.
+        This is typically done by invoking ``dr.enable_grad()`` and
+        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
+        that can be obtained obtained via a call to
+        ``mi.traverse()``.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_forward()`` will not do this for you). Furthermore,
+           ``dr.set_grad(...)`` must be used to associate specific gradient values
+           with each parameter.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → ~drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``grad_in`` (~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:function:: mitsuba.ad.integrators.acoustic_ad.Callable(overloaded)
+
+
+    Callable[[int], str] signifies a function that takes a single
+    parameter of type int and returns a str.
+
+    The subscription syntax must always be used with exactly two
+    values: the argument list and the return type.
+    The argument list must be a list of types, a ParamSpec,
+    Concatenate or ellipsis. The return type must be a single type.
+
+    There is no syntax to indicate optional or keyword arguments;
+    such function types are rarely used as callback types.
+
+.. py:function:: mitsuba.ad.integrators.acoustic_ad.Optional()
+
+    Optional[X] is equivalent to Union[X, None].
+
+.. py:function:: mitsuba.ad.integrators.acoustic_ad.Tuple(overloaded)
+
+
+    Tuple[X, Y] is the cross-product type of X and Y.
+
+    Example: Tuple[T1, T2] is a tuple of two elements corresponding
+    to type variables T1 and T2.  Tuple[int, float, str] is a tuple
+    of an int, a float and a string.
+
+    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...].
+
+.. py:function:: mitsuba.ad.integrators.acoustic_ad.Union()
+
+    Union type; Union[X, Y] means either X or Y.
+
+    On Python 3.10 and higher, the | operator
+    can also be used to denote unions;
+    X | Y means the same thing to the type checker as Union[X, Y].
+
+    To define a union, use e.g. Union[int, str]. Details:
+    - The arguments must be types and there must be at least one.
+    - None as an argument is a special case and is replaced by
+      type(None).
+    - Unions of unions are flattened, e.g.::
+
+        assert Union[Union[int, str], float] == Union[int, str, float]
+
+    - Unions of a single argument vanish, e.g.::
+
+        assert Union[int] == int  # The constructor actually returns int
+
+    - Redundant arguments are skipped, e.g.::
+
+        assert Union[int, str, int] == Union[int, str]
+
+    - When comparing unions, the argument order is ignored, e.g.::
+
+        assert Union[int, str] == Union[str, int]
+
+    - You cannot subclass or instantiate a union.
+    - You can use Optional[X] as a shorthand for Union[X, None].
+
+.. py:class:: mitsuba.ad.integrators.acoustic_ad_threepoint.AcousticADThreePointIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator`
+
+    .. _integrator-acoustic_ad_threepoint:
+
+    Acoustic AD Three-Point Form (:monosp:`acoustic_ad_threepoint`)
+    ---------------------------------------------------------------
+
+    This integrator inherits all parameters from
+    :ref:`acoustic_ad <integrator-acoustic_ad>`.
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form
+    reparametrization that can also handle **non-static scenes** with moving
+    geometry.
+
+    Rather than sampling directions in :math:`\mathbb{H}^2`, this integrator
+    samples surface points in the scene (which inherently move with the
+    geometry). This reparametrization:
+
+    1. Removes most of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    This variant merely exists for debugging purposes and as a reference
+    implementation. For differentiable rendering of non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad_threepoint.AcousticADThreePointIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+
+.. py:class:: mitsuba.ad.integrators.acoustic_prb.AcousticPRBIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator`
+
+    .. _integrator-acoustic_prb:
+
+    Acoustic Path Replay Backpropagation (:monosp:`acoustic_prb`)
+    -------------------------------------------------------------
+
+    This integrator inherits all parameters from
+    :ref:`acoustic_ad <integrator-acoustic_ad>`.
+
+    This integrator works analogously to the
+    :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
+    additional gradient tracking. It uses time-resolved path replay
+    backpropagation (PRB) to efficiently propagate gradients with respect to
+    material properties, using constant memory and linear time complexity.
+
+    This integrator is only suitable for **static scenes** (i.e., scenes with
+    no moving objects). For non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`
+    instead.
+
+    .. warning:: This integrator is biased when used with moving geometry.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_prb.AcousticPRBIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_prb.AcousticPRBIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``grad_in`` (~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator`
+
+    .. _integrator-acoustic_prb_threepoint:
+
+    Acoustic PRB Three-Point Form (:monosp:`acoustic_prb_threepoint`)
+    -----------------------------------------------------------------
+
+    This integrator inherits all parameters from
+    :ref:`acoustic_ad <integrator-acoustic_ad>`.
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but can also handle
+    **non-static scenes** with moving geometry. Moving geometry causes two
+    challenges:
+
+    1. Moving geometry can cause discontinuities in the integrand whose
+       locations depend on the scene parameters -- for example, when a small
+       displacement of a surface causes a ray to start or stop intersecting it.
+       Even if the derivative of the integral with respect to a scene parameter
+       is continuous, it cannot be estimated by differentiating the individual
+       rays that sample the integrand, because those local derivatives are
+       discontinuous, making them incompatible with automatic differentiation.
+
+    2. Moving geometry influences the path geometry. When the ray sampling
+       strategy is detached from the optimized parameters, local changes of the
+       scene geometry have a global effect on all successive path vertices.
+       Standard PRB methods do not account for this and only consider the
+       influence on the next (few) ray segments.
+
+    This integrator handles both problems by reparametrizing the integral.
+    Rather than sampling directions in :math:`\mathbb{H}^2`, it samples
+    surface points in the scene (which inherently move with the geometry).
+    This:
+
+    1. Removes some of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+
+    .. py:method:: mitsuba.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``grad_in`` (~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
 
 .. py:class:: mitsuba.ad.integrators.common.ADIntegrator
 
@@ -20700,9 +21605,8 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float
+.. py:function:: mitsuba.sample_tea_float(overloaded)
 
-    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
