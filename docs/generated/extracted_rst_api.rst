@@ -17454,7 +17454,7 @@
     Returns → list[float]:
         *no description available*
 
-.. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity, atmospheric_pressure, saturation_vapor_pressure, co2_ppm, method='auto')
+.. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity=nan, atmospheric_pressure=nan, saturation_vapor_pressure=-1.0, co2_ppm=nan, method='auto')
 
     Return the speed of sound in air. Chooses calculation method based on input parameters.
 
