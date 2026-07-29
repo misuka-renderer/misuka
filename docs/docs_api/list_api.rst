@@ -548,7 +548,7 @@
 
 .. autoclass:: mitsuba.ZStream
 
-.. autofunction:: mitsuba.acoustic.apply_air_attenuation
+.. autofunction:: mitsuba.acoustic.apply_pure_tone_attenuation
 
 .. autofunction:: mitsuba.acoustic.speed_of_sound
 

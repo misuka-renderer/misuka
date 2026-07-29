@@ -278,10 +278,6 @@ Value energy_attenuation_coefficient(Value temperature,
  *      Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
  *      Atmospheric pressure in Pascal.
- * \param n_time_bins
- *      Number of time bins (rows) in \p etc.
- * \param n_frequencies
- *      Number of frequency bands (columns) in \p etc.
  *
  * \return
  *      A new vector containing the attenuated ETC with the same layout as
@@ -295,18 +291,14 @@ std::vector<Value> apply_pure_tone_attenuation(
         Value temperature,
         const std::vector<Value>& frequencies,
         Value relative_humidity,
-        Value atmospheric_pressure,
-        size_t n_time_bins,
-        size_t n_frequencies) {
+        Value atmospheric_pressure) {
 
-    if (etc.size() != n_time_bins * n_frequencies) {
+    size_t n_frequencies = frequencies.size();
+    if (n_frequencies == 0 || etc.size() % n_frequencies != 0) {
         throw std::invalid_argument(
-            "etc size does not match n_time_bins * n_frequencies.");
+            "etc size must be a multiple of frequencies.size().");
     }
-    if (frequencies.size() != n_frequencies) {
-        throw std::invalid_argument(
-            "frequencies size does not match n_frequencies.");
-    }
+    size_t n_time_bins = etc.size() / n_frequencies;
 
     // Precompute the energy decay coefficient per frequency band
     std::vector<Value> decay(n_frequencies);

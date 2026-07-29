@@ -17429,11 +17429,11 @@
         Returns → object:
             *no description available*
 
-.. py:function:: mitsuba.acoustic.apply_air_attenuation(etc, sampling_rate, speed_of_sound_ms, air_attenuation_decay, n_time_bins, n_frequencies)
+.. py:function:: mitsuba.acoustic.apply_pure_tone_attenuation(etc, sampling_rate, speed_of_sound_ms, temperature, frequencies, relative_humidity, atmospheric_pressure)
 
-    Apply air attenuation to an energy time curve (ETC).
+    Apply air attenuation to an energy time curve (ETC), computing the air attenuation decay coefficients from temperature, frequencies, relative humidity and atmospheric pressure (ISO 9613-1:1993). Accepts etc as a flat sequence, numpy array, or a drjit/mitsuba tensor (e.g. the TensorXf returned by mi.render) of arbitrary shape; the number of frequency bands is inferred from len(frequencies), and etc's total size must be a multiple of it. Returns the same type as the input (TensorXf in, TensorXf out; otherwise a numpy array), reshaped to match.
 
-    Parameter ``etc`` (collections.abc.Sequence[float]):
+    Parameter ``etc`` (object):
         *no description available*
 
     Parameter ``sampling_rate`` (float):
@@ -17442,16 +17442,19 @@
     Parameter ``speed_of_sound_ms`` (float):
         *no description available*
 
-    Parameter ``air_attenuation_decay`` (collections.abc.Sequence[float]):
+    Parameter ``temperature`` (float):
         *no description available*
 
-    Parameter ``n_time_bins`` (int):
+    Parameter ``frequencies`` (collections.abc.Sequence[float]):
         *no description available*
 
-    Parameter ``n_frequencies`` (int):
+    Parameter ``relative_humidity`` (float):
         *no description available*
 
-    Returns → list[float]:
+    Parameter ``atmospheric_pressure`` (float):
+        *no description available*
+
+    Returns → object:
         *no description available*
 
 .. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity=nan, atmospheric_pressure=nan, saturation_vapor_pressure=-1.0, co2_ppm=nan, method='auto')

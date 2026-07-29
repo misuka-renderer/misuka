@@ -9546,12 +9546,6 @@ Parameter ``relative_humidity``:
 Parameter ``atmospheric_pressure``:
     Atmospheric pressure in Pascal.
 
-Parameter ``n_time_bins``:
-    Number of time bins (rows) in \p etc.
-
-Parameter ``n_frequencies``:
-    Number of frequency bands (columns) in \p etc.
-
 Returns:
     A new vector containing the attenuated ETC with the same layout as
     the input (row-major, n_time_bins × n_frequencies).)doc";
