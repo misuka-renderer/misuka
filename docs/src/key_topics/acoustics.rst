@@ -5,27 +5,27 @@ Acoustic rendering
 
 misuka turns `Mitsuba 3 <https://mitsuba-renderer.org/>`_ into a room-acoustic renderer. The geometry, samplers,
 scene format, and the `Dr.Jit <https://drjit.readthedocs.io/en/v1.4.0/>`_
-JIT / autodiff engine all carry over unchanged. What changes is *what* is
-transported and *what* the renderer records. Instead of spectral radiance
-integrated into a 2D image, misuka transports **sound energy** and records an
-**energy-time curve (ETC)**. The ETC is the energy arriving at a receiver as a
+JIT / autodiff engine all carry over unchanged. What changes is *how* transport
+is evaluated and *what* the renderer records. Instead of solving light energy transport for a steady
+state and integrating it into a 2D image, misuka resolves sound energy transport in time and
+records an **energy-time curve (ETC)**: the energy arriving at a receiver as a
 function of propagation time, resolved per frequency band.
 
-This page explains the concepts a user needs in order to work with misuka.
+This page explains the concepts a user needs in order to work with misuka, and the differences to Mitsuba 3.
 The plugins themselves are documented in the
 :ref:`plugin reference <sec-integrators>`, and examples live in the
 :doc:`rendering <../rendering_tutorials>` and
 :doc:`inverse rendering <../inverse_rendering_tutorials>` tutorials.
 
-The ``_acoustic`` variant family
+The ``acoustic`` variant family
 --------------------------------
 
-Mitsuba compiles the same C++ sources into several *variants*, each a ``(backend × spectrum)`` combination.
-The ``spectrum`` part determines what a "color" channel means, the backend part determines *where and how* the computation runs.
-For example, ``cuda_rgb`` performs RGB rendering on an NVIDIA GPU via CUDA, while ``metal_spectral`` renders images into channels that represent continuous wavelength bands.
+Mitsuba 3 is provides a set of different system *variants*, each a ``(backend × spectrum)`` combination.
+The ``backend`` part determines *where and how* the computation runs, while the ``spectrum`` part defines what a "spectrum" represents.
+For example, ``cuda_rgb`` performs RGB rendering on NVIDIA GPUs via CUDA, while ``metal_spectral`` renders on Apple Silicon and produces multichannel images that represent continuous wavelength bands, and ``llvm_mono`` renders monochromatic (greyscale) images on the CPU.
 
 misuka adds an ``_acoustic`` variant family.
-These variants work in the **frequency (Hz) domain** rather than with wavelengths.
+These variants work in the **frequency (Hz) domain** rather than with wavelengths (nm).
 Therefore, acoustic scenes **must** be rendered with an acoustic variant and are not compatible with ``rgb``, ``mono`` or ``spectral`` variants.
 See :ref:`Frequency-domain spectra <sec-spectra-acoustic>`.
 
@@ -51,44 +51,65 @@ Mitsuba's backend prefixes apply (``scalar_``, ``llvm_``, , ``cuda_``, ``metal_`
 See the `Mitsuba variants guide <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for the underlying variant system, and the :ref:`developer guide <sec-compiling>` for enabling additional variants if you compile misuka yourself.
 
 
-Energy transport, not radiance
-------------------------------
+Time-resolved transport
+-----------------------
 
-Acoustic simulation in misuka is a geometric (ray-based) energy simulation. A
-path from a sound source to the receiver carries energy that is attenuated at
-each surface interaction by the frequency-dependent absorption and scattering of
-the :ref:`acoustic material <bsdf-acousticbsdf>`. Two differences from light
-transport are fundamental:
+Acoustic simulation in misuka is a geometric (ray-based) simulation. A path from
+a sound source to the receiver is attenuated at each surface interaction by the
+frequency-dependent absorption and scattering of the
+:ref:`acoustic material <bsdf-acousticbsdf>`. Three points characterize how this
+relates to light transport:
 
-- **Energy, not radiance.** Each frequency band carries a single scalar energy.
-  There is no colour and no polarization. Surfaces attenuate energy per band
-  according to their absorption/scattering spectra.
-- **Time is explicit.** Light transport is treated as instantaneous, but sound
-  travels at a finite **speed of sound** (default 343 m/s). The renderer tracks
-  the total geometric path length and converts it into a propagation *time*,
-  which is what makes an impulse response, the ETC, meaningful.
+- **The same transport equation, with a propagation delay.** misuka solves the
+  *room acoustic rendering equation* :cite:`Siltanen2007`, which is the
+  rendering equation with the incident term evaluated at a retarded time, i.e.
+  the current time offset by the propagation time:
+  
+  .. math::
+      L(\mathbf{x} \to \omega, t) = L_\mathrm{e}(\mathbf{x} \to \omega, t) +
+      \int_{\mathcal{H}^2} f_\mathrm{r}(\mathbf{x}, \omega' \to \omega)\,
+      L\!\left(\mathbf{y} \to \omega',\, t - \frac{\|\mathbf{x} - \mathbf{y}\|}{c}\right)
+      \cos\theta'\, \mathrm{d}\omega'
+
+  Letting the speed of sound :math:`c \to \infty` removes the delay and recovers
+  the light-transport case exactly. What travels along a ray is therefore a
+  radiance-like quantity, invariant along the ray, just as in Mitsuba; the
+  :math:`1/r^2` falloff enters only through the integration over all rays: an 
+  emitter that is further away occupies a smaller solid angle and is therefore hit
+  by fewer rays.
+- **Time is resolved rather than integrated out.** Light transport is solved for
+  the steady state. misuka instead tracks the total geometric path length,
+  converts it into a propagation *time*, and bins the contribution accordingly.
+  The ETC is thus the energy impulse response of the transport operator, and
+  integrating it over all time recovers the steady-state result a conventional
+  renderer would produce.
+- **Energetic, not wave-based.** Contributions are summed as intensities, with
+  no pressure phase. Optical rendering makes the same approximation, but it is a
+  stronger one in acoustics: audible wavelengths are not always small compared 
+  to room geometry, so diffraction and interference effects can become significant
+  at lower frequencies / larger wavelengths. These effects are not modelled. 
 
 Ray-geometry intersection, importance sampling, the Dr.Jit computation graph,
 and gradient propagation are all inherited from Mitsuba and Dr.Jit and behave as
 usual.
 
-The energy-time curve (ETC)
+The Energy Time Curve (ETC)
 ---------------------------
 
-The ETC is the acoustic analogue of an image and the primary output of a
-forward render. It is produced by the :ref:`tape <film-tape>` film paired with a
-:ref:`microphone <sensor-microphone>` sensor, and records how much energy
-reaches the receiver in each **time bin**, separately for each **frequency
-band**.
+The ETC is the primary output of all acoustic ray tracing methods.
+It can be interpreted as the envelope of the squared impulse response.
 
-- The **frequency bands** are listed explicitly on the ``tape`` film via its
-  ``frequencies`` parameter (e.g. octave-band centre frequencies). Each entry is
+It is produced by the :ref:`tape <film-tape>` film paired with a
+:ref:`microphone <sensor-microphone>` sensor, and records how much energy
+reaches the receiver in each **time bin**, separately for each **frequency**.
+
+- The **rendered frequencies** are listed explicitly on the ``tape`` film via its
+  ``frequencies`` parameter (e.g. octave-band center frequencies). Each entry is
   one band of the output.
 - The **time bins** (``time_bins``) discretize propagation time. Together with
   the integrator's ``max_time`` they set the temporal resolution: each bin
   covers ``max_time / time_bins`` seconds, and a path contributes to the bin
-  matching its total propagation time. Paths whose travel distance exceeds
-  ``max_time × speed_of_sound`` are discarded.
+  matching its total propagation time.
 
 A render therefore returns a tensor of shape ``(time_bins, frequencies, 1)``,
 with energy against time along the first axis and one column per frequency band.
@@ -134,34 +155,39 @@ acoustic components.**
       - Mitsuba (optical)
       - misuka (acoustic)
     * - Spectrum
-      - RGB / spectral radiance
-      - single-channel energy per frequency band
+      - RGB / wavelength spectra in nanometers
+      - frequency spectra in Hz
     * - Material
-      - optical BSDFs (``diffuse``, ``conductor``, …)
+      - optical BSDFs (``diffuse``, ``conductor``, ...)
       - :ref:`acousticbsdf <bsdf-acousticbsdf>` (absorption + scattering)
     * - Sensor
-      - camera (``perspective``, …)
+      - camera (``perspective``, ...)
       - :ref:`microphone <sensor-microphone>` (receiver point)
     * - Film
-      - image film (``hdrfilm``, …)
+      - image film (``hdrfilm``, ...)
       - :ref:`tape <film-tape>` (ETC storage)
     * - Integrator
       - path / PRB light-transport integrators
       - :ref:`acoustic_path <integrator-acoustic_path>` (forward) and the
-        differentiable :ref:`acoustic_ad <integrator-acoustic_ad>` /
-        :ref:`acoustic_prb <integrator-acoustic_prb>` integrators
+        differentiable :ref:`acoustic_prb <integrator-acoustic_prb>` integrators
 
 Geometry, transforms, samplers, reconstruction filters, the XML/dict scene
-format, and the whole Dr.Jit / autodiff stack are unchanged and remain
-documented upstream.
+format, and the whole Dr.Jit / autodiff functionality are unchanged and remain
+documented at `mitsuba.readthedocs.io <https://mitsuba.readthedocs.io/en/v3.9.0>`_ and `drjit.readthedocs.io <https://drjit.readthedocs.io/en/v1.4.0/>`_.
 
 Differentiable acoustics
 ------------------------
 
 Under an ``_ad_`` variant, misuka differentiates the ETC with respect to scene
 parameters: material absorption/scattering, source and receiver positions, and
-geometry. The :ref:`acoustic_prb <integrator-acoustic_prb>` integrator
+geometry.
+
+The :ref:`acoustic_prb <integrator-acoustic_prb>` integrator
 implements **Time-Resolved Path Replay Backpropagation** :cite:`acoustic_prb`,
 which propagates gradients efficiently across many reflections without
-storing the full path history. This is the basis for the inverse-rendering
-tutorials, where scene parameters are optimized to match a target ETC.
+storing the full path history.
+It is the basis for all optimization tasks and is suited for material optimization
+with static (not optimized) geometry.
+The :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` produces
+unbiased gradients also when optimizing geometry. See :ref:`plugin reference <sec-integrators>`
+for further details.
