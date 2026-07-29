@@ -175,15 +175,92 @@ float speed_of_sound(const Value temperature,
                 + (a12*x_w*x_w + a13*p*p + a14*x_c*x_c + a15*x_c*p*x_w);
 
     } else {
-        throw std::invalid_argument("Invalid method specified for speed of sound calculation. Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.");
+        throw std::invalid_argument("Invalid method specified for speed of sound calculation. "
+                                    "Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.");
     }
 }
 
 /**
- * \brief Apply air attenuation to an energy time curve (ETC).
+ * \brief Pure tone energy attenuation coefficient, following ISO 9613-1:1993.
+ *
+ * \param temperature
+ *      Temperature in degree Celsius. Must be greater than -73 °C for accuracy of +/-50% (and success).
+ *      Must be in the range of -20 °C to 50 °C for accuracy of +/-10%.
+ * \param frequency
+ *      Frequency in Hz. Must be greater than 50 Hz.
+ *      Frequency-to-pressure ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%.
+ * \param relative_humidity
+ *      Relative humidity in the range of 0 to 1.
+ * \param atmospheric_pressure
+ *      Atmospheric pressure in Pascal. Must be less than 200 kPa.
+ *      Frequency-to-pressure ratio: 4 x 10-4 HzjPa to 10 Hz/Pa for accuracy of +/-50%.
+ *
+ * \return
+ *      Energy decay coefficient m in 1/m.
+ */
+template <typename Value>
+Value energy_attenuation_coefficient(Value temperature,
+                            Value frequency,
+                            Value relative_humidity,
+                            Value atmospheric_pressure) {
+
+    // check limits
+    if (temperature < -73.0f) {
+        throw std::invalid_argument("Temperature must be above -73 °C for accuracy of +/-50% (and success)");
+    }
+    else if (frequency < 50.0f) {
+        throw std::invalid_argument("Frequency in Hz. Must be greater than 50 Hz.");
+    }
+    else if (atmospheric_pressure > 200000.0f)
+    {
+        throw std::invalid_argument("Atmospheric pressure in Pascal. Must be less than 200 kPa.");
+    }
+    else if (frequency/atmospheric_pressure < 0.0004f || frequency/atmospheric_pressure > 10.0f) {
+        throw std::invalid_argument(" Frequency-to-pressure ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%. (and success)");
+    }
+    else {
+        constexpr float p_r  = 101325.0f; // reference atmospheric pressure
+        constexpr float T_0  = 293.15f;   // reference temperature (20°C)
+        constexpr float T_01 = 273.16f;   // triple point temperature of water
+
+        Value T = temperature + 273.15f;
+
+        // saturation vapour pressure ratio p_sat/p_r (ISO 9613-1)
+        Value p_sat_ratio = dr::pow(Value(10.f),
+            Value(-6.8346f) * dr::pow(Value(T_01) / T, Value(1.261f)) + Value(4.6151f));
+
+        // molar concentration of water vapor as a percentage (Eq. B.1)
+        Value h = (relative_humidity * 100.f) * p_sat_ratio * (atmospheric_pressure / p_r);
+
+        // Oxygen relaxation frequency
+        Value f_rO = (atmospheric_pressure / p_r) *
+            (24.f + 4.04e4f * h * (0.02f + h) / (0.391f + h));
+
+        // Nitrogen relaxation frequency
+        Value f_rN = (atmospheric_pressure / p_r) * dr::pow(T / T_0, Value(-0.5f)) *
+            (9.f + 280.f * h * dr::exp(Value(-4.17f) *
+                (dr::pow(T / T_0, Value(-1.f / 3.f)) - 1.f)));
+
+        // air attenuation
+        Value f2 = frequency * frequency;
+        Value alpha = 8.686f * f2 *
+            (1.84e-11f * (p_r / atmospheric_pressure) * dr::sqrt(T / T_0) +
+            dr::pow(T / T_0, Value(-2.5f)) *
+                (0.01275f * dr::exp(Value(-2239.1f) / T) / (f_rO + f2 / f_rO) +
+                0.1068f * dr::exp(Value(-3352.f) / T) / (f_rN + f2 / f_rN)));
+
+        // 10*log10(e) = 10/ln(10) ≈ 4.342944819f
+        return alpha / 4.342944819f;
+    }
+}
+
+/**
+ * \brief Apply pure tone attenuation to an energy time curve (ETC).
  *
  * Multiplies each time bin of the ETC with a frequency-dependent exponential
- * decay factor derived from the distance the sound has travelled.
+ * decay factor derived from the distance the sound has travelled and the
+ * air attenuation coefficient computed for each frequency band, following
+ * ISO 9613-1:1993.
  *
  * \param etc
  *      Input energy time curve as a 2-D array of shape
@@ -192,9 +269,15 @@ float speed_of_sound(const Value temperature,
  *      Sampling rate in Hz used to convert sample indices to times.
  * \param speed_of_sound_ms
  *      Speed of sound in m/s (use the return value of speed_of_sound()).
- * \param air_attenuation_decay
- *      Energy decay coefficients m in 1/m, one value per frequency band.
- *      Must have the same number of entries as \p etc has columns.
+ * \param temperature
+ *      Temperature in degree Celsius.
+ * \param frequencies
+ *      Center frequencies in Hz, one value per frequency band. Must have
+ *      the same number of entries as \p etc has columns.
+ * \param relative_humidity
+ *      Relative humidity in the range of 0 to 1.
+ * \param atmospheric_pressure
+ *      Atmospheric pressure in Pascal.
  * \param n_time_bins
  *      Number of time bins (rows) in \p etc.
  * \param n_frequencies
@@ -205,11 +288,14 @@ float speed_of_sound(const Value temperature,
  *      the input (row-major, n_time_bins × n_frequencies).
  */
 template <typename Value>
-std::vector<Value> apply_air_attenuation(
+std::vector<Value> apply_pure_tone_attenuation(
         const std::vector<Value>& etc,
         Value sampling_rate,
         Value speed_of_sound_ms,
-        const std::vector<Value>& air_attenuation_decay,
+        Value temperature,
+        const std::vector<Value>& frequencies,
+        Value relative_humidity,
+        Value atmospheric_pressure,
         size_t n_time_bins,
         size_t n_frequencies) {
 
@@ -217,9 +303,16 @@ std::vector<Value> apply_air_attenuation(
         throw std::invalid_argument(
             "etc size does not match n_time_bins * n_frequencies.");
     }
-    if (air_attenuation_decay.size() != n_frequencies) {
+    if (frequencies.size() != n_frequencies) {
         throw std::invalid_argument(
-            "air_attenuation_decay size does not match n_frequencies.");
+            "frequencies size does not match n_frequencies.");
+    }
+
+    // Precompute the energy decay coefficient per frequency band
+    std::vector<Value> decay(n_frequencies);
+    for (size_t f = 0; f < n_frequencies; ++f) {
+        decay[f] = energy_attenuation_coefficient<Value>(
+            temperature, frequencies[f], relative_humidity, atmospheric_pressure);
     }
 
     std::vector<Value> etc_attenuated(n_time_bins * n_frequencies);
@@ -228,10 +321,17 @@ std::vector<Value> apply_air_attenuation(
         // Time and distance for this bin
         Value time     = static_cast<Value>(t) / sampling_rate;
         Value distance = time * speed_of_sound_ms;
+        if (distance > 10000.0f) {
+            throw std::invalid_argument(
+                "Distance must be smaller than 10 km for accuracy of +/-50% (and success).\n"
+                "Calculated distance was: " + std::to_string(distance) + "\n"
+                "From speed: " + std::to_string(speed_of_sound_ms) +
+                " m/s and time: " + std::to_string(time) + " s. With s = t * v.");
+        }
 
         for (size_t f = 0; f < n_frequencies; ++f) {
             // Exponential decay:  exp(-distance * m_f)
-            Value attenuation = dr::exp(-distance * air_attenuation_decay[f]);
+            Value attenuation = dr::exp(-distance * decay[f]);
             etc_attenuated[t * n_frequencies + f] =
                 etc[t * n_frequencies + f] * attenuation;
         }

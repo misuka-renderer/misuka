@@ -9515,12 +9515,13 @@ Out-of-bounds regions are safely ignored. It is assumed that ``source
 The function supports `T` being a raw pointer or an arbitrary Dr.Jit
 array that can potentially live on the GPU and/or be differentiable.)doc";
 
-static const char *__doc_mitsuba_acoustic_apply_air_attenuation =
-R"doc(Apply air attenuation to an energy time curve (ETC).
+static const char *__doc_mitsuba_acoustic_apply_pure_tone_attenuation =
+R"doc(Apply pure tone attenuation to an energy time curve (ETC).
 
 Multiplies each time bin of the ETC with a frequency-dependent
 exponential decay factor derived from the distance the sound has
-travelled.
+travelled and the air attenuation coefficient computed for each
+frequency band, following ISO 9613-1:1993.
 
 Parameter ``etc``:
     Input energy time curve as a 2-D array of shape (n_time_bins,
@@ -9532,9 +9533,18 @@ Parameter ``sampling_rate``:
 Parameter ``speed_of_sound_ms``:
     Speed of sound in m/s (use the return value of speed_of_sound()).
 
-Parameter ``air_attenuation_decay``:
-    Energy decay coefficients m in 1/m, one value per frequency band.
-    Must have the same number of entries as \p etc has columns.
+Parameter ``temperature``:
+    Temperature in degree Celsius.
+
+Parameter ``frequencies``:
+    Center frequencies in Hz, one value per frequency band. Must have
+    the same number of entries as \p etc has columns.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal.
 
 Parameter ``n_time_bins``:
     Number of time bins (rows) in \p etc.
@@ -9545,6 +9555,29 @@ Parameter ``n_frequencies``:
 Returns:
     A new vector containing the attenuated ETC with the same layout as
     the input (row-major, n_time_bins × n_frequencies).)doc";
+
+static const char *__doc_mitsuba_acoustic_energy_attenuation_coefficient =
+R"doc(Pure tone energy attenuation coefficient, following ISO 9613-1:1993.
+
+Parameter ``temperature``:
+    Temperature in degree Celsius. Must be greater than -73 °C for
+    accuracy of +/-50% (and success). Must be in the range of -20 °C
+    to 50 °C for accuracy of +/-10%.
+
+Parameter ``frequency``:
+    Frequency in Hz. Must be greater than 50 Hz. Frequency-to-pressure
+    ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal. Must be less than 200 kPa.
+    Frequency-to-pressure ratio: 4 x 10-4 HzjPa to 10 Hz/Pa for
+    accuracy of +/-50%.
+
+Returns:
+    Energy decay coefficient m in 1/m.)doc";
 
 static const char *__doc_mitsuba_acoustic_is_missing_value = R"doc()doc";
 
