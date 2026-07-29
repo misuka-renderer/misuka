@@ -3,7 +3,7 @@
 Acoustic rendering
 ==================
 
-misuka turns Mitsuba 3 into a room-acoustic renderer. The geometry, samplers,
+misuka turns `Mitsuba 3 <https://mitsuba-renderer.org/>`_ into a room-acoustic renderer. The geometry, samplers,
 scene format, and the `Dr.Jit <https://drjit.readthedocs.io/en/v1.4.0/>`_
 JIT / autodiff engine all carry over unchanged. What changes is *what* is
 transported and *what* the renderer records. Instead of spectral radiance
@@ -11,41 +11,45 @@ integrated into a 2D image, misuka transports **sound energy** and records an
 **energy-time curve (ETC)**. The ETC is the energy arriving at a receiver as a
 function of propagation time, resolved per frequency band.
 
-This page explains the concepts a Mitsuba user needs in order to work
-acoustically. The plugins themselves are documented in the
-:ref:`plugin reference <sec-integrators>`, and worked examples live in the
+This page explains the concepts a user needs in order to work with misuka.
+The plugins themselves are documented in the
+:ref:`plugin reference <sec-integrators>`, and examples live in the
 :doc:`rendering <../rendering_tutorials>` and
 :doc:`inverse rendering <../inverse_rendering_tutorials>` tutorials.
 
 The ``_acoustic`` variant family
 --------------------------------
 
-Mitsuba compiles the same C++ sources into several *variants*, each a
-``(backend × spectrum)`` combination. misuka adds an ``_acoustic`` spectrum in
-which the spectral type is ``Spectrum<Float, 1>``, a **single-channel energy
-value** rather than a colour. Acoustic scenes must be rendered with one of these
-variants:
+Mitsuba compiles the same C++ sources into several *variants*, each a ``(backend × spectrum)`` combination.
+The ``spectrum`` part determines what a "color" channel means, the backend part determines *where and how* the computation runs.
+For example, ``cuda_rgb`` performs RGB rendering on an NVIDIA GPU via CUDA, while ``metal_spectral`` renders images into channels that represent continuous wavelength bands.
+
+misuka adds an ``_acoustic`` variant family.
+These variants work in the **frequency (Hz) domain** rather than with wavelengths.
+Therefore, acoustic scenes **must** be rendered with an acoustic variant and are not compatible with ``rgb``, ``mono`` or ``spectral`` variants.
+See :ref:`Frequency-domain spectra <sec-spectra-acoustic>`.
+
+The opposite also holds:
+Rendering an image with an optical integrator using an acoustic variant will produce unexpected results, unless handled explicitly.
+For example, using an acoustic spectrum with an optical variant will interpret frequency nodes in Hz as wavelengths in nm.
+Conversely, using an acoustic variant to render an ``rgb`` image will produce very noisy images because Mitsuba's rgb-specific variance reduction techniques are not natively compatible with the acoustic spectrum type.
+See the :doc:`Forward Rendering: Shoebox Room <../rendering_tutorials>` tutorial for an example how to render images of acoustic scenes, evaluated at specific frequencies.
+
+The ``pip`` package ships with ``acoustic_ad`` variants for all backends (``cuda``, ``metal`` and ``llvm``).
+We recommend setting the variants in the following way.
+When selecting multiple variants, the first available one will be used.
 
 .. code-block:: python
 
     import misuka as mi
 
-    mi.set_variant("llvm_ad_acoustic")   # then mi.Scene, mi.Float, … resolve acoustically
+    mi.set_variant('cuda_ad_acoustic', 'metal_ad_acoustic', 'llvm_ad_acoustic')
 
-The usual backend prefixes apply (``scalar_``, ``llvm_``, ``cuda_`` and their
-``_ad_`` autodiff forms), so ``llvm_ad_acoustic`` is a vectorized CPU variant
-with automatic differentiation, ``cuda_ad_acoustic`` its GPU counterpart, and
-``scalar_acoustic`` a single-ray variant that is easiest to debug. An optical
-variant such as ``llvm_ad_rgb`` **cannot** render acoustic scenes. The acoustic
-plugins and integrators only register under ``_acoustic`` variants. See the
-`Mitsuba variants guide
-<https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for the
-underlying variant system, and the :ref:`developer guide <sec-compiling>` for
-enabling ``_acoustic`` variants in :monosp:`misuka.conf`.
+    print(f'Using variant: {mi.variant()}')
 
-Because a single frequency band replaces the wavelength axis, the spectral
-plugins take a **frequency (Hz)** domain rather than wavelengths. See
-:ref:`Frequency-domain spectra <sec-spectra-acoustic>`.
+Mitsuba's backend prefixes apply (``scalar_``, ``llvm_``, , ``cuda_``, ``metal_`` and their ``_ad_`` autodiff forms), so ``llvm_ad_acoustic`` is a vectorized CPU variant with automatic differentiation, ``cuda_ad_acoustic`` and ``metal_ad_acoustic`` are its GPU counterparts on NVIDIA GPUs and Apple Silicon, respectively.
+See the `Mitsuba variants guide <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for the underlying variant system, and the :ref:`developer guide <sec-compiling>` for enabling additional variants if you compile misuka yourself.
+
 
 Energy transport, not radiance
 ------------------------------
