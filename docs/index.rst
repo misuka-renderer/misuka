@@ -26,13 +26,17 @@ misuka inherits from Mitsuba 3 and Dr.Jit.
 Installation
 ------------
 
-misuka is built from source, analogously to Mitsuba 3. Follow the
-:ref:`developer guide <sec-compiling>` for the full recipe, and make sure the
-:monosp:`misuka.conf` ``"enabled"`` list contains at least one ``*_acoustic``
-variant (e.g. ``llvm_ad_acoustic``). Acoustic scenes cannot be rendered with an
-optical variant. See the `Mitsuba variants guide
-<https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for
-background on the variant system.
+misuka can be installed via :monosp:`pip` from `PyPI
+<https://pypi.org/project/misuka/>`_. This is the recommended method of installation.
+
+.. code-block:: bash
+
+    pip install misuka
+
+This command will also install :monosp:`Dr.Jit` on your system if not already available.
+
+See the :ref:`developer guide <sec-compiling>` for complete instructions on building
+from the git source tree.
 
 Requirements
 ^^^^^^^^^^^^
@@ -46,15 +50,15 @@ Hello World!
 ------------
 
 The example below builds a simple shoebox room with a spherical sound source,
-places a microphone, and renders an **Energy Time Curve (ETC)**. The ETC is the
-acoustic analogue of an image: energy against propagation time, one column per
-frequency band.
+places a microphone, and renders an **Energy Time Curve (ETC)**. The ETC represents
+the temporal energy distribution in the squared impulse response.
 
 .. code-block:: python
 
     import misuka as mi
 
-    mi.set_variant("llvm_ad_acoustic")
+    mi.set_variant('cuda_ad_acoustic', 'metal_ad_acoustic', 'llvm_ad_acoustic')
+    print('Using variant:', mi.variant())
 
     from misuka import ScalarTransform4f as tf
 
@@ -64,74 +68,57 @@ frequency band.
     receiver_pos = [2.0, 1.0, 1.2]
 
     scene_dict = {
-        "type": "scene",
+        'type': 'scene',
         # Omnidirectional sound source.
-        "emitter": {
-            "type": "sphere",
-            "radius": 0.1,
-            "center": source_pos,
-            "emitter": {"type": "area", "radiance": {"type": "uniform", "value": 50}},
+        'emitter': {
+            'type': 'sphere',
+            'radius': 1,
+            'center': source_pos,
+            'emitter': {'type': 'area', 'radiance': {'type': 'uniform', 'value': 50}},
         },
-        # One absorbing/scattering acoustic material, shared by all six walls.
-        "wall": {
-            "type": "acousticbsdf",
-            "absorption": {"type": "spectrum", "value": [(100, 0.1), (500, 0.5), (20000, 0.4)]},
-            "scattering": {"type": "spectrum", "value": [(100, 0.2), (500, 0.5), (20000, 0.8)]},
-        },
-    }
 
-    # A unit cube of six inward-facing rectangles, placed via a shapegroup and
-    # instanced at the room's dimensions.
-    walls = {
-        "top":    (tf().translate([0, 0, 1]).scale(0.5).translate([1, 1, 0]), True),
-        "bottom": (tf().scale(0.5).translate([1, 1, 0]), False),
-        "left":   (tf().rotate(axis=[0, -1, 0], angle=90).scale(0.5).translate([1, 1, 0]), True),
-        "right":  (tf().translate([1, 0, 1]).rotate(axis=[0, 1, 0], angle=90).scale(0.5).translate([1, 1, 0]), True),
-        "front":  (tf().rotate(axis=[1, 0, 0], angle=90).scale(0.5).translate([1, 1, 0]), True),
-        "back":   (tf().translate([0, 1, 0]).rotate(axis=[1, 0, 0], angle=90).scale(0.5).translate([1, 1, 0]), False),
-    }
-    scene_dict["cube"] = {"type": "shapegroup"}
-    for surface, (to_world, flip) in walls.items():
-        scene_dict["cube"][surface] = {
-            "type": "rectangle",
-            "bsdf": {"type": "ref", "id": "wall"},
-            "to_world": to_world,
-            "flip_normals": flip,
-        }
-    scene_dict["shoebox"] = {
-        "type": "instance",
-        "geometry": {"type": "ref", "id": "cube"},
-        "to_world": tf().scale(room_dim),
+        'room': {
+            'type': 'cube',
+            'to_world': tf().scale(room_dim),
+            'flip_normals': True,
+            'bsdf': {
+                'type': 'acousticbsdf',
+                'absorption': {'type': 'spectrum', 'value': [(100, 0.1), (500, 0.2), (20000, 0.3)]},
+                'scattering': {'type': 'spectrum', 'value': [(100, 0.2), (500, 0.5), (20000, 0.8)]},
+            },
+        },
     }
 
     scene = mi.load_dict(scene_dict)
 
     # A microphone that records an ETC into a `tape` film.
-    max_time      = 0.1    # seconds
-    sampling_rate = 10000  # time bins per second
+    max_time      = 2
+    sampling_rate = 2000
+    n_time_bins   = int(max_time * sampling_rate)
+    frequencies   = [100, 500, 20000]
+
     microphone = mi.load_dict({
-        "type": "microphone",
-        "origin": receiver_pos,
-        "direction": source_pos,
-        "film": {
-            "type": "tape",
-            "frequencies": "100, 500, 20000",
-            "time_bins": int(max_time * sampling_rate),
+        'type': 'microphone',
+        'origin': receiver_pos,
+        'direction': source_pos,
+        'film': {
+            'type': 'tape',
+            'frequencies': ','.join(map(str, frequencies)),
+            'time_bins': n_time_bins,
         },
     })
 
     integrator = mi.load_dict({
-        "type": "acoustic_path",
-        "max_depth": -1,          # -1 = unlimited reflections
-        "max_time": max_time,
-        "speed_of_sound": 343,
+        'type': 'acoustic_path',
+        'max_time': max_time,
     })
 
-    # Render the ETC (time_bins x frequencies x 1). Increase spp to reduce noise.
-    etc = mi.render(scene, sensor=microphone, integrator=integrator, spp=2**16)
+    # Render the ETC. Increase spp to reduce variance.
+    spp = 2**20 # around 1 million rays, power of 2 for better performance.
+    etc = mi.render(scene, sensor=microphone, integrator=integrator, spp=spp)
 
-For a fully worked version, including a visual preview of the room and plotting
-the ETC, see the :doc:`rendering tutorials <src/rendering_tutorials>`.
+For a fully working version, including separate materials for each wall, a visual
+preview of the room and a plot of the ETC, see the :doc:`rendering tutorials <src/rendering_tutorials>`.
 
 Citation
 --------
