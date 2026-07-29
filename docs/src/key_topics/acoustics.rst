@@ -57,13 +57,13 @@ Time-resolved transport
 Acoustic simulation in misuka is a geometric (ray-based) simulation. A path from
 a sound source to the receiver is attenuated at each surface interaction by the
 frequency-dependent absorption and scattering of the
-:ref:`acoustic material <bsdf-acousticbsdf>`. Three points characterize how this
+:ref:`acoustic material <bsdf-acousticbsdf>`. Four points characterize how this
 relates to light transport:
 
 - **The same transport equation, with a propagation delay.** misuka solves the
   *room acoustic rendering equation* :cite:`Siltanen2007`, which is the
-  rendering equation with the incident term evaluated at a retarded time, i.e.
-  the current time offset by the propagation time:
+  rendering equation with the incident term evaluated at the *retarded* time, i.e.
+  the current time offset by the propagation time :math:`\frac{\|\mathbf{x} - \mathbf{y}\|}{c}`:
   
   .. math::
       L(\mathbf{x} \to \omega, t) = L_\mathrm{e}(\mathbf{x} \to \omega, t) +
@@ -83,11 +83,31 @@ relates to light transport:
   The ETC is thus the energy impulse response of the transport operator, and
   integrating it over all time recovers the steady-state result a conventional
   renderer would produce.
-- **Energetic, not wave-based.** Contributions are summed as intensities, with
-  no pressure phase. Optical rendering makes the same approximation, but it is a
-  stronger one in acoustics: audible wavelengths are not always small compared 
-  to room geometry, so diffraction and interference effects can become significant
-  at lower frequencies / larger wavelengths. These effects are not modelled. 
+- **Energy transport only.** Contributions are summed as intensities, without
+  pressure phase. Optical rendering makes the same approximation, but it is a far
+  weaker one there: visible wavelengths are many orders of magnitude smaller than
+  the objects being rendered, so diffraction is irrelevant in most use cases.
+  Audible wavelengths, in contrast, span three orders of magnitude — roughly
+  17 m at 20 Hz down to 1.7 cm at 20 kHz — and are not always small compared to
+  room geometry. Diffraction and interference effects such as standing waves
+  therefore become significant towards low frequencies. misuka does not model
+  them.
+- **Required level of geometric detail.** Optical renderers routinely handle
+  highly detailed scenes. In acoustics, more detail is not automatically better:
+  the scene should contain only *macro*-geometry, i.e. geometry much larger than
+  the longest simulated wavelength. Every surface is treated as macro-geometry, 
+  so features comparable to or smaller than the wavelength are
+  reflected geometrically instead of producing the diffraction and scattering
+  they would cause in reality — which can give plainly wrong results. Such level of
+  detail should be removed from the scene geometry and expressed through the
+  :ref:`material's BSDF <bsdf-acousticbsdf>` instead, which is where all
+  direction-dependent scattering behavior is modeled.
+
+  For example, a staircase whose steps are smaller than the wavelength behaves
+  like a flat inclined plane, sending energy up along the 45° slope. Modelling
+  the individual steps does not reproduce this: their 90° corners retroreflect
+  energy back towards the source instead. The staircase should be modelled as a
+  single diagonal plane.
 
 Ray-geometry intersection, importance sampling, the Dr.Jit computation graph,
 and gradient propagation are all inherited from Mitsuba and Dr.Jit and behave as
