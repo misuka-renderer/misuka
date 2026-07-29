@@ -115,7 +115,7 @@ def _m_per_m_from_apply(temperature, frequency, relative_humidity_percent,
     etc = [etc_in, etc_in]
     out = mi.acoustic.apply_pure_tone_attenuation(
         etc, 1.0, distance, temperature, [frequency],
-        relative_humidity_percent / 100.0, atmospheric_pressure, 2, 1)
+        relative_humidity_percent / 100.0, atmospheric_pressure)
     etc_out = out[1]
     return _get_m(etc_in, etc_out, distance)
 
@@ -162,8 +162,7 @@ def test03_apply_pure_tone_attenuation_direct_call(variants_all_acoustic):
     out = mi.acoustic.apply_pure_tone_attenuation(
         etc, sampling_rate=10.0, speed_of_sound_ms=343.0,
         temperature=20.0, frequencies=frequencies,
-        relative_humidity=0.5, atmospheric_pressure=101325.0,
-        n_time_bins=n_time_bins, n_frequencies=len(frequencies))
+        relative_humidity=0.5, atmospheric_pressure=101325.0)
 
     out_low = out[0::2]
     out_high = out[1::2]
@@ -176,22 +175,20 @@ def test03_apply_pure_tone_attenuation_direct_call(variants_all_acoustic):
         assert out_high[t] < out_low[t]
 
 
-def test04_etc_size_mismatch_raises(variants_all_acoustic):
+def test04_etc_size_not_multiple_of_frequencies_raises(variants_all_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.apply_pure_tone_attenuation(
             etc=[1.0, 1.0, 1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
-            temperature=20.0, frequencies=[1000.0],
-            relative_humidity=0.5, atmospheric_pressure=101325.0,
-            n_time_bins=2, n_frequencies=1)
+            temperature=20.0, frequencies=[1000.0, 2000.0],
+            relative_humidity=0.5, atmospheric_pressure=101325.0)
 
 
-def test05_frequencies_size_mismatch_raises(variants_all_acoustic):
+def test05_empty_frequencies_raises(variants_all_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.apply_pure_tone_attenuation(
-            etc=[1.0, 1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
-            temperature=20.0, frequencies=[1000.0, 2000.0],
-            relative_humidity=0.5, atmospheric_pressure=101325.0,
-            n_time_bins=2, n_frequencies=1)
+            etc=[], sampling_rate=10.0, speed_of_sound_ms=343.0,
+            temperature=20.0, frequencies=[],
+            relative_humidity=0.5, atmospheric_pressure=101325.0)
 
 
 def test06_temperature_too_low_raises(variants_all_acoustic):
@@ -199,8 +196,7 @@ def test06_temperature_too_low_raises(variants_all_acoustic):
         mi.acoustic.apply_pure_tone_attenuation(
             etc=[1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
             temperature=-100.0, frequencies=[1000.0],
-            relative_humidity=0.5, atmospheric_pressure=101325.0,
-            n_time_bins=1, n_frequencies=1)
+            relative_humidity=0.5, atmospheric_pressure=101325.0)
 
 
 def test07_frequency_too_low_raises(variants_all_acoustic):
@@ -208,8 +204,7 @@ def test07_frequency_too_low_raises(variants_all_acoustic):
         mi.acoustic.apply_pure_tone_attenuation(
             etc=[1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
             temperature=20.0, frequencies=[10.0],
-            relative_humidity=0.5, atmospheric_pressure=101325.0,
-            n_time_bins=1, n_frequencies=1)
+            relative_humidity=0.5, atmospheric_pressure=101325.0)
 
 
 def test08_atmospheric_pressure_too_high_raises(variants_all_acoustic):
@@ -217,8 +212,7 @@ def test08_atmospheric_pressure_too_high_raises(variants_all_acoustic):
         mi.acoustic.apply_pure_tone_attenuation(
             etc=[1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
             temperature=20.0, frequencies=[1000.0],
-            relative_humidity=0.5, atmospheric_pressure=250000.0,
-            n_time_bins=1, n_frequencies=1)
+            relative_humidity=0.5, atmospheric_pressure=250000.0)
 
 
 def test09_frequency_to_pressure_ratio_out_of_range_raises(variants_all_acoustic):
@@ -227,15 +221,13 @@ def test09_frequency_to_pressure_ratio_out_of_range_raises(variants_all_acoustic
         mi.acoustic.apply_pure_tone_attenuation(
             etc=[1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
             temperature=20.0, frequencies=[50.0],
-            relative_humidity=0.5, atmospheric_pressure=150000.0,
-            n_time_bins=1, n_frequencies=1)
+            relative_humidity=0.5, atmospheric_pressure=150000.0)
     # ratio above 10 Hz/Pa
     with pytest.raises(Exception):
         mi.acoustic.apply_pure_tone_attenuation(
             etc=[1.0], sampling_rate=10.0, speed_of_sound_ms=343.0,
             temperature=20.0, frequencies=[10000.0],
-            relative_humidity=0.5, atmospheric_pressure=500.0,
-            n_time_bins=1, n_frequencies=1)
+            relative_humidity=0.5, atmospheric_pressure=500.0)
 
 
 def test10_distance_too_large_raises(variants_all_acoustic):
