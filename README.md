@@ -34,8 +34,21 @@ You can find tutorials for forward rendering and gradient-based optimization in 
 
 ## Installation
 
-misuka can be compiled analogously to Mitsuba 3.
-Please refer the [Mitsuba 3 documentation](https://mitsuba.readthedocs.io/en/latest/src/developer_guide/compiling.html) for instructions.
+We provide pre-compiled binary wheels via PyPI. Installing misuka this way is as simple as running
+
+```
+pip install misuka
+```
+
+on the command line. The Python package includes the following variants by default:
+
+- `scalar_rgb`
+- `cuda_ad_acoustic`
+- `metal_ad_acoustic`
+- `llvm_ad_acoustic`
+  
+Additional variants can be enabled by compiling misuka.
+Please refer to the [Developer's Guide](https://misuka.readthedocs.io/en/stable/src/developer_guide/compiling.html) for instructions.
 
 ### Requirements
 
@@ -43,6 +56,14 @@ Please refer the [Mitsuba 3 documentation](https://mitsuba.readthedocs.io/en/lat
 - (optional) For computation on the GPU: `Nvidia driver >= 535`
 - (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
 - (optional) For computation on Apple Silicon GPUs: macOS with a Metal-capable GPU
+
+## License
+
+misuka is licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0), which permits academic and private use.
+If you are interested in using misuka commercially, please contact a.jueterbock@tu-berlin.de.
+
+
+## Citation
 
 When using misuka in academic projects, please cite:
 
@@ -63,7 +84,7 @@ When using misuka in academic projects, please cite:
 }
 ```
 
-When using Time-Resolved Path Replay Backpropagation in academic projects, please cite:
+If your work uses Time-Resolved Path Replay Backpropagation, please also cite:
 
 ```bibtex
 @article{acoustic_prb,
