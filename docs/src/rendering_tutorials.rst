@@ -5,9 +5,9 @@
 Rendering tutorials
 ===================
 
-The following tutorials show you how to use misuka to render the acoustic
-response of a scene as an Energy Time Curve (ETC), with complete, end-to-end
-examples.
+The following tutorial show you how to use misuka to render the Energy Time Curve
+of a shoebox room with individual materials for each wall.
+More examples will follow.
 
 .. nbgallery::
 
