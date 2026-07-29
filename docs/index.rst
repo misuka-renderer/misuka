@@ -12,7 +12,7 @@ forward and inverse sound-transport simulation. It is a fully compatible
 extension to `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_: it reuses
 Mitsuba's scene format, geometry, samplers, and the `Dr.Jit
 <https://drjit.readthedocs.io/en/v1.4.0/>`_ JIT compiler / autodiff engine, and
-adds acoustic plugins (an absorbing/scattering material, an energy path tracer,
+adds acoustic plugins (an absorbing/scattering material, several acoustic path tracers,
 a microphone sensor, and an Energy-Time-Curve film). It implements `Time-Resolved
 Path Replay Backpropagation <https://dl.acm.org/doi/pdf/10.1145/3730900>`_ for
 efficient gradient estimation with respect to material properties, source/receiver
