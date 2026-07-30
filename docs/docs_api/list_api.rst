@@ -844,16 +844,6 @@
 
 .. autoclass:: misuka.ad.UniformDistr
 
-.. autoclass:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator
-
-.. autofunction:: misuka.ad.integrators.acoustic_ad.Callable
-
-.. autoclass:: misuka.ad.integrators.acoustic_ad_threepoint.AcousticADThreePointIntegrator
-
-.. autoclass:: misuka.ad.integrators.acoustic_prb.AcousticPRBIntegrator
-
-.. autoclass:: misuka.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator
-
 .. autoclass:: misuka.ad.integrators.common.ADIntegrator
 
 .. autoclass:: misuka.ad.integrators.common.PSIntegrator
