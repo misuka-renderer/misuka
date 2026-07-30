@@ -120,6 +120,17 @@ the temporal energy distribution in the squared impulse response.
 For a fully working version, including separate materials for each wall, a visual
 preview of the room and a plot of the ETC, see the :doc:`rendering tutorials <src/rendering_tutorials>`.
 
+License
+-------
+
+misuka is licensed under the `PolyForm Noncommercial License 1.0.0
+<https://polyformproject.org/licenses/noncommercial/1.0.0>`_, which permits academic
+and private use. Files inherited from Mitsuba 3 remain under the original BSD-3-Clause
+license. See `LICENSE
+<https://github.com/misuka-renderer/misuka/blob/master/LICENSE>`_.
+If you are interested in using misuka commercially, please contact
+a.jueterbock@tu-berlin.de.
+
 Citation
 --------
 
