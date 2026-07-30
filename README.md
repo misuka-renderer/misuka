@@ -48,7 +48,7 @@ on the command line. The Python package includes the following variants by defau
 - `llvm_ad_acoustic`
 
 Additional variants can be enabled by compiling misuka.
-Please refer to the [Developer's Guide](https://misuka.readthedocs.io/en/stable/src/developer_guide/compiling.html) for instructions.
+Please refer to the [Developer's Guide](https://misuka.readthedocs.io/en/latest/src/developer_guide/compiling.html) for instructions.
 
 ### Requirements
 
