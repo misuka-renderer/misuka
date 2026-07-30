@@ -82,7 +82,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
     surface points in the scene (which inherently move with the geometry).
     This:
 
-    1. Removes some of the discontinuities in the rendering integral, leaving
+    1. Removes most of the discontinuities in the rendering integral, leaving
        discontinuities only where visibility in the scene changes (e.g., at
        shadow boundaries).
     2. Ensures that the influence of the geometry on the ray path is local,
