@@ -1,4 +1,4 @@
-.. _sec-acoustics:
+.. _sec-acoustic-rendering:
 
 Acoustic rendering
 ==================

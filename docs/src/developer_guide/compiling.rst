@@ -85,7 +85,7 @@ these (or another ``*_acoustic`` variant) in the enabled list, acoustic scenes
 cannot be rendered, since the stock RGB/spectral variants use
 ``Spectrum<Float, 3>``/``Spectrum<Float, N>`` color representations rather than
 the single-channel energy representation acoustic rendering needs. See
-:ref:`sec-acoustics` for background on the ``_acoustic`` variant family.
+:ref:`sec-acoustic-rendering` for background on the ``_acoustic`` variant family.
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
