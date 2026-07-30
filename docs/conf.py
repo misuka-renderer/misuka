@@ -172,7 +172,7 @@ html_logo = "images/misuka_icon_cropped.png"
 html_title = "misuka"
 html_theme = 'furo'
 html_static_path = ['_static']
-html_js_files = []
+html_js_files = ['external_links_new_tab.js']
 
 # Register the theme as an extension to generate a sitemap.xml
 extensions = []
