@@ -55,10 +55,10 @@ Time-resolved transport
 -----------------------
 
 Acoustic simulation in misuka is a geometric (ray-based) simulation. A path from
-a sound source to the receiver is attenuated at each surface interaction by the
-frequency-dependent absorption and scattering of the
-:ref:`acoustic material <bsdf-acousticbsdf>`. Four points characterize how this
-relates to light transport:
+a sound source (see :ref:`Emitters <sec-emitters>`) to the receiver is attenuated
+at each surface interaction by the frequency-dependent absorption and scattering
+of the :ref:`acoustic material <bsdf-acousticbsdf>`. Four points characterize how
+this relates to light transport:
 
 - **The same transport equation, with a propagation delay.** misuka solves the
   *room acoustic rendering equation* :cite:`Siltanen2007`, which is the
@@ -180,6 +180,10 @@ acoustic components.**
     * - Material
       - optical BSDFs (``diffuse``, ``conductor``, ...)
       - :ref:`acousticbsdf <bsdf-acousticbsdf>` (absorption + scattering)
+    * - Emitter
+      - light sources (``point``, ``envmap``, ...)
+      - :ref:`area <emitter-area>` on a :ref:`sphere <shape-sphere>` (see
+        :ref:`Emitters <sec-emitters>`)
     * - Sensor
       - camera (``perspective``, ...)
       - :ref:`microphone <sensor-microphone>` (receiver point)

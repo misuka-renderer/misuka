@@ -30,6 +30,11 @@ BSDF_ORDERING = [
     'acousticbsdf',
 ]
 
+EMITTER_ORDERING = [
+    'area',
+    'point',
+]
+
 SENSOR_ORDERING = [
     'microphone',
 ]
@@ -184,6 +189,7 @@ def generate(build_dir):
     sections = [
         ('shapes',      SHAPE_ORDERING,     None),
         ('bsdfs',       BSDF_ORDERING,      BSDF_ORDERING),
+        ('emitters',    EMITTER_ORDERING,   EMITTER_ORDERING),
         ('sensors',     SENSOR_ORDERING,    SENSOR_ORDERING),
         ('textures',    TEXTURE_ORDERING,   None),
         ('spectra',     SPECTRUM_ORDERING,  None),
