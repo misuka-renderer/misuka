@@ -3,11 +3,20 @@
 Textures
 ========
 
-The following section describes the available texture data sources. In Mitsuba 3,
+The following section describes the available texture data sources. In misuka,
 textures are objects that can be attached to certain surface scattering model
 parameters to introduce spatial variation. In the documentation, these are listed
-as supporting the :paramtype:`texture` type. See the last sections about
-:ref:`BSDFs <sec-bsdfs>` for many examples.
+as supporting the :paramtype:`texture` type.
+
+.. note::
+
+    Textures are inherited from Mitsuba unchanged, but they play a much smaller role
+    acoustically. Absorption and scattering coefficients are usually understood as properties of
+    a *material* rather than of an individual surface point, so they tend not to vary across a
+    surface. The :ref:`acoustic material <bsdf-acousticbsdf>` varies them over *frequency*
+    instead, which is why its parameters are usually given as
+    :ref:`frequency spectra <sec-spectra-acoustic>`. Use a texture when a single surface
+    genuinely needs spatially varying acoustic properties.
 
 Textures take an (optional) ``<transform>`` called :paramtype:`to_uv` which can
 be used to translate, scale, or rotate the lookup into the texture accordingly.
