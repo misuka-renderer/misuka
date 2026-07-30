@@ -77,9 +77,11 @@ the temporal energy distribution in the squared impulse response.
             'emitter': {'type': 'area', 'radiance': {'type': 'uniform', 'value': 50}},
         },
 
+        # Move the cube's corner to the origin, scale it to a side length of
+        # 1 m, and then scale it to the room dimensions.
         'room': {
             'type': 'cube',
-            'to_world': tf().scale(room_dim),
+            'to_world': tf().scale(room_dim).scale(0.5).translate([1, 1, 1]),
             'flip_normals': True,
             'bsdf': {
                 'type': 'acousticbsdf',
@@ -114,7 +116,7 @@ the temporal energy distribution in the squared impulse response.
     })
 
     # Render the ETC. Increase spp to reduce variance.
-    spp = 2**20 # around 1 million rays, power of 2 for better performance.
+    spp = 2**20 # around 1 million rays per frequency, power of 2 for better performance.
     etc = mi.render(scene, sensor=microphone, integrator=integrator, spp=spp)
 
 For a fully working version, including separate materials for each wall, a visual
