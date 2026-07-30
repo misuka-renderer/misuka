@@ -32,113 +32,82 @@ in misuka. They can be used as either BSDF or emitter parameters:
 
 In practice, it is however discouraged to instantiate plugins in this explicit way
 and the XML scene description parser directly parses a number of common (shorter)
-``<spectrum>`` and ``<rgb>`` tags. See the corresponding section about the
+``<spectrum>`` tags. See the corresponding section about the
 `scene file format <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/scene_format.html>`_
-for details.
+for details. Which plugin such a tag instantiates depends on its contents:
 
-The following two tables summarize which underlying plugins get instantiated
-in each case, accounting for differences between reflectance and emission properties
-and all different color modes. Each plugin is briefly summarized below.
+A single value applies at every frequency and instantiates
+:ref:`uniform <spectrum-uniform>`:
+
+.. tabs::
+    .. code-tab:: xml
+
+        <spectrum name="absorption" value="0.3"/>
+
+    .. code-tab:: python
+
+        'absorption': {
+            'type': 'spectrum',
+            'value': 0.3
+        }
+
+Frequency-value pairs instantiate :ref:`regular <spectrum-regular>` when the frequency
+nodes are evenly spaced:
+
+.. tabs::
+    .. code-tab:: xml
+
+        <spectrum name="absorption" value="100:0.1, 200:0.2, 300:0.4"/>
+
+    .. code-tab:: python
+
+        'absorption': {
+            'type': 'spectrum',
+            'value': [(100, 0.1), (200, 0.2), (300, 0.4)]
+        }
+
+They instantiate :ref:`irregular <spectrum-irregular>` otherwise. Octave-band center
+frequencies fall into this case, since they are spaced logarithmically:
+
+.. tabs::
+    .. code-tab:: xml
+
+        <spectrum name="absorption" value="125:0.1, 250:0.2, 500:0.4"/>
+
+    .. code-tab:: python
+
+        'absorption': {
+            'type': 'spectrum',
+            'value': [(125, 0.1), (250, 0.2), (500, 0.4)]
+        }
+
+A ``filename`` reads the same pairs from a file, one frequency and value per line, and
+chooses between the two plugins in the same way:
+
+.. tabs::
+    .. code-tab:: xml
+
+        <spectrum name="absorption" filename="absorption.spd"/>
+
+    .. code-tab:: python
+
+        'absorption': {
+            'type': 'spectrum',
+            'filename': 'absorption.spd'
+        }
 
 .. note::
 
-    Acoustic variants follow the **Spectral mode** column of both tables. They are treated as
-    spectral internally, even though a :monosp:`Spectrum` holds a single band. A tag such as
-    ``<spectrum name=".." value="100:0.1, 20000:0.4"/>`` therefore really does instantiate
-    :ref:`regular <spectrum-regular>` or :ref:`irregular <spectrum-irregular>` rather than
-    collapsing to a :ref:`uniform <spectrum-uniform>` spectrum, with the value pairs read as
-    frequencies in Hz instead of wavelengths in nanometers. See
-    :ref:`Frequency-domain spectra <sec-spectra-acoustic>` below and
-    :ref:`sec-acoustic-rendering`.
+    These three are the only spectra tested for acoustic rendering, and they are the ones used
+    throughout misuka's acoustic examples and tests. :ref:`regular <spectrum-regular>` and
+    :ref:`irregular <spectrum-irregular>` are also the only ones that accept frequency
+    parameters rather than wavelengths, as described below.
 
-.. figtable::
-    :label: spectrum-reflectance-table-list
-    :caption: Spectra used for reflectance (within BSDFs)
-    :alt: Spectrum reflectance table
-
-    .. list-table::
-        :widths: 35 25 25 25
-        :header-rows: 1
-
-        * - XML description
-          - Monochrome mode
-          - RGB mode
-          - Spectral mode
-        * - ``<spectrum name=".." value="0.5"/>``
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`uniform <spectrum-uniform>`
-        * - ``<spectrum name=".." value="400:0.1, 700:0.2"/>``
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`regular <spectrum-regular>`/:ref:`irregular <spectrum-irregular>`
-        * - ``<spectrum name=".." filename=".."/>``
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`regular <spectrum-regular>`/:ref:`irregular <spectrum-irregular>`
-        * - ``<rgb name=".." value="0.5, 0.2, 0.5"/>``
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`srgb <spectrum-srgb>`
-
-.. figtable::
-    :label: spectrum-emission-table-list
-    :caption: Spectra used for emission (within emitters)
-    :alt: Spectrum emission table
-
-    .. list-table::
-        :widths: 35 25 25 25
-        :header-rows: 1
-
-        * - XML description
-          - Monochrome mode
-          - RGB mode
-          - Spectral mode
-        * - ``<spectrum name=".." value="0.5"/>``
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`uniform <spectrum-uniform>`
-        * - ``<spectrum name=".." value="400:0.1, 700:0.2"/>``
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`regular <spectrum-regular>`/:ref:`irregular <spectrum-irregular>`
-        * - ``<spectrum name=".." filename=".."/>``
-          - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`regular <spectrum-regular>`/:ref:`irregular <spectrum-irregular>`
-        * - ``<rgb name=".." value="0.5, 0.2, 0.5"/>``
-          - :ref:`d65 <spectrum-d65>`
-          - :ref:`srgb <spectrum-srgb>`
-          - :ref:`d65 <spectrum-d65>`
-
-The remainder of this section concerns the optical variants only. It does not apply to acoustic
-renderings, where there is no color model at all and the two plugins used in the illustration
-below are not relevant. Skip ahead to
-:ref:`Frequency-domain spectra <sec-spectra-acoustic>` if you are doing acoustic renderings.
-
-A uniform spectrum does not produce a uniform RGB response in sRGB (which
-has a D65 white point). Hence giving ``<spectrum name=".." value="1.0"/>``
-as the radiance value of an emitter will result in a purple-ish color. On the
-other hand, using such spectrum for a BSDF reflectance value will result in
-an object appearing white. Both RGB and spectral modes will exhibit this
-behavior consistently. The figure below illustrates this for
-combinations of inputs for the emitter radiance (here using a ``constant``
-emitter) and the BSDF reflectance (here using a ``diffuse`` BSDF). Both are
-optical plugins that misuka inherits but does not document, see the
-`Mitsuba plugin reference <https://mitsuba.readthedocs.io/en/v3.9.0/src/plugin_reference.html>`_.
-
-.. image:: ../../resources/data/docs/images/misc/spectrum_rgb_table.png
-    :width: 60%
-    :align: center
-
-.. warning::
-
-    While it is possible to define unbounded RGB properties (such as the ``eta``
-    value for a conductor BSDF) using ``<rgb name=".." value=".."/>``
-    tag, it is highly recommended to directly define a spectrum curve (or use a
-    material from the conductor's built-in IOR list) as the spectral uplifting algorithm
-    won't be able to guarantee that the produced spectrum will behave consistently
-    in both RGB and spectral modes.
+    misuka inherits Mitsuba's remaining spectra (``srgb``, ``d65``, ``blackbody`` and
+    ``rawconstant``). They still load under an acoustic variant, but they are defined over
+    wavelengths and exist to serve Mitsuba's color handling, so they are documented in the
+    `Mitsuba plugin reference <https://mitsuba.readthedocs.io/en/v3.9.0/src/plugin_reference.html>`_
+    rather than here.
 
 .. _sec-spectra-acoustic:
 

@@ -49,11 +49,7 @@ TEXTURE_ORDERING = [
 SPECTRUM_ORDERING = [
     'uniform',
     'regular',
-    'irregular',
-    'srgb',
-    'd65',
-    'blackbody'
-    'rawconstant'
+    'irregular'
 ]
 
 SAMPLER_ORDERING = [
@@ -192,7 +188,7 @@ def generate(build_dir):
         ('emitters',    EMITTER_ORDERING,   EMITTER_ORDERING),
         ('sensors',     SENSOR_ORDERING,    SENSOR_ORDERING),
         ('textures',    TEXTURE_ORDERING,   None),
-        ('spectra',     SPECTRUM_ORDERING,  None),
+        ('spectra',     SPECTRUM_ORDERING,  SPECTRUM_ORDERING),
         ('integrators', INTEGRATOR_ORDERING, INTEGRATOR_ORDERING),
         ('samplers',    SAMPLER_ORDERING,   None),
         ('films',       FILM_ORDERING,      FILM_ORDERING),
