@@ -6,7 +6,7 @@ Films
 A film defines how conducted measurements are stored and converted into the
 final output that is written to disk at the end of the rendering process.
 misuka's acoustic film is :ref:`tape <film-tape>`, which records an
-**Energy Time Curve (ETC)**: energy accumulated per frequency band, against
+**energy-time curve (ETC)**: energy accumulated per frequency band, against
 propagation time. Unlike an image film, its two axes are frequency bands and
 time bins rather than pixel width and height.
 

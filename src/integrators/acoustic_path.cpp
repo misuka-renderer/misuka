@@ -58,9 +58,9 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
 
 This integrator implements an acoustic path tracer that simulates sound
 propagation in a scene by tracing paths from the sensor (microphone) to
-the emitters (sound sources). It computes an energy-based impulse response
-(echogram) by accumulating path contributions into time bins determined by the
-total path length and the speed of sound.
+the emitters (sound sources). It computes an energy-time curve (ETC) by
+accumulating path contributions into time bins determined by the total path
+length and the speed of sound.
 
 At each surface interaction, the integrator uses multiple importance sampling
 (MIS) to combine BSDF and emitter samples, analogous to the optical

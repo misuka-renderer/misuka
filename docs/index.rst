@@ -13,7 +13,7 @@ extension to `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_: it reuses
 Mitsuba's scene format, geometry, samplers, and the `Dr.Jit
 <https://drjit.readthedocs.io/en/v1.4.0/>`_ JIT compiler / autodiff engine, and
 adds acoustic plugins (an absorbing/scattering material, several acoustic path tracers,
-a microphone sensor, and an Energy-Time-Curve film). It implements `Time-Resolved
+a microphone sensor, and an energy-time curve film). It implements `Time-Resolved
 Path Replay Backpropagation <https://dl.acm.org/doi/pdf/10.1145/3730900>`_ for
 efficient gradient estimation with respect to material properties, source/receiver
 positions, and scene geometry.
@@ -50,7 +50,7 @@ Hello World!
 ------------
 
 The example below builds a simple shoebox room with a spherical sound source,
-places a microphone, and renders an **Energy Time Curve (ETC)**. The ETC represents
+places a microphone, and renders an **energy-time curve (ETC)**. The ETC represents
 the temporal energy distribution in the squared impulse response.
 
 .. code-block:: python

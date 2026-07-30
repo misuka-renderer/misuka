@@ -5,7 +5,7 @@
 Rendering tutorials
 ===================
 
-The following tutorial shows you how to use misuka to render the Energy Time Curve
+The following tutorial shows you how to use misuka to render the energy-time curve (ETC)
 of a shoebox room with individual materials for each wall.
 More examples will follow.
 

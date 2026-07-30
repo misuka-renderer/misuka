@@ -62,9 +62,8 @@ class AcousticADIntegrator(RBIntegrator):
 
     Like the acoustic path tracer, it simulates sound propagation by tracing
     paths from the sensor (microphone) to the emitters (sound sources), and
-    computes an energy-based impulse response (echogram) by accumulating path
-    contributions into time bins determined by the total path length and the
-    speed of sound.
+    computes an energy-time curve (ETC) by accumulating path contributions into
+    time bins determined by the total path length and the speed of sound.
 
     This class is not meant to be used in practice, but mostly exists for
     debugging purposes and as a reference implementation.

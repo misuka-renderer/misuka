@@ -112,7 +112,7 @@ Ray-geometry intersection, importance sampling, the Dr.Jit computation graph,
 and gradient propagation are all inherited from Mitsuba and Dr.Jit and behave as
 usual.
 
-The Energy Time Curve (ETC)
+The energy-time curve (ETC)
 ---------------------------
 
 The ETC is the primary output of all acoustic ray tracing methods.
