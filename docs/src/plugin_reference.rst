@@ -20,6 +20,17 @@ The subsections above describe the available misuka plugins, usually along with 
 renderings and a description of what each parameter does. They are separated into subsections
 covering textures, surface scattering models, etc.
 
+.. note::
+
+    Because misuka is a compatible extension to Mitsuba 3, it inherits Mitsuba's full set of
+    plugins. This reference documents the acoustic ones plus the generic plugins that acoustic
+    scenes typically use, so the purely optical plugins (the optical BSDFs and integrators, cameras,
+    image films, participating media, and most emitters) are left out of this documentation. They still
+    load, and they are documented in the
+    `Mitsuba plugin reference <https://mitsuba.readthedocs.io/en/v3.9.0/src/plugin_reference.html>`_.
+    You will need to select an optical variant in order to do optical renderings.
+    See :ref:`sec-acoustic-rendering` for which components acoustic rendering replaces.
+
 The documentation of a plugin always starts with a table similar to the one below:
 
 .. pluginparameters::
