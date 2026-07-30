@@ -24,15 +24,14 @@ Mitsuba 3 provides a set of different system *variants*, each a ``(backend × sp
 The ``backend`` part determines *where and how* the computation runs, while the ``spectrum`` part defines what a "spectrum" represents.
 For example, ``cuda_rgb`` performs RGB rendering on NVIDIA GPUs via CUDA, while ``metal_spectral`` renders on Apple Silicon and produces multichannel images that represent continuous wavelength bands, and ``llvm_mono`` renders monochromatic (greyscale) images on the CPU.
 
-misuka adds an ``_acoustic`` variant family.
-These variants work in the **frequency (Hz) domain** rather than with wavelengths (nm).
+misuka adds an ``acoustic`` variant family.
+These variants work in the **frequency domain** with frequencies in Hz, rather than with wavelengths in nm.
 Therefore, acoustic scenes **must** be rendered with an acoustic variant and are not compatible with ``rgb``, ``mono`` or ``spectral`` variants.
 See :ref:`Frequency-domain spectra <sec-spectra-acoustic>`.
 
 The opposite also holds:
 Rendering an image with an optical integrator using an acoustic variant will produce unexpected results, unless handled explicitly.
-For example, using an acoustic spectrum with an optical variant will interpret frequency nodes in Hz as wavelengths in nm.
-Conversely, using an acoustic variant to render an ``rgb`` image will produce very noisy images because Mitsuba's rgb-specific variance reduction techniques are not natively compatible with the acoustic spectrum type.
+For example, using an acoustic spectrum with an optical variant will interpret frequency nodes in Hz as wavelengths in nm, so using an acoustic variant to render an ``rgb`` image will produce unexpected results.
 See the :doc:`../rendering/shoebox_scene` tutorial for an example of how to render images of acoustic scenes, evaluated at specific frequencies.
 
 The ``pip`` package ships with ``acoustic_ad`` variants for all backends (``cuda``, ``metal`` and ``llvm``).
