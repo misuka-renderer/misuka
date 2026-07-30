@@ -4,10 +4,7 @@ Spectra
 =======
 
 This section describes the plugins behind spectral reflectance or emission used
-in Mitsuba 3. On an implementation level, these behave very similarly to the
-:ref:`texture plugins <sec-textures>` described earlier (but lacking their
-spatially varying property) and can thus be used similarly as either BSDF or
-emitter parameters:
+in misuka. They can be used as either BSDF or emitter parameters:
 
 .. tabs::
     .. code-tab:: xml
@@ -42,6 +39,17 @@ for details.
 The following two tables summarize which underlying plugins get instantiated
 in each case, accounting for differences between reflectance and emission properties
 and all different color modes. Each plugin is briefly summarized below.
+
+.. note::
+
+    Acoustic variants follow the **Spectral mode** column of both tables. They are treated as
+    spectral internally, even though a :monosp:`Spectrum` holds a single band. A tag such as
+    ``<spectrum name=".." value="100:0.1, 20000:0.4"/>`` therefore really does instantiate
+    :ref:`regular <spectrum-regular>` or :ref:`irregular <spectrum-irregular>` rather than
+    collapsing to a :ref:`uniform <spectrum-uniform>` spectrum, with the value pairs read as
+    frequencies in Hz instead of wavelengths in nanometers. See
+    :ref:`Frequency-domain spectra <sec-spectra-acoustic>` below and
+    :ref:`sec-acoustic-rendering`.
 
 .. figtable::
     :label: spectrum-reflectance-table-list
@@ -103,14 +111,21 @@ and all different color modes. Each plugin is briefly summarized below.
           - :ref:`srgb <spectrum-srgb>`
           - :ref:`d65 <spectrum-d65>`
 
+The remainder of this section concerns the optical variants only. It does not apply to acoustic
+renderings, where there is no color model at all and the two plugins used in the illustration
+below are not relevant. Skip ahead to
+:ref:`Frequency-domain spectra <sec-spectra-acoustic>` if you are doing acoustic renderings.
+
 A uniform spectrum does not produce a uniform RGB response in sRGB (which
 has a D65 white point). Hence giving ``<spectrum name=".." value="1.0"/>``
 as the radiance value of an emitter will result in a purple-ish color. On the
 other hand, using such spectrum for a BSDF reflectance value will result in
-an object appearing white. Both RGB and spectral modes of Mitsuba 3 will
-exhibit this behavior consistently. The figure below illustrates this for
-combinations of inputs for the emitter radiance (here using a constant emitter)
-and the BSDF reflectance (here using a diffuse BSDF).
+an object appearing white. Both RGB and spectral modes will exhibit this
+behavior consistently. The figure below illustrates this for
+combinations of inputs for the emitter radiance (here using a ``constant``
+emitter) and the BSDF reflectance (here using a ``diffuse`` BSDF). Both are
+optical plugins that misuka inherits but does not document, see the
+`Mitsuba plugin reference <https://mitsuba.readthedocs.io/en/v3.9.0/src/plugin_reference.html>`_.
 
 .. image:: ../../resources/data/docs/images/misc/spectrum_rgb_table.png
     :width: 60%
@@ -122,8 +137,8 @@ and the BSDF reflectance (here using a diffuse BSDF).
     value for a conductor BSDF) using ``<rgb name=".." value=".."/>``
     tag, it is highly recommended to directly define a spectrum curve (or use a
     material from the conductor's built-in IOR list) as the spectral uplifting algorithm
-    implemented in Mitsuba won't be able to guarantee that the produced spectrum
-    will behave consistently in both RGB and spectral modes.
+    won't be able to guarantee that the produced spectrum will behave consistently
+    in both RGB and spectral modes.
 
 .. _sec-spectra-acoustic:
 
