@@ -11,7 +11,7 @@ state and integrating it into a 2D image, misuka resolves sound energy transport
 records an **energy-time curve (ETC)**: the energy arriving at a receiver as a
 function of propagation time, resolved per frequency band.
 
-This page explains the concepts a user needs in order to work with misuka, and the differences to Mitsuba 3.
+This page explains the concepts a user needs in order to work with misuka, and the differences from Mitsuba 3.
 The plugins themselves are documented in the
 :ref:`plugin reference <sec-integrators>`, and examples live in the
 :doc:`rendering <../rendering_tutorials>` and
@@ -20,7 +20,7 @@ The plugins themselves are documented in the
 The ``acoustic`` variant family
 --------------------------------
 
-Mitsuba 3 is provides a set of different system *variants*, each a ``(backend × spectrum)`` combination.
+Mitsuba 3 provides a set of different system *variants*, each a ``(backend × spectrum)`` combination.
 The ``backend`` part determines *where and how* the computation runs, while the ``spectrum`` part defines what a "spectrum" represents.
 For example, ``cuda_rgb`` performs RGB rendering on NVIDIA GPUs via CUDA, while ``metal_spectral`` renders on Apple Silicon and produces multichannel images that represent continuous wavelength bands, and ``llvm_mono`` renders monochromatic (greyscale) images on the CPU.
 
@@ -33,7 +33,7 @@ The opposite also holds:
 Rendering an image with an optical integrator using an acoustic variant will produce unexpected results, unless handled explicitly.
 For example, using an acoustic spectrum with an optical variant will interpret frequency nodes in Hz as wavelengths in nm.
 Conversely, using an acoustic variant to render an ``rgb`` image will produce very noisy images because Mitsuba's rgb-specific variance reduction techniques are not natively compatible with the acoustic spectrum type.
-See the :doc:`Forward Rendering: Shoebox Room <../rendering_tutorials>` tutorial for an example how to render images of acoustic scenes, evaluated at specific frequencies.
+See the :doc:`../rendering/shoebox_scene` tutorial for an example of how to render images of acoustic scenes, evaluated at specific frequencies.
 
 The ``pip`` package ships with ``acoustic_ad`` variants for all backends (``cuda``, ``metal`` and ``llvm``).
 We recommend setting the variants in the following way.
@@ -47,7 +47,7 @@ When selecting multiple variants, the first available one will be used.
 
     print(f'Using variant: {mi.variant()}')
 
-Mitsuba's backend prefixes apply (``scalar_``, ``llvm_``, , ``cuda_``, ``metal_`` and their ``_ad_`` autodiff forms), so ``llvm_ad_acoustic`` is a vectorized CPU variant with automatic differentiation, ``cuda_ad_acoustic`` and ``metal_ad_acoustic`` are its GPU counterparts on NVIDIA GPUs and Apple Silicon, respectively.
+Mitsuba's backend prefixes apply (``scalar_``, ``llvm_``, ``cuda_``, ``metal_`` and their ``_ad_`` autodiff forms), so ``llvm_ad_acoustic`` is a vectorized CPU variant with automatic differentiation, ``cuda_ad_acoustic`` and ``metal_ad_acoustic`` are its GPU counterparts on NVIDIA GPUs and Apple Silicon, respectively.
 See the `Mitsuba variants guide <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for the underlying variant system, and the :ref:`developer guide <sec-compiling>` for enabling additional variants if you compile misuka yourself.
 
 
@@ -64,7 +64,7 @@ relates to light transport:
   *room acoustic rendering equation* :cite:`Siltanen2007`, which is the
   rendering equation with the incident term evaluated at the *retarded* time, i.e.
   the current time offset by the propagation time :math:`\frac{\|\mathbf{x} - \mathbf{y}\|}{c}`:
-  
+
   .. math::
       L(\mathbf{x} \to \omega, t) = L_\mathrm{e}(\mathbf{x} \to \omega, t) +
       \int_{\mathcal{H}^2} f_\mathrm{r}(\mathbf{x}, \omega' \to \omega)\,
@@ -73,8 +73,8 @@ relates to light transport:
 
   Letting the speed of sound :math:`c \to \infty` removes the delay and recovers
   the light-transport case exactly. What travels along a ray is therefore a
-  radiance-like quantity, invariant along the ray, just as in Mitsuba; the
-  :math:`1/r^2` falloff enters only through the integration over all rays: an 
+  radiance-like quantity, invariant along the ray, just as in Mitsuba. The
+  :math:`1/r^2` falloff enters only through the integration over all rays: an
   emitter that is further away occupies a smaller solid angle and is therefore hit
   by fewer rays.
 - **Time is resolved rather than integrated out.** Light transport is solved for
@@ -87,18 +87,18 @@ relates to light transport:
   pressure phase. Optical rendering makes the same approximation, but it is a far
   weaker one there: visible wavelengths are many orders of magnitude smaller than
   the objects being rendered, so diffraction is irrelevant in most use cases.
-  Audible wavelengths, in contrast, span three orders of magnitude — roughly
-  17 m at 20 Hz down to 1.7 cm at 20 kHz — and are not always small compared to
+  Audible wavelengths, in contrast, span three orders of magnitude -- roughly
+  17 m at 20 Hz down to 1.7 cm at 20 kHz -- and are not always small compared to
   room geometry. Diffraction and interference effects such as standing waves
   therefore become significant towards low frequencies. misuka does not model
   them.
 - **Required level of geometric detail.** Optical renderers routinely handle
   highly detailed scenes. In acoustics, more detail is not automatically better:
   the scene should contain only *macro*-geometry, i.e. geometry much larger than
-  the longest simulated wavelength. Every surface is treated as macro-geometry, 
+  the longest simulated wavelength. Every surface is treated as macro-geometry,
   so features comparable to or smaller than the wavelength are
   reflected geometrically instead of producing the diffraction and scattering
-  they would cause in reality — which can give plainly wrong results. Such level of
+  they would cause in reality -- which can give plainly wrong results. Such level of
   detail should be removed from the scene geometry and expressed through the
   :ref:`material's BSDF <bsdf-acousticbsdf>` instead, which is where all
   direction-dependent scattering behavior is modeled.
@@ -208,6 +208,6 @@ which propagates gradients efficiently across many reflections without
 storing the full path history.
 It is the basis for all optimization tasks and is suited for material optimization
 with static (not optimized) geometry.
-The :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` produces
+The :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` integrator produces
 unbiased gradients also when optimizing geometry. See :ref:`plugin reference <sec-integrators>`
 for further details.
