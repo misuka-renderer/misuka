@@ -88,7 +88,7 @@ When dealing with vectorized computational backends (e.g. ``llvm_*``,
 particular, ``if`` statements).
 
 Consider the result of a ray intersection in scalar mode. The resulting
-:py:class:`~mitsuba.SurfaceInteraction3f` record holds information
+:py:class:`~misuka.SurfaceInteraction3f` record holds information
 concerning a single surface intersection. In this case, conditional logic works
 fine using normal ``if`` statements.
 

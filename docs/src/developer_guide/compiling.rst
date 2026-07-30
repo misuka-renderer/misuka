@@ -271,16 +271,16 @@ Mitsuba can then be used to render scenes by typing
 
 .. code-block:: bash
 
-    mitsuba scene.xml
+    misuka scene.xml
 
 where ``scene.xml`` is a Mitsuba scene file. Alternatively,
 
 .. code-block:: bash
 
-    mitsuba -m scalar_spectral_polarized scene.xml
+    misuka -m llvm_ad_acoustic scene.xml
 
 renders with a specific variant that was previously enabled in
-:monosp:`misuka.conf`. Call ``mitsuba --help`` to print additional information
+:monosp:`misuka.conf`. Call ``misuka --help`` to print additional information
 about the various possible command line options.
 
 

@@ -50,5 +50,5 @@ follows:
 The ``<film>`` plugin should be instantiated inside a ``<sensor>``
 declaration. As with other films, the output filename is inferred from the
 scene filename and can be manually overridden by passing the configuration
-parameter ``-o`` to the ``mitsuba`` executable when rendering from the
+parameter ``-o`` to the ``misuka`` executable when rendering from the
 command line.

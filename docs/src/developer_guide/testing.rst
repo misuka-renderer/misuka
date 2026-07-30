@@ -81,7 +81,7 @@ in ``src/conftest.py``):
 Chi^2 tests
 -----------
 
-The ``mitsuba.chi2`` module implements the Pearson's chi-square test for
+The ``misuka.chi2`` module implements the Pearson's chi-square test for
 testing goodness of fit of a distribution to a known reference distribution.
 
 The implementation specifically compares a Monte Carlo sampling strategy on a
@@ -96,7 +96,7 @@ It is possible to test your own sampling code in the following way:
 
 .. code-block:: python
 
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant('llvm_rgb')
 
     # some sampling code
@@ -124,13 +124,13 @@ In case of failure, the target density and histogram were written to
     python chi2_data.py
 
 
-The ``mitsuba.chi2`` module also provides a set of ``Adapter`` functions
+The ``misuka.chi2`` module also provides a set of ``Adapter`` functions
 which can be used to wrap different plugins (e.g. ``BSDF``, ``Emitter``, ...)
 in order to test them:
 
 .. code-block:: python
 
-    import mitsuba as mi
+    import misuka as mi
     import drjit as dr
 
     mi.set_variant('llvm_rgb')
@@ -178,7 +178,7 @@ the ``ChiSquareTest`` is to decide whether the observed deviation is within the
 range of random noise, or whether there are systematic biases that should lead
 to a test failure.
 
-For more information, see :py:class:`mitsuba.chi2.ChiSquareTest`.
+For more information, see :py:class:`misuka.chi2.ChiSquareTest`.
 
 
 Rendering test suite and Z-test
