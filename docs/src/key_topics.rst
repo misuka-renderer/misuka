@@ -12,8 +12,8 @@ The following documents clarify a particular part of the system or the
 background theory. They are referred to by the tutorials and guides for
 in-depth knowledge about a specific subject.
 
-The topic :ref:`sec-acoustic-rendering` covers the ``_acoustic`` variant family and
-the ETC output format, misuka's main additions to Mitsuba 3.
+The topic :ref:`sec-acoustic-rendering` covers the basics of acoustic rendering
+and the differences between misuka's functionality and Mitsuba 3.
 Because misuka is a compatible extension to Mitsuba 3, the general variant
 overview and the XML scene format are otherwise unchanged and stay documented
 in the Mitsuba documentation.
