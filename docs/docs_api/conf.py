@@ -151,6 +151,7 @@ excluded_api = [
     r'misuka.test.scenes.([\w]+)', 'misuka.ad.contextmanager',
     r'misuka.ad.(.*).annotations', r'misuka.ad.prb(.*)', r'misuka.ad.integrators.prb(.*)',
     r'misuka.ad.direct_projective(.*)', r'misuka.ad.integrators.direct_projective(.*)',
+    r'misuka.ad.acoustic(.*)', r'misuka.ad.integrators.acoustic(.*)',
     'misuka.float_dtype', 'misuka.casters', 'misuka.cast_object',
     'misuka.get_property', 'misuka.set_property', 'misuka.PyObjectWrapper',
     'misuka.xml.WriteXML', 'misuka.xml.Files',
