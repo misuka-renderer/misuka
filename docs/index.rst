@@ -196,6 +196,7 @@ appropriate, please also cite the underlying renderer following its
 
     src/key_topics
     src/developer_guide
+    src/how_to_guides
 
 .. toctree::
     :maxdepth: 1
