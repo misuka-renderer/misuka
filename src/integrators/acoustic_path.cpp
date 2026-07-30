@@ -477,7 +477,7 @@ public:
 
             /*
             Calculate path segment length. spawn_ray() offsets rays by a small
-            epsilon to prevent self-intersection. This moves the origin towards
+            epsilon to prevent self-intersection. This moves the origin toward
             the intersection point and reduces si.t slightly.
             Use true geometric distance instead:
             */
@@ -739,7 +739,7 @@ protected:
                        const Film *film,
                        Sampler *sampler,
                        ImageBlock *block,
-                       Float *aovs, /* just passed through towards sample(), putting data into the block needs to happen inside sample() to avoid storing copies of entire histograms. */
+                       Float *aovs, /* just passed through toward sample(), putting data into the block needs to happen inside sample() to avoid storing copies of entire histograms. */
                        const Vector2f &pos,
                        Mask active = true) const {
         Log(Debug, "Running render_sample() ..");

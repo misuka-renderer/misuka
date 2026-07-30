@@ -380,7 +380,7 @@ class AcousticADIntegrator(RBIntegrator):
                                         coherent=(depth == 0))
 
             # Calculate path segment length. si.t includes a spawn-ray epsilon,
-            # which moves the origin towards the intersection point and reduces
+            # which moves the origin toward the intersection point and reduces
             # si.t slightly. Use true geometric distance instead:
             τ = dr.select(depth == 0, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
@@ -429,7 +429,7 @@ class AcousticADIntegrator(RBIntegrator):
             with dr.suspend_grad(when=not self.is_detached):
                 ds, em_weight = scene.sample_emitter_direction(si, sampler.next_2d(), True, active_em)
 
-            # Retrace the ray towards the emitter because ds is directly sampled
+            # Retrace the ray toward the emitter because ds is directly sampled
             # from the emitter shape instead of tracing a ray against it.
             # This contradicts the definition of "sampling of *directions*"
             # Only retrace when gradients are needed (AD mode); in primal mode

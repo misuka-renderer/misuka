@@ -245,7 +245,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             with dr.resume_grad(when=not primal):
                 if dr.hint(not primal, mode='scalar'):
-                    # Retrace the ray towards the emitter because ds_em is directly sampled
+                    # Retrace the ray toward the emitter because ds_em is directly sampled
                     # from the emitter shape instead of tracing a ray against it.
                     # This contradicts the definition of "sampling of *directions*"
                     si_em       = scene.ray_intersect(si.spawn_ray(ds_em.d), active=active_em)
