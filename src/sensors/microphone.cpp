@@ -26,8 +26,9 @@ Microphone (:monosp:`microphone`)
  * - origin, direction
    - |point|, |vector|
    - Alternative to ``to_world``: place the microphone at ``origin`` and orient
-     its forward axis along ``direction``. Both must be given together, and they
-     cannot be combined with ``to_world``.
+     its forward axis along ``direction``. Both must be given together. If
+     ``to_world`` is also present, it takes precedence and these two are
+     ignored.
 
  * - kappa
    - |float|
@@ -50,7 +51,7 @@ approximating a directional microphone.
 
 Unlike an optical camera, the microphone has no image resolution. Its film is
 a single receiver point. The two axes of the ``tape`` output correspond to
-frequency bands and time bins rather than image pixels.
+time bins and frequency bands rather than image pixels.
 
 .. tabs::
     .. code-tab:: xml

@@ -69,7 +69,7 @@ At each surface interaction, the integrator uses multiple importance sampling
 The key difference is that energy
 transport is not assumed to be instantaneous, but at the speed of sound. Instead
 of producing an image, the output is stored in a ``Tape``, where the first axis
-corresponds to frequency bins and the second axis to time bins.
+corresponds to time bins and the second axis to frequency bands.
 
 Sound paths are terminated when any of the following conditions are met:
 

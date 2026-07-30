@@ -24,7 +24,7 @@ Tape (:monosp:`tape`)
    - |string|
    - Comma- or space-separated list of frequency band values in Hz. Each entry
      becomes one frequency band of the output. The number of entries defines the
-     first (frequency) axis of the ETC. This parameter is required.
+     second (frequency) axis of the ETC. This parameter is required.
 
  * - time_bins
    - |int|

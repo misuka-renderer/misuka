@@ -37,8 +37,8 @@ placed samples. You can specify either wavelengths or frequencies as the domain.
         :name: irregular
 
         <spectrum type="irregular">
-            <string name="wavelengths" value="400, 700">
-            <string name="values" value="0.1, 0.2">
+            <string name="wavelengths" value="400, 700"/>
+            <string name="values" value="0.1, 0.2"/>
         </spectrum>
 
     .. code-tab:: python
@@ -51,12 +51,11 @@ placed samples. You can specify either wavelengths or frequencies as the domain.
         :name: irregular-acoustic
 
         <spectrum type="irregular">
-            <string name="frequencies" value="250, 500">
-            <string name="values" value="0.1, 0.2">
+            <string name="frequencies" value="250, 500"/>
+            <string name="values" value="0.1, 0.2"/>
         </spectrum>
 
     .. code-tab:: python Python (acoustic)
-        :name: irregular-acoustic
 
         'type': 'irregular',
         'frequencies': '250, 500',
