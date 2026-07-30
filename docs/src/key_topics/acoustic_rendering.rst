@@ -89,7 +89,7 @@ this relates to light transport:
   Audible wavelengths, in contrast, span three orders of magnitude -- roughly
   17 m at 20 Hz down to 1.7 cm at 20 kHz -- and are not always small compared to
   room geometry. Diffraction and interference effects such as standing waves
-  therefore become significant towards low frequencies. misuka does not model
+  therefore become significant toward low frequencies. misuka does not model
   them.
 - **Required level of geometric detail.** Optical renderers routinely handle
   highly detailed scenes. In acoustics, more detail is not automatically better:
@@ -103,9 +103,9 @@ this relates to light transport:
   direction-dependent scattering behavior is modeled.
 
   For example, a staircase whose steps are smaller than the wavelength behaves
-  like a flat inclined plane, sending energy up along the 45° slope. Modelling
+  like a flat inclined plane, sending energy up along the 45° slope. Modeling
   the individual steps does not reproduce this: their 90° corners retroreflect
-  energy back towards the source instead. The staircase should be modelled as a
+  energy back toward the source instead. The staircase should be modeled as a
   single diagonal plane.
 
 Ray-geometry intersection, importance sampling, the Dr.Jit computation graph,

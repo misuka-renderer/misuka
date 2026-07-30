@@ -20,7 +20,7 @@ oscillation artifacts near discontinuities, such as a light-shadow transition in
     different axis. A conventional film reconstructs over the two *spatial* axes of an image,
     whereas the :ref:`tape <film-tape>` film reconstructs over *time* only. The filter width is
     therefore measured in time bins and controls how far a single arrival is smeared across
-    neighbouring bins. Frequency bands are never filtered into each other, no matter which filter
+    neighboring bins. Frequency bands are never filtered into each other, no matter which filter
     is chosen.
 
     As for any film, the default is a :ref:`gaussian <rfilter-gaussian>` filter. A
