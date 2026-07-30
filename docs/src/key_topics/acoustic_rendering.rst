@@ -13,7 +13,7 @@ function of propagation time, resolved per frequency band.
 
 This page explains the concepts a user needs in order to work with misuka, and the differences from Mitsuba 3.
 The plugins themselves are documented in the
-:ref:`plugin reference <sec-integrators>`, and examples live in the
+:ref:`plugin reference <sec-plugins>`, and examples live in the
 :doc:`rendering <../rendering_tutorials>` and
 :doc:`inverse rendering <../inverse_rendering_tutorials>` tutorials.
 
@@ -212,5 +212,5 @@ storing the full path history.
 It is the basis for all optimization tasks and is suited for material optimization
 with static (not optimized) geometry.
 The :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` integrator produces
-unbiased gradients also when optimizing geometry. See :ref:`plugin reference <sec-integrators>`
-for further details.
+unbiased gradients also when optimizing geometry. See the
+:ref:`integrator reference <sec-integrators>` for further details.
