@@ -6,7 +6,7 @@ misuka release notes
 
 misuka 0.1.0
 ~~~~~~~~~~~~
-*Todo: Add date once we release*
+*Unreleased*
 
 - **Mitsuba update**. misuka now builds on Mitsuba 3.9.0, so all of its features
   are available (e.g. function freezing, Dr.Jit's new gradient-based optimizers, and
@@ -31,7 +31,7 @@ misuka 0.1.0
     drops below ``max_energy_loss`` in dB. `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
 
   - **Hide emitters**. The new ``hide_emitters`` option excludes direct emitter
-    contributions from the ETC. It replaces ``skip_direct``, which is now deprecated.
+    contributions from the ETC. It replaces ``skip_direct``, which has been removed.
     `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
 
 - **spp-invariant ETC**. Acoustic integrator output is now normalized by the sample
