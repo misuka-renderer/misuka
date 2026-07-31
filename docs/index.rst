@@ -128,8 +128,9 @@ License
 misuka is licensed under the `PolyForm Noncommercial License 1.0.0
 <https://polyformproject.org/licenses/noncommercial/1.0.0>`_, which permits academic
 and private use. Files inherited from Mitsuba 3 remain under the original BSD-3-Clause
-license. See `LICENSE
+license. See the full license on `github
 <https://github.com/misuka-renderer/misuka/blob/master/LICENSE>`_.
+
 If you are interested in using misuka commercially, please contact
 a.jueterbock@tu-berlin.de.
 
