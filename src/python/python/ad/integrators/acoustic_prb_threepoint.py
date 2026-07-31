@@ -96,12 +96,12 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
        integrator is unbiased even with moving geometry, though its gradient
        estimates are noisier.
 
-    .. warning:: ``track_time_derivatives`` must be set to |true| for this
-       integrator to compute correct gradients. The film's reconstruction
-       filter must also be differentiable for the time gradients to be
-       correct: a ``gaussian`` filter with ``stddev`` set to 0.25 time bins is
-       recommended, as it enables gradient estimation without significant
-       smoothing of the ETC.
+    .. warning:: Gradients with respect to geometry need the time derivatives
+       that ``track_time_derivatives`` enables, so leave it at |true| when
+       optimizing geometry. The film's reconstruction filter also has to be
+       differentiable for those time gradients to be correct: a ``gaussian``
+       filter with ``stddev`` set to 0.25 time bins is recommended, as it
+       enables gradient estimation without significant smoothing of the ETC.
 
     .. tabs::
         .. code-tab:: python

@@ -56,8 +56,10 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
        - Whether to track derivatives with respect to time/distance, needed
          to compute gradients with respect to geometry (time-dependent)
          scene parameters. Takes effect during the adjoint (gradient) pass
-         only. Enable it when optimizing for such parameters; leaving it
-         disabled is more efficient otherwise. (Default: |false|)
+         only. When enabled, the film's reconstruction filter has to be
+         differentiable for those time gradients to be correct. Enable it
+         when optimizing for such parameters; leaving it disabled is more
+         efficient otherwise. (Default: |false|)
 
     This integrator works analogously to the
     :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes

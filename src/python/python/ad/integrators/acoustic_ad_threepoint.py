@@ -78,12 +78,11 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
        integrator is unbiased even with moving geometry, though its gradient
        estimates are noisier.
 
-    .. warning:: This integrator always tracks derivatives with respect to
-       time/distance, since propagation time enters the film through the
-       reconstruction filter. That filter has to be differentiable for the
-       time gradients to be correct: a ``gaussian`` filter with ``stddev``
-       set to 0.25 time bins is recommended, as it enables gradient
-       estimation without significant smoothing of the ETC.
+    .. warning:: Because time derivatives are always tracked, the film's
+       reconstruction filter has to be differentiable for those time gradients
+       to be correct: a ``gaussian`` filter with ``stddev`` set to 0.25 time
+       bins is recommended, as it enables gradient estimation without
+       significant smoothing of the ETC.
 
     .. tabs::
         .. code-tab:: python

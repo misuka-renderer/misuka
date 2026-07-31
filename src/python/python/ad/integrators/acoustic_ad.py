@@ -53,7 +53,8 @@ class AcousticADIntegrator(RBIntegrator):
      * - is_detached
        - |bool|
        - Whether the sampling strategy should be detached from the optimized
-         parameters. (Default: |true|)
+         parameters. This is the only acoustic AD integrator that acts on it.
+         The others accept it and ignore it. (Default: |true|)
 
     This is the base class for differentiable acoustic integrators. It extends
     the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
@@ -79,6 +80,12 @@ class AcousticADIntegrator(RBIntegrator):
        derivatives it does track carry overlapping information, though, so
        geometry optimization can still converge in practice, depending on
        the scene and optimization setting.
+
+    .. warning:: Because time derivatives are always tracked, the film's
+       reconstruction filter has to be differentiable for those time gradients
+       to be correct: a ``gaussian`` filter with ``stddev`` set to 0.25 time
+       bins is recommended, as it enables gradient estimation without
+       significant smoothing of the ETC.
 
     .. note:: This integrator only supports acoustic rendering and does not
        handle participating media. It requires a ``Microphone`` sensor with a

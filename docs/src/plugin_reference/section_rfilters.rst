@@ -28,8 +28,11 @@ oscillation artifacts near discontinuities, such as a light-shadow transition in
     deposits each arrival in the single bin matching its propagation time and so leaves the ETC
     temporally unsmoothed. The :ref:`differentiable acoustic integrators <sec-integrators>` are
     the exception. Whenever one of them tracks derivatives with respect to time, which is what
-    ``track_time_derivatives`` enables and what gradients with respect to time-dependent scene
-    parameters such as geometry need, the reconstruction filter has to be differentiable for those time
-    gradients to be correct. A gaussian with ``stddev`` set to 0.25 time bins is recommended
+    gradients with respect to time-dependent scene parameters such as geometry need, the
+    reconstruction filter has to be differentiable for those time gradients to be correct.
+    :ref:`acoustic_ad <integrator-acoustic_ad>` and
+    :ref:`acoustic_ad_threepoint <integrator-acoustic_ad_threepoint>` always track them, the
+    :ref:`acoustic_prb <integrator-acoustic_prb>` variants whenever ``track_time_derivatives``
+    is enabled. A gaussian with ``stddev`` set to 0.25 time bins is recommended
     there, since it permits gradient estimation without smoothing the ETC significantly. See
     :ref:`sec-acoustic-rendering` for the ETC and its time axis.
