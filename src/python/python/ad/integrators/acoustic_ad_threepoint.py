@@ -70,10 +70,6 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
     implementation. For differentiable rendering of non-static scenes, use
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
 
-    .. note:: This integrator only supports acoustic rendering and does not
-       handle participating media. It requires a ``Microphone`` sensor with a
-       ``Tape`` film.
-
     .. note:: Unlike :ref:`acoustic_prb <integrator-acoustic_prb>`, this
        integrator is unbiased even with moving geometry, though its gradient
        estimates are noisier.

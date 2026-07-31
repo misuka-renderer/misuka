@@ -80,10 +80,6 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
        geometry optimization can still converge in practice, depending on
        the scene and optimization setting.
 
-    .. note:: This integrator only supports acoustic rendering and does not
-       handle participating media. It requires a ``Microphone`` sensor with a
-       ``Tape`` film.
-
     .. tabs::
         .. code-tab:: python
 

@@ -78,9 +78,6 @@ Sound paths are terminated when any of the following conditions are met:
 - The path throughput drops below the energy loss threshold
   (``max_energy_loss``).
 
-.. note:: This integrator only supports acoustic rendering and does not handle
-   participating media. It requires a ``Microphone`` sensor with a ``Tape`` film.
-
 .. tabs::
     .. code-tab::  xml
         :name: acoustic-path-integrator

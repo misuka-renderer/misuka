@@ -87,10 +87,6 @@ class AcousticADIntegrator(RBIntegrator):
        bins is recommended, as it enables gradient estimation without
        significant smoothing of the ETC.
 
-    .. note:: This integrator only supports acoustic rendering and does not
-       handle participating media. It requires a ``Microphone`` sensor with a
-       ``Tape`` film.
-
     .. tabs::
         .. code-tab:: python
 

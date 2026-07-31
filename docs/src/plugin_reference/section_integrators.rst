@@ -12,6 +12,10 @@ Python integrators built on Time-Resolved Path Replay Backpropagation
 :cite:`acoustic_prb` for gradient-based acoustic optimization. See the
 acoustic integrators listed below.
 
+.. note:: All acoustic integrators only support acoustic rendering and
+   do not handle participating media. They require a ``Microphone`` sensor
+   with a ``Tape`` film, and therefore an ``acoustic`` variant.
+
 In the XML description language, a single integrator is usually instantiated
 by declaring it at the top level within the scene, e.g.
 
