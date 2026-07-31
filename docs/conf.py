@@ -127,6 +127,7 @@ language = 'en'
 exclude_patterns = ['.build',
                     'release.rst',
                     'porting_3_6.rst',
+                    'src/gallery.rst',
                     'src/plugin_reference/section_*.rst',
                     'docs_api/*',
                     'generated/*.rst',
