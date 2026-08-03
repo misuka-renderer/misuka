@@ -54,22 +54,6 @@ a single receiver point. The two axes of the ``tape`` output correspond to
 time bins and frequency bands rather than image pixels.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: microphone-sensor
-
-        <sensor type="microphone">
-            <float name="kappa" value="0.0"/>
-            <point name="origin" value="2, 1, 0"/>
-            <vector name="direction" value="-1, 0, 0"/>
-            <film type="tape">
-                <string name="frequencies" value="125, 250, 500, 1000, 2000, 4000"/>
-                <integer name="time_bins" value="1000"/>
-            </film>
-            <sampler type="independent">
-                <integer name="sample_count" value="16"/>
-            </sampler>
-        </sensor>
-
     .. code-tab:: python
 
         'type': 'microphone',
@@ -85,6 +69,22 @@ time bins and frequency bands rather than image pixels.
             'type': 'independent',
             'sample_count': 16,
         },
+
+    .. code-tab:: xml
+        :name: microphone-sensor
+
+        <sensor type="microphone">
+            <float name="kappa" value="0.0"/>
+            <point name="origin" value="2, 1, 0"/>
+            <vector name="direction" value="-1, 0, 0"/>
+            <film type="tape">
+                <string name="frequencies" value="125, 250, 500, 1000, 2000, 4000"/>
+                <integer name="time_bins" value="1000"/>
+            </film>
+            <sampler type="independent">
+                <integer name="sample_count" value="16"/>
+            </sampler>
+        </sensor>
 */
 
 MI_VARIANT class Microphone final : public Sensor<Float, Spectrum> {

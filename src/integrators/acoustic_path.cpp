@@ -79,6 +79,13 @@ Sound paths are terminated when any of the following conditions are met:
   (``max_energy_loss``).
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'acoustic_path',
+        'max_time': 1.0,
+        'speed_of_sound': 343.0,
+        'max_depth': -1,
+
     .. code-tab::  xml
         :name: acoustic-path-integrator
 
@@ -87,13 +94,6 @@ Sound paths are terminated when any of the following conditions are met:
             <float name="speed_of_sound" value="343.0"/>
             <integer name="max_depth" value="-1"/>
         </integrator>
-
-    .. code-tab:: python
-
-        'type': 'acoustic_path',
-        'max_time': 1.0,
-        'speed_of_sound': 343.0,
-        'max_depth': -1,
 
  */
 

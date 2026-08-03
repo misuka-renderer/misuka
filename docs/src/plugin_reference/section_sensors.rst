@@ -12,24 +12,6 @@ ETC output format).
 In the XML scene description language, a sensor declaration looks as follows:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <!-- .. scene contents .. -->
-
-            <sensor type="microphone">
-                <!-- .. sensor parameters .. -->
-
-                <sampler type=".. sampler type ..">
-                    <!-- .. sampler parameters .. -->
-                </sampler>
-
-                <film type="tape">
-                    <!-- .. film parameters .. -->
-                </film>
-            </sensor>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
@@ -48,6 +30,24 @@ In the XML scene description language, a sensor declaration looks as follows:
                 # ...
             }
         }
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <!-- .. scene contents .. -->
+
+            <sensor type="microphone">
+                <!-- .. sensor parameters .. -->
+
+                <sampler type=".. sampler type ..">
+                    <!-- .. sampler parameters .. -->
+                </sampler>
+
+                <film type="tape">
+                    <!-- .. film parameters .. -->
+                </film>
+            </sensor>
+        </scene>
 
 In other words, the ``sensor`` declaration is a child element of the ``<scene>``
 (the particular position in the scene file does not play a role). Nested within

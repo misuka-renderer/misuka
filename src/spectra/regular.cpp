@@ -46,20 +46,11 @@ This spectrum returns linearly interpolated reflectance or emission values from 
 placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: regular
-
-        <spectrum type="regular">
-            <float name="wavelength_min" value="400"/>
-            <float name="wavelength_max" value="700"/>
-            <string name="values" value="0.1, 0.2"/>
-        </spectrum>
-
-    .. code-tab:: python
+    .. code-tab:: python Python (acoustic)
 
         'type': 'regular',
-        'wavelength_min': 400,
-        'wavelength_max': 700,
+        'frequency_min': 250,
+        'frequency_max': 500,
         'values': '0.1, 0.2'
 
     .. code-tab:: xml XML (acoustic)
@@ -71,12 +62,21 @@ placed samples. You can specify either wavelengths or frequencies as the domain.
             <string name="values" value="0.1, 0.2"/>
         </spectrum>
 
-    .. code-tab:: python Python (acoustic)
+    .. code-tab:: python
 
         'type': 'regular',
-        'frequency_min': 250,
-        'frequency_max': 500,
+        'wavelength_min': 400,
+        'wavelength_max': 700,
         'values': '0.1, 0.2'
+
+    .. code-tab:: xml
+        :name: regular
+
+        <spectrum type="regular">
+            <float name="wavelength_min" value="400"/>
+            <float name="wavelength_max" value="700"/>
+            <string name="values" value="0.1, 0.2"/>
+        </spectrum>
  */
 
 template <typename Float, typename Spectrum>

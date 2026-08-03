@@ -33,18 +33,10 @@ This spectrum returns linearly interpolated reflectance or emission values from 
 placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: irregular
-
-        <spectrum type="irregular">
-            <string name="wavelengths" value="400, 700"/>
-            <string name="values" value="0.1, 0.2"/>
-        </spectrum>
-
-    .. code-tab:: python
+    .. code-tab:: python Python (acoustic)
 
         'type': 'irregular',
-        'wavelengths': '400, 700',
+        'frequencies': '250, 500',
         'values': '0.1, 0.2'
 
     .. code-tab:: xml XML (acoustic)
@@ -55,11 +47,19 @@ placed samples. You can specify either wavelengths or frequencies as the domain.
             <string name="values" value="0.1, 0.2"/>
         </spectrum>
 
-    .. code-tab:: python Python (acoustic)
+    .. code-tab:: python
 
         'type': 'irregular',
-        'frequencies': '250, 500',
+        'wavelengths': '400, 700',
         'values': '0.1, 0.2'
+
+    .. code-tab:: xml
+        :name: irregular
+
+        <spectrum type="irregular">
+            <string name="wavelengths" value="400, 700"/>
+            <string name="values" value="0.1, 0.2"/>
+        </spectrum>
  */
 
 template <typename Float, typename Spectrum>

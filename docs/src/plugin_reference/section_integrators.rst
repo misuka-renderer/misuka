@@ -20,21 +20,6 @@ In the XML description language, a single integrator is usually instantiated
 by declaring it at the top level within the scene, e.g.
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <!-- Instantiate the acoustic path tracer, terminating
-                paths after 0.5 seconds of propagation time -->
-            <integrator type="acoustic_path">
-                <float name="max_time" value="0.5"/>
-            </integrator>
-
-            <!-- Some geometry to be rendered -->
-            <shape type="rectangle">
-                <bsdf type="acousticbsdf"/>
-            </shape>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
@@ -52,6 +37,21 @@ by declaring it at the top level within the scene, e.g.
                 'type': 'acousticbsdf'
             }
         }
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <!-- Instantiate the acoustic path tracer, terminating
+                paths after 0.5 seconds of propagation time -->
+            <integrator type="acoustic_path">
+                <float name="max_time" value="0.5"/>
+            </integrator>
+
+            <!-- Some geometry to be rendered -->
+            <shape type="rectangle">
+                <bsdf type="acousticbsdf"/>
+            </shape>
+        </scene>
 
 
 This section gives an overview of the available choices along with their parameters.

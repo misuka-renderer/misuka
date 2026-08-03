@@ -64,6 +64,12 @@ Unlike a conventional image film, the ``tape`` does not accept ``width`` or
 axis by ``time_bins``.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'tape',
+        'frequencies': '125, 250, 500, 1000, 2000, 4000',
+        'time_bins': 1000,
+
     .. code-tab:: xml
         :name: tape-film
 
@@ -71,12 +77,6 @@ axis by ``time_bins``.
             <string name="frequencies" value="125, 250, 500, 1000, 2000, 4000"/>
             <integer name="time_bins" value="1000"/>
         </film>
-
-    .. code-tab:: python
-
-        'type': 'tape',
-        'frequencies': '125, 250, 500, 1000, 2000, 4000',
-        'time_bins': 1000,
 */
 
 template <typename Float, typename Spectrum>

@@ -49,13 +49,6 @@ Suppose this hypothetical plugin is an integrator named ``amazing``. Then, based
 description, it can be instantiated from an XML scene file using a custom configuration such as:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <integrator type="amazing">
-            <boolean name="softer_rays" value="true"/>
-            <float name="dark_matter" value="0.44"/>
-        </integrator>
-
     .. code-tab:: python
 
         {
@@ -63,6 +56,13 @@ description, it can be instantiated from an XML scene file using a custom config
             'softer_rays': True,
             'dark_matter': 0.44
         }
+
+    .. code-tab:: xml
+
+        <integrator type="amazing">
+            <boolean name="softer_rays" value="true"/>
+            <float name="dark_matter" value="0.44"/>
+        </integrator>
 
 In some cases, plugins also indicate that they accept nested plugins as input arguments. These can
 either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the following two parameters:
@@ -80,19 +80,6 @@ either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the 
 then it can be instantiated e.g. as follows:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <integrator type="amazing">
-            <boolean name="softer_rays" value="true"/>
-            <float name="dark_matter" value="0.44"/>
-            <!-- Nested unnamed integrator -->
-            <integrator type="path"/>
-            <!-- Nested texture named puppies -->
-            <texture name="puppies" type="bitmap">
-                <string name="filename" value="cute.jpg"/>
-            </texture>
-        </integrator>
-
     .. code-tab:: python
 
         {
@@ -109,6 +96,19 @@ then it can be instantiated e.g. as follows:
                 'filename': 'cute.jpg'
             }
         }
+
+    .. code-tab:: xml
+
+        <integrator type="amazing">
+            <boolean name="softer_rays" value="true"/>
+            <float name="dark_matter" value="0.44"/>
+            <!-- Nested unnamed integrator -->
+            <integrator type="path"/>
+            <!-- Nested texture named puppies -->
+            <texture name="puppies" type="bitmap">
+                <string name="filename" value="cute.jpg"/>
+            </texture>
+        </integrator>
 
 Flags
 ^^^^^^
@@ -157,12 +157,6 @@ has no effect in scalar or LLVM variants.
 When creating a scene, the scene-wide attributes can be specified as follows:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <boolean name="embree_use_robust_intersections" value="true"/>
-        </scene>
-
     .. code-tab:: python
 
         {
@@ -170,3 +164,9 @@ When creating a scene, the scene-wide attributes can be specified as follows:
             'embree_use_robust_intersections': True,
             'allow_thread_reordering': True,
         }
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <boolean name="embree_use_robust_intersections" value="true"/>
+        </scene>

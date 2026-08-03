@@ -14,22 +14,6 @@ In the XML scene description language, a film configuration might look as
 follows:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <!-- .. scene contents -->
-
-            <sensor type="microphone">
-                <!-- .. sensor parameters .. -->
-
-                <!-- Record an ETC over three frequency bands -->
-                <film type="tape">
-                    <string name="frequencies" value="100, 500, 20000"/>
-                    <integer name="time_bins" value="1000"/>
-                </film>
-            </sensor>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
@@ -46,6 +30,22 @@ follows:
                 'time_bins': 1000,
             }
         }
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <!-- .. scene contents -->
+
+            <sensor type="microphone">
+                <!-- .. sensor parameters .. -->
+
+                <!-- Record an ETC over three frequency bands -->
+                <film type="tape">
+                    <string name="frequencies" value="100, 500, 20000"/>
+                    <integer name="time_bins" value="1000"/>
+                </film>
+            </sensor>
+        </scene>
 
 The ``<film>`` plugin should be instantiated inside a ``<sensor>``
 declaration. As with other films, the output filename is inferred from the

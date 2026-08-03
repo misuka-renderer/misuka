@@ -14,21 +14,6 @@ is small compared to the room, but not so small that rays rarely find it. This i
 what the tutorials and the getting-started example do.
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <!-- .. scene contents .. -->
-
-            <shape type="sphere">
-                <float name="radius" value="0.2"/>
-                <point name="center" x="3" y="6" z="1.2"/>
-
-                <emitter type="area">
-                    <spectrum name="radiance" value="100:1, 20000:1"/>
-                </emitter>
-            </shape>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
@@ -44,6 +29,21 @@ what the tutorials and the getting-started example do.
                 'radiance': {'type': 'spectrum', 'value': [(100, 1), (20000, 1)]},
             },
         },
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <!-- .. scene contents .. -->
+
+            <shape type="sphere">
+                <float name="radius" value="0.2"/>
+                <point name="center" x="3" y="6" z="1.2"/>
+
+                <emitter type="area">
+                    <spectrum name="radiance" value="100:1, 20000:1"/>
+                </emitter>
+            </shape>
+        </scene>
 
 The :ref:`point <emitter-point>` emitter currently loses the direct sound. A
 contribution that reaches the receiver without touching a surface can only be

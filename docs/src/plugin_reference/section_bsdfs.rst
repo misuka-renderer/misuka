@@ -15,21 +15,6 @@ declared once and referenced by name. Declaring once is useful when the same
 material is reused across many shapes, e.g. all six walls of a shoebox room:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <!-- Creating a named acoustic material for later use -->
-            <bsdf type="acousticbsdf" id="wall">
-                <spectrum name="absorption" value="100:0.1, 20000:0.4"/>
-                <spectrum name="scattering" value="100:0.2, 20000:0.8"/>
-            </bsdf>
-
-            <shape type="rectangle">
-                <!-- Example of referencing a named material -->
-                <ref id="wall"/>
-            </shape>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
@@ -45,6 +30,21 @@ material is reused across many shapes, e.g. all six walls of a shoebox room:
             # Example of referencing a named material
             'bsdf': {'type': 'ref', 'id': 'wall'},
         }
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <!-- Creating a named acoustic material for later use -->
+            <bsdf type="acousticbsdf" id="wall">
+                <spectrum name="absorption" value="100:0.1, 20000:0.4"/>
+                <spectrum name="scattering" value="100:0.2, 20000:0.8"/>
+            </bsdf>
+
+            <shape type="rectangle">
+                <!-- Example of referencing a named material -->
+                <ref id="wall"/>
+            </shape>
+        </scene>
 
 It is generally more economical to use named materials when the same one is
 reused across several shapes, since this reduces internal memory usage.

@@ -31,17 +31,17 @@ dimension. It implements a uniform sampling method on a finite spectral range
 controlled by the ``wavelength_min`` and ``wavelength_max`` parameters.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'uniform',
+        'value': 0.1
+
     .. code-tab:: xml
         :name: uniform
 
         <spectrum type="uniform">
             <float name="value" value="0.1"/>
         </spectrum>
-
-    .. code-tab:: python
-
-        'type': 'uniform',
-        'value': 0.1
 
  */
 

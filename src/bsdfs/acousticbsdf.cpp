@@ -72,15 +72,6 @@ absorption and scattering values, given in frequency-value pairs (see
 :ref:`frequency-domain spectra <sec-spectra-acoustic>`).
 
 .. tabs::
-    .. code-tab:: xml
-        :name: acousticbsdf
-
-        <bsdf type="acousticbsdf">
-            <spectrum name="absorption" value="20:0.2, 1000.:0.5, 20000:0.8"/>
-            <spectrum name="scattering" value="20:0.1, 1000.:0.6, 20000:0.9"/>
-            <float name="specular_lobe_width" value="0.001"/>
-        </bsdf>
-
     .. code-tab:: python
 
         'type': 'acousticbsdf',
@@ -93,6 +84,15 @@ absorption and scattering values, given in frequency-value pairs (see
             'value': [(20, 0.1), (1000, 0.6), (20000, 0.9)],
         },
         'specular_lobe_width': 0.001
+
+    .. code-tab:: xml
+        :name: acousticbsdf
+
+        <bsdf type="acousticbsdf">
+            <spectrum name="absorption" value="20:0.2, 1000.:0.5, 20000:0.8"/>
+            <spectrum name="scattering" value="20:0.1, 1000.:0.6, 20000:0.9"/>
+            <float name="specular_lobe_width" value="0.001"/>
+        </bsdf>
 */
 
 template <typename Float, typename Spectrum>

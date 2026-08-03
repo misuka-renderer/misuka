@@ -7,17 +7,6 @@ This section describes the plugins behind spectral reflectance or emission used
 in misuka. They can be used as either BSDF or emitter parameters:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <bsdf type=".. BSDF type ..">
-                <!-- Explicitly add a uniform spectrum plugin -->
-                <spectrum type=".. spectrum type .." name=".. parameter name ..">
-                    <!-- Spectrum parameters go here -->
-                </spectrum>
-            </bsdf>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
@@ -30,6 +19,17 @@ in misuka. They can be used as either BSDF or emitter parameters:
             }
         }
 
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <bsdf type=".. BSDF type ..">
+                <!-- Explicitly add a uniform spectrum plugin -->
+                <spectrum type=".. spectrum type .." name=".. parameter name ..">
+                    <!-- Spectrum parameters go here -->
+                </spectrum>
+            </bsdf>
+        </scene>
+
 In practice, it is however discouraged to instantiate plugins in this explicit way
 and the XML scene description parser directly parses a number of common (shorter)
 ``<spectrum>`` tags. See the corresponding section about the
@@ -40,10 +40,6 @@ A single value applies at every frequency and instantiates
 :ref:`uniform <spectrum-uniform>`:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <spectrum name="absorption" value="0.3"/>
-
     .. code-tab:: python
 
         'absorption': {
@@ -51,14 +47,14 @@ A single value applies at every frequency and instantiates
             'value': 0.3
         }
 
+    .. code-tab:: xml
+
+        <spectrum name="absorption" value="0.3"/>
+
 Frequency-value pairs instantiate :ref:`regular <spectrum-regular>` when the frequency
 nodes are evenly spaced:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <spectrum name="absorption" value="100:0.1, 200:0.2, 300:0.4"/>
-
     .. code-tab:: python
 
         'absorption': {
@@ -66,14 +62,14 @@ nodes are evenly spaced:
             'value': [(100, 0.1), (200, 0.2), (300, 0.4)]
         }
 
+    .. code-tab:: xml
+
+        <spectrum name="absorption" value="100:0.1, 200:0.2, 300:0.4"/>
+
 They instantiate :ref:`irregular <spectrum-irregular>` otherwise. Octave-band center
 frequencies fall into this case, since they are spaced logarithmically:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <spectrum name="absorption" value="125:0.1, 250:0.2, 500:0.4"/>
-
     .. code-tab:: python
 
         'absorption': {
@@ -81,20 +77,24 @@ frequencies fall into this case, since they are spaced logarithmically:
             'value': [(125, 0.1), (250, 0.2), (500, 0.4)]
         }
 
+    .. code-tab:: xml
+
+        <spectrum name="absorption" value="125:0.1, 250:0.2, 500:0.4"/>
+
 A ``filename`` reads the same pairs from a file, one frequency and value per line, and
 chooses between the two plugins in the same way:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <spectrum name="absorption" filename="absorption.spd"/>
-
     .. code-tab:: python
 
         'absorption': {
             'type': 'spectrum',
             'filename': 'absorption.spd'
         }
+
+    .. code-tab:: xml
+
+        <spectrum name="absorption" filename="absorption.spd"/>
 
 .. note::
 
