@@ -21,7 +21,7 @@ sound sources are built (see :ref:`Emitters <sec-emitters>`).
     :ref:`material's BSDF <bsdf-acousticbsdf>` instead of the scene geometry. See
     :ref:`sec-acoustic-rendering` for the reasoning.
 
-Shapes are usually declared along with a surface scattering model named *BSDF* (see the :ref:`respective section <sec-bsdfs>`). This BSDF characterizes what happens at the surface. In the XML scene description language, this might look like the following:
+Shapes are usually declared along with a surface scattering model named *BSDF* (see the :ref:`respective section <sec-bsdfs>`). This BSDF characterizes what happens at the surface, and might look like the following:
 
 .. tabs::
     .. code-tab:: python

@@ -46,7 +46,7 @@ The documentation of a plugin always starts with a table similar to the one belo
    - A nested integrator which does the actual hard work
 
 Suppose this hypothetical plugin is an integrator named ``amazing``. Then, based on this
-description, it can be instantiated from an XML scene file using a custom configuration such as:
+description, it can be instantiated with a custom configuration such as:
 
 .. tabs::
     .. code-tab:: python

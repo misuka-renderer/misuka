@@ -9,7 +9,7 @@ some usable format. misuka's acoustic sensor is :ref:`microphone
 :ref:`tape film <sec-films>` (see :ref:`Films <sec-films>` for the resulting
 ETC output format).
 
-In the XML scene description language, a sensor declaration looks as follows:
+A sensor declaration looks as follows:
 
 .. tabs::
     .. code-tab:: python

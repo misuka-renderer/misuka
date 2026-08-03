@@ -10,8 +10,7 @@ misuka's acoustic film is :ref:`tape <film-tape>`, which records an
 propagation time. Unlike an image film, its two axes are frequency bands and
 time bins rather than pixel width and height.
 
-In the XML scene description language, a film configuration might look as
-follows:
+A film configuration might look as follows:
 
 .. tabs::
     .. code-tab:: python

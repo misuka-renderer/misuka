@@ -30,11 +30,11 @@ in misuka. They can be used as either BSDF or emitter parameters:
             </bsdf>
         </scene>
 
-In practice, it is however discouraged to instantiate plugins in this explicit way
-and the XML scene description parser directly parses a number of common (shorter)
-``<spectrum>`` tags. See the corresponding section about the
+In practice, it is however discouraged to instantiate plugins in this explicit way,
+and both the Python dict and XML scene parsers directly accept a number of common
+(shorter) forms for a spectrum entry. See the corresponding section about the
 `scene file format <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/scene_format.html>`_
-for details. Which plugin such a tag instantiates depends on its contents:
+for details. Which plugin such a shorthand instantiates depends on its contents:
 
 A single value applies at every frequency and instantiates
 :ref:`uniform <spectrum-uniform>`:

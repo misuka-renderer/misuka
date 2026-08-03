@@ -16,8 +16,8 @@ acoustic integrators listed below.
    do not handle participating media. They require a ``Microphone`` sensor
    with a ``Tape`` film, and therefore an ``acoustic`` variant.
 
-In the XML description language, a single integrator is usually instantiated
-by declaring it at the top level within the scene, e.g.
+A single integrator is usually instantiated by declaring it at the top level
+within the scene, e.g.
 
 .. tabs::
     .. code-tab:: python

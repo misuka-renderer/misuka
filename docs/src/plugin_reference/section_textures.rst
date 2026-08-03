@@ -21,7 +21,7 @@ as supporting the :paramtype:`texture` type.
 Textures take an (optional) ``<transform>`` called :paramtype:`to_uv` which can
 be used to translate, scale, or rotate the lookup into the texture accordingly.
 
-An example in XML looks as follows:
+An example looks as follows:
 
 .. tabs::
     .. code-tab:: python
