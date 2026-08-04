@@ -160,11 +160,12 @@ jobs:
       - name: Test built wheel in fresh environment
         shell: bash
         run: |
-          python -m venv .venv-wheel-test
+          VENV_DIR="$GITHUB_WORKSPACE/.venv-wheel-test"
+          python -m venv "$VENV_DIR"
           if [ "$RUNNER_OS" = "Windows" ]; then
-            VENV_PYTHON=".venv-wheel-test/Scripts/python.exe"
+            VENV_PYTHON="$VENV_DIR/Scripts/python.exe"
           else
-            VENV_PYTHON=".venv-wheel-test/bin/python"
+            VENV_PYTHON="$VENV_DIR/bin/python"
           fi
 
           "$VENV_PYTHON" -m pip install --upgrade pip pytest
