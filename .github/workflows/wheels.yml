@@ -7,8 +7,13 @@ on:
         required: true
         default: '0'
 
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
 env:
-  VARIANTS: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized,metal_ad_rgb,metal_ad_mono,metal_ad_mono_polarized,metal_ad_spectral,metal_ad_spectral_polarized"
+  VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic,metal_ad_rgb,metal_ad_acoustic"
 
 jobs:
   build_wheels:
@@ -35,8 +40,45 @@ jobs:
           attempt_limit: 3
           attempt_delay: 2000
 
-      - uses: actions/setup-python@v4
-        name: Install Python
+      - name: Map matrix Python tag to interpreter version
+        shell: bash
+        run: |
+          case "${{ matrix.python }}" in
+            cp39)
+              echo "TEST_PYTHON_VERSION=3.9" >> "$GITHUB_ENV"
+              ;;
+            cp310)
+              echo "TEST_PYTHON_VERSION=3.10" >> "$GITHUB_ENV"
+              ;;
+            cp311)
+              echo "TEST_PYTHON_VERSION=3.11" >> "$GITHUB_ENV"
+              ;;
+            cp312|cp312_stable)
+              echo "TEST_PYTHON_VERSION=3.12" >> "$GITHUB_ENV"
+              ;;
+            cp313)
+              echo "TEST_PYTHON_VERSION=3.13" >> "$GITHUB_ENV"
+              ;;
+            cp314)
+              echo "TEST_PYTHON_VERSION=3.14" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unsupported matrix.python: ${{ matrix.python }}" >&2
+              exit 1
+              ;;
+          esac
+
+          case "${{ matrix.python }}" in
+            cp312_stable)
+              echo "WHEEL_PYTHON_TAG=cp312" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "WHEEL_PYTHON_TAG=${{ matrix.python }}" >> "$GITHUB_ENV"
+              ;;
+          esac
+
+      - uses: actions/setup-python@v5
+        name: Install Python for build tooling
         with:
           python-version: '3.11'
 
@@ -63,7 +105,6 @@ jobs:
         run: |
           python -m pip install cibuildwheel==3.3.1
 
-
       ################################################################
       # Set up envvars to build the correct wheel (stable ABI or not)
       ################################################################
@@ -71,13 +112,13 @@ jobs:
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DMI_DEFAULT_VARIANTS=\"${{ env.VARIANTS }}\"\"" >> $GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment (Windows)
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DMI_DEFAULT_VARIANTS='${{ env.VARIANTS }}''" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $env:GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (UNIX)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
@@ -88,7 +129,7 @@ jobs:
           echo "CIBW_BUILD_FRONTEND=pip; args: --no-build-isolation" >> $GITHUB_ENV
           echo "CIBW_BEFORE_BUILD=python {project}/.github/install_build_deps_abi3.py" >> $GITHUB_ENV
           echo "CIBW_BEFORE_TEST=python {project}/.github/install_build_deps_abi3.py --drjit-only" >> $GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}\"" >> $GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (Windows)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
@@ -99,31 +140,70 @@ jobs:
           echo "CIBW_BUILD_FRONTEND=pip; args: --no-build-isolation" >> $env:GITHUB_ENV
           echo "CIBW_BEFORE_BUILD=python {project}/.github/install_build_deps_abi3.py" >> $env:GITHUB_ENV
           echo "CIBW_BEFORE_TEST=python {project}/.github/install_build_deps_abi3.py --drjit-only" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}'" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $env:GITHUB_ENV
 
 
       #########################
       # Build and store wheels
       #########################
       - name: Build wheel
+        env:
+          CIBW_TEST: "0"
         run: |
           python -m cibuildwheel --output-dir wheelhouse
+
+      - uses: actions/setup-python@v5
+        name: Install Python for wheel tests
+        with:
+          python-version: ${{ env.TEST_PYTHON_VERSION }}
+
+      - name: Test built wheel in fresh environment
+        shell: bash
+        run: |
+          VENV_DIR="$GITHUB_WORKSPACE/.venv-wheel-test"
+          python -m venv "$VENV_DIR"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            VENV_PYTHON="$VENV_DIR/Scripts/python.exe"
+          else
+            VENV_PYTHON="$VENV_DIR/bin/python"
+          fi
+
+          "$VENV_PYTHON" -m pip install --upgrade pip
+          wheel=$("$VENV_PYTHON" -c "import os; from pathlib import Path; wheels = sorted(Path('wheelhouse').glob('*.whl')); tag = os.environ['WHEEL_PYTHON_TAG']; matches = [w for w in wheels if tag in w.name]; print(matches[0] if matches else '')" )
+          if [ -z "$wheel" ]; then
+            echo "No matching wheel for tag $WHEEL_PYTHON_TAG" >&2
+            exit 1
+          fi
+          "$VENV_PYTHON" -m pip install "$wheel[test]"
+          rm -rf /tmp/misuka-wheel-test
+          mkdir -p /tmp/misuka-wheel-test
+          cp -r "$GITHUB_WORKSPACE/src" /tmp/misuka-wheel-test/src
+          if [ -f "$GITHUB_WORKSPACE/pyproject.toml" ]; then
+            cp "$GITHUB_WORKSPACE/pyproject.toml" /tmp/misuka-wheel-test/
+          fi
+          if [ -f "$GITHUB_WORKSPACE/pytest.ini" ]; then
+            cp "$GITHUB_WORKSPACE/pytest.ini" /tmp/misuka-wheel-test/
+          fi
+          (
+            cd /tmp/misuka-wheel-test
+            "$VENV_PYTHON" -m pytest src -m "not slow"
+          )
 
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
-  upload_pypi:
-    name: Upload wheels to PyPI
+  upload_testpypi:
+    name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload == '1'}}
     needs: [build_wheels]
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.upload == '1' }}
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      #########################
-      # Fetch and upload wheels
-      #########################
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
@@ -132,5 +212,27 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
+          password: ${{secrets.TESTPYPI_TOKEN}}
+
+  # upload_pypi:
+  #   name: Upload wheels to PyPI
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.event.inputs.upload == '1'}}
+  #   needs: [build_wheels]
+
+  #   steps:
+  #     #########################
+  #     # Fetch and upload wheels
+  #     #########################
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: wheels-*
+  #         merge-multiple: true
+  #         path: dist
+
+  #     - uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         user: __token__
+  #         password: ${{ secrets.PYPI_PASSWORD }}
