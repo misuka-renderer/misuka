@@ -40,8 +40,45 @@ jobs:
           attempt_limit: 3
           attempt_delay: 2000
 
-      - uses: actions/setup-python@v4
-        name: Install Python
+      - name: Map matrix Python tag to interpreter version
+        shell: bash
+        run: |
+          case "${{ matrix.python }}" in
+            cp39)
+              echo "TEST_PYTHON_VERSION=3.9" >> "$GITHUB_ENV"
+              ;;
+            cp310)
+              echo "TEST_PYTHON_VERSION=3.10" >> "$GITHUB_ENV"
+              ;;
+            cp311)
+              echo "TEST_PYTHON_VERSION=3.11" >> "$GITHUB_ENV"
+              ;;
+            cp312|cp312_stable)
+              echo "TEST_PYTHON_VERSION=3.12" >> "$GITHUB_ENV"
+              ;;
+            cp313)
+              echo "TEST_PYTHON_VERSION=3.13" >> "$GITHUB_ENV"
+              ;;
+            cp314)
+              echo "TEST_PYTHON_VERSION=3.14" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unsupported matrix.python: ${{ matrix.python }}" >&2
+              exit 1
+              ;;
+          esac
+
+          case "${{ matrix.python }}" in
+            cp312_stable)
+              echo "WHEEL_PYTHON_TAG=cp312" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "WHEEL_PYTHON_TAG=${{ matrix.python }}" >> "$GITHUB_ENV"
+              ;;
+          esac
+
+      - uses: actions/setup-python@v5
+        name: Install Python for build tooling
         with:
           python-version: '3.11'
 
@@ -115,6 +152,11 @@ jobs:
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 
+      - uses: actions/setup-python@v5
+        name: Install Python for wheel tests
+        with:
+          python-version: ${{ env.TEST_PYTHON_VERSION }}
+
       - name: Test built wheel in fresh environment
         shell: bash
         run: |
@@ -126,9 +168,25 @@ jobs:
           fi
 
           "$VENV_PYTHON" -m pip install --upgrade pip pytest
-          wheel=$("$VENV_PYTHON" -c "from pathlib import Path; wheels = sorted(Path('wheelhouse').glob('*.whl')); print(wheels[0])" )
+          wheel=$("$VENV_PYTHON" -c "import os; from pathlib import Path; wheels = sorted(Path('wheelhouse').glob('*.whl')); tag = os.environ['WHEEL_PYTHON_TAG']; matches = [w for w in wheels if tag in w.name]; print(matches[0] if matches else '')" )
+          if [ -z "$wheel" ]; then
+            echo "No matching wheel for tag $WHEEL_PYTHON_TAG" >&2
+            exit 1
+          fi
           "$VENV_PYTHON" -m pip install "$wheel"
-          "$VENV_PYTHON" -m pytest "$GITHUB_WORKSPACE/src" -m "not slow"
+          rm -rf /tmp/misuka-wheel-test
+          mkdir -p /tmp/misuka-wheel-test
+          cp -r "$GITHUB_WORKSPACE/src" /tmp/misuka-wheel-test/src
+          if [ -f "$GITHUB_WORKSPACE/pyproject.toml" ]; then
+            cp "$GITHUB_WORKSPACE/pyproject.toml" /tmp/misuka-wheel-test/
+          fi
+          if [ -f "$GITHUB_WORKSPACE/pytest.ini" ]; then
+            cp "$GITHUB_WORKSPACE/pytest.ini" /tmp/misuka-wheel-test/
+          fi
+          (
+            cd /tmp/misuka-wheel-test
+            "$VENV_PYTHON" -m pytest src -m "not slow"
+          )
 
       - uses: actions/upload-artifact@v4
         with:
