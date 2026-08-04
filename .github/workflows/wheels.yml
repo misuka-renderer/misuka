@@ -126,15 +126,7 @@ jobs:
           fi
 
           "$VENV_PYTHON" -m pip install --upgrade pip pytest
-          wheel=$(
-            python - <<'PY'
-            from pathlib import Path
-            wheels = sorted(Path("wheelhouse").glob("*.whl"))
-            if not wheels:
-                raise SystemExit("No wheel found in wheelhouse")
-            print(wheels[0])
-            PY
-          )
+          wheel=$("$VENV_PYTHON" -c "from pathlib import Path; wheels = sorted(Path('wheelhouse').glob('*.whl')); print(wheels[0])" )
           "$VENV_PYTHON" -m pip install "$wheel"
           "$VENV_PYTHON" -m pytest "$GITHUB_WORKSPACE/src" -m "not slow"
 
