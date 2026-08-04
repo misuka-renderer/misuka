@@ -68,7 +68,6 @@ jobs:
         run: |
           python -m pip install cibuildwheel==3.3.1
 
-
       ################################################################
       # Set up envvars to build the correct wheel (stable ABI or not)
       ################################################################
@@ -111,8 +110,33 @@ jobs:
       # Build and store wheels
       #########################
       - name: Build wheel
+        env:
+          CIBW_TEST: "0"
         run: |
           python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Test built wheel in fresh environment
+        shell: bash
+        run: |
+          python -m venv .venv-wheel-test
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            VENV_PYTHON=".venv-wheel-test/Scripts/python.exe"
+          else
+            VENV_PYTHON=".venv-wheel-test/bin/python"
+          fi
+
+          "$VENV_PYTHON" -m pip install --upgrade pip pytest
+          wheel=$(
+            python - <<'PY'
+            from pathlib import Path
+            wheels = sorted(Path("wheelhouse").glob("*.whl"))
+            if not wheels:
+                raise SystemExit("No wheel found in wheelhouse")
+            print(wheels[0])
+            PY
+          )
+          "$VENV_PYTHON" -m pip install "$wheel"
+          "$VENV_PYTHON" -m pytest "$GITHUB_WORKSPACE/src" -m "not slow"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -123,6 +147,7 @@ jobs:
     name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
     needs: [build_wheels]
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.upload == '1' }}
     permissions:
       contents: read
       id-token: write
