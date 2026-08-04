@@ -8,18 +8,20 @@ Key Topics
 Overview
 --------
 
-The following document aim at clarifying a particular part of the system or the
-background theory. They will often be referred by the tutorials and guides for
-in depth knowledge about a specific subject.
+The following documents clarify a particular part of the system or the
+background theory. They are referred to by the tutorials and guides for
+in-depth knowledge about a specific subject.
 
-Topics
-------
+The topic :ref:`sec-acoustic-rendering` covers the basics of acoustic rendering
+and the differences between misuka's functionality and Mitsuba 3.
+Because misuka is a compatible extension to Mitsuba 3, the general variant
+overview and the XML scene format are otherwise unchanged and stay documented
+in the Mitsuba documentation.
 
 .. toctree::
     :maxdepth: 1
     :glob:
 
-    key_topics/variants
-    key_topics/scene_format
-    key_topics/differences
-    key_topics/polarization
+    key_topics/*
+    Choosing variants <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>
+    Scene format <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/scene_format.html>

@@ -1,44 +1,42 @@
 .. only:: not latex
 
-.. .. image:: images/mitsuba-logo-white-bg.png
-..     :width: 75%
-..     :align: center
-
-.. image:: resources/data/docs/images/banners/banner_01.jpg
-        :width: 100%
+    .. image:: images/misuka_logo.png
+        :width: 60%
         :align: center
 
 Getting started
 ===============
 
-Mitsuba 3 is a research-oriented rendering system for forward and inverse
-light-transport simulation. It consists of a small set of core libraries and a
-wide variety of plugins that implement functionality ranging from materials and
-light sources to complete rendering algorithms. Mitsuba 3 strives to retain
-scene compatibility with its predecessors: `Mitsuba 0.6
-<https://github.com/mitsuba-renderer/mitsuba>`_ and `Mitsuba 2
-<https://github.com/mitsuba-renderer/mitsuba2>`_. However, in most other
-respects, it is a completely new system following a different set of goals.
+misuka is a research-oriented, differentiable **room-acoustic renderer** for
+forward and inverse sound-transport simulation. It is a fully compatible
+extension to `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_: it reuses
+Mitsuba's scene format, geometry, samplers, and the `Dr.Jit
+<https://drjit.readthedocs.io/en/v1.4.0/>`_ JIT compiler / autodiff engine, and
+adds acoustic plugins (an absorbing/scattering material, several acoustic path tracers,
+a microphone sensor, and an energy-time curve film). It implements `Time-Resolved
+Path Replay Backpropagation <https://dl.acm.org/doi/pdf/10.1145/3730900>`_ for
+efficient gradient estimation with respect to material properties, source/receiver
+positions, and scene geometry.
+
+Because misuka is an extension, the light-transport engine, scene description
+language, and Python API are documented upstream. This site documents only
+**acoustic rendering functionality**. Follow the links above for everything
+misuka inherits from Mitsuba 3 and Dr.Jit.
 
 Installation
 ------------
 
-Mitsuba 3 can be installed via :monosp:`pip` from `PyPI
-<https://pypi.org/project/mitsuba/>`_. This is the recommended method of installation.
+misuka can be installed via :monosp:`pip` from `PyPI
+<https://pypi.org/project/misuka/>`_. This is the recommended method of installation.
 
 .. code-block:: bash
 
-    pip install mitsuba
+    pip install misuka
 
 This command will also install :monosp:`Dr.Jit` on your system if not already available.
 
 See the :ref:`developer guide <sec-compiling>` for complete instructions on building
 from the git source tree.
-
-When using the `Windows Subsystem for Linux 2 (WSL2)
-<https://learn.microsoft.com/en-us/windows/wsl/compare-versions#whats-new-in-wsl-2>`__,
-you must follow the :ref:`linked instructions <optix-wsl2>` to enable hardware-accelerated
-ray tracing on NVIDIA GPUs.
 
 Requirements
 ^^^^^^^^^^^^
@@ -46,74 +44,136 @@ Requirements
 - ``Python >= 3.9``
 - (optional) For computation on the GPU: ``Nvidia driver >= 535``
 - (optional) For vectorized / parallel computation on the CPU: ``LLVM >= 11.1``
+- (optional) For computation on Apple Silicon GPUs: macOS with a Metal-capable GPU
 
 Hello World!
 ------------
 
-You should now be all setup to render your first scene with Mitsuba 3. Running
-the Mitsuba 3 code below will render the famous Cornell Box scene and write the
-rendered image to a file on disk.
+The example below builds a simple shoebox room with a spherical sound source,
+places a microphone, and renders an **energy-time curve (ETC)**. The ETC represents
+the temporal energy distribution in the squared impulse response.
 
 .. code-block:: python
 
-    import mitsuba as mi
+    import misuka as mi
 
-    mi.set_variant('scalar_rgb')
+    mi.set_variant('cuda_ad_acoustic', 'metal_ad_acoustic', 'llvm_ad_acoustic')
+    print('Using variant:', mi.variant())
 
-    img = mi.render(mi.load_dict(mi.cornell_box()))
+    from misuka import ScalarTransform4f as tf
 
-    mi.Bitmap(img).write('cbox.exr')
+    # A 6 x 8 x 4 m shoebox room with a spherical sound source.
+    room_dim     = [6.0, 8.0, 4.0]
+    source_pos   = [3.0, 6.0, 1.2]
+    receiver_pos = [2.0, 1.0, 1.2]
 
+    scene_dict = {
+        'type': 'scene',
+        # Omnidirectional sound source.
+        'emitter': {
+            'type': 'sphere',
+            'radius': 1,
+            'center': source_pos,
+            'emitter': {'type': 'area', 'radiance': {'type': 'uniform', 'value': 50}},
+        },
 
-.. _sec-quickstart:
+        # Move the cube's corner to the origin, scale it to a side length of
+        # 1 m, and then scale it to the room dimensions.
+        'room': {
+            'type': 'cube',
+            'to_world': tf().scale(room_dim).scale(0.5).translate([1, 1, 1]),
+            'flip_normals': True,
+            'bsdf': {
+                'type': 'acousticbsdf',
+                'absorption': {'type': 'spectrum', 'value': [(100, 0.1), (500, 0.2), (20000, 0.3)]},
+                'scattering': {'type': 'spectrum', 'value': [(100, 0.2), (500, 0.5), (20000, 0.8)]},
+            },
+        },
+    }
 
-Quickstart
-----------
+    scene = mi.load_dict(scene_dict)
 
-For the new users, we put together absolute beginner's tutorials for both Dr.Jit and Mitsuba.
+    # A microphone that records an ETC into a `tape` film.
+    max_time      = 2
+    sampling_rate = 2000
+    n_time_bins   = int(max_time * sampling_rate)
+    frequencies   = [100, 500, 20000]
 
-.. grid:: 2
+    microphone = mi.load_dict({
+        'type': 'microphone',
+        'origin': receiver_pos,
+        'direction': source_pos,
+        'film': {
+            'type': 'tape',
+            'frequencies': ','.join(map(str, frequencies)),
+            'time_bins': n_time_bins,
+        },
+    })
 
-    .. grid-item-card:: Dr.Jit quickstart
-        :class-title: sd-text-center sd-font-weight-bold
-        :link: src/quickstart/drjit_quickstart.html
+    integrator = mi.load_dict({
+        'type': 'acoustic_path',
+        'max_time': max_time,
+    })
 
-        .. image:: ../resources/data/docs/images/logos/drjit-logo.png
-            :height: 200
-            :align: center
+    # Render the ETC. Increase spp to reduce variance.
+    spp = 2**20 # around 1 million rays per frequency, power of 2 for better performance.
+    etc = mi.render(scene, sensor=microphone, integrator=integrator, spp=spp)
 
+For a fully working version, including separate materials for each wall, a visual
+preview of the room and a plot of the ETC, see the :doc:`rendering tutorials <src/rendering_tutorials>`.
 
-    .. grid-item-card:: Mitsuba quickstart
-        :class-title: sd-text-center sd-font-weight-bold
-        :link: src/quickstart/mitsuba_quickstart.html
+License
+-------
 
-        .. image:: ../resources/data/docs/images/logos/mitsuba-logo.png
-            :height: 200
-            :align: center
+misuka is licensed under the `PolyForm Noncommercial License 1.0.0
+<https://polyformproject.org/licenses/noncommercial/1.0.0>`_, which permits academic
+and private use. Files inherited from Mitsuba 3 remain under the original BSD-3-Clause
+license. See the full license on `github
+<https://github.com/misuka-renderer/misuka/blob/master/LICENSE>`_.
 
-
-Video tutorials
----------------
-
-The following `YouTube playlist <https://www.youtube.com/playlist?list=PLI9y-85z_Po6da-pyTNGTns2n4fhpbLe5>`_ contains various video tutorials related
-to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries.
-
-.. youtube:: LCsjK6Cbv6Q
+If you are interested in using misuka commercially, please contact
+a.jueterbock@tu-berlin.de.
 
 Citation
 --------
 
-When using Mitsuba 3 in academic projects, please cite:
+When using misuka in academic projects, please cite:
 
 .. code-block:: bibtex
 
-    @software{jakob2022mitsuba3,
-        title = {Mitsuba 3 renderer},
-        author = {Wenzel Jakob and Sébastien Speierer and Nicolas Roussel and Merlin Nimier-David and Delio Vicini and Tizian Zeltner and Baptiste Nicolet and Miguel Crespo and Vincent Leroy and Ziyi Zhang},
-        note = {https://mitsuba-renderer.org},
-        version = {3.8.0},
-        year = 2022,
+    @article{misuka,
+        title   = {{misuka}: An Open-Source Differentiable Room Acoustic Renderer},
+        author  = {J\"uterbock, Tobias and Finnendahl, Ugo and Worchel, Markus and
+                   Wujecki, Daniel and Alexa, Marc and Weinzierl, Stefan},
+        journal = {Proceedings of Meetings on Acoustics},
+        volume  = {58},
+        number  = {1},
+        pages   = {022004:1--022004:13},
+        year    = {2026},
+        doi     = {10.1121/2.0002193},
     }
+
+When using Time-Resolved Path Replay Backpropagation, please also cite:
+
+.. code-block:: bibtex
+
+    @article{acoustic_prb,
+        title   = {Differentiable Geometric Acoustic Path Tracing Using
+                   Time-Resolved Path Replay Backpropagation},
+        author  = {Finnendahl, Ugo and Worchel, Markus and J\"uterbock, Tobias and
+                   Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and
+                   Alexa, Marc},
+        journal = {ACM Transactions on Graphics},
+        volume  = {44},
+        number  = {4},
+        pages   = {82:1--82:17},
+        year    = {2025},
+        doi     = {10.1145/3730900},
+    }
+
+misuka is built on `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_. When
+appropriate, please also cite the underlying renderer following its
+`citation guidelines <https://mitsuba.readthedocs.io/en/v3.9.0/#citation>`_.
 
 .. .............................................................................
 
@@ -129,16 +189,15 @@ When using Mitsuba 3 in academic projects, please cite:
 
     src/rendering_tutorials
     src/inverse_rendering_tutorials
-    src/others_tutorials
 
 .. toctree::
     :maxdepth: 1
     :caption: Guides
     :hidden:
 
-    src/how_to_guides
     src/key_topics
     src/developer_guide
+    src/how_to_guides
 
 .. toctree::
     :maxdepth: 1
@@ -153,8 +212,6 @@ When using Mitsuba 3 in academic projects, please cite:
     :caption: Miscellaneous
     :hidden:
 
-    src/gallery
     src/optix_setup
-    porting_3_6
     release_notes
     zz_bibliography

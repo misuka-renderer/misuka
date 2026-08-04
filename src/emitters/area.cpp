@@ -34,15 +34,6 @@ To create an area light source, simply instantiate the desired
 emitter shape and specify an :monosp:`area` instance as its child:
 
 .. tabs::
-    .. code-tab:: xml
-        :name: sphere-light
-
-        <shape type="sphere">
-            <emitter type="area">
-                <rgb name="radiance" value="1.0"/>
-            </emitter>
-        </shape>
-
     .. code-tab:: python
 
         'type': 'sphere',
@@ -53,6 +44,15 @@ emitter shape and specify an :monosp:`area` instance as its child:
                 'value': 1.0,
             }
         }
+
+    .. code-tab:: xml
+        :name: sphere-light
+
+        <shape type="sphere">
+            <emitter type="area">
+                <rgb name="radiance" value="1.0"/>
+            </emitter>
+        </shape>
 
  */
 

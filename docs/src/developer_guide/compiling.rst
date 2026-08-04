@@ -6,20 +6,20 @@ Compiling the system
 Cloning the repository
 ----------------------
 
-Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
+Compiling misuka from scratch requires recent versions of CMake (at least
 **3.9.0**) and Python (at least **3.9**). Further platform-specific dependencies
 and compilation instructions are provided below for each operating system. Some
 additional steps are required for GPU-based backends that are described at the
 end of this section.
 
-Mitsuba depends on several external dependencies, and its repository directly
+misuka depends on several external dependencies, and its repository directly
 refers to specific versions of them using a Git feature called *submodules*.
-Cloning Mitsuba's repository will recursively fetch these dependencies, which
+Cloning misuka's repository will recursively fetch these dependencies, which
 are subsequently compiled using a single unified build system. This dramatically
 reduces the number steps needed to set up the renderer compared to previous
 versions of Mitsuba.
 
-Most of Mitsuba's active development happens on the ``master`` Git branch. We
+Most of misuka's active development happens on the ``master`` Git branch. We
 therefore recommend using the ``stable`` branch which points to the most recent
 release.
 
@@ -53,39 +53,47 @@ Afterwards, simply write
 
     git pullall
 
-to fetch the latest version of Mitsuba 3.
+to fetch the latest version of misuka.
 
-Configuring :monosp:`mitsuba.conf`
+Configuring :monosp:`misuka.conf`
 ----------------------------------
 
-Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. This file
+misuka variants are specified in the file :monosp:`misuka.conf`. This file
 can be found in the build directory and will be created when executing CMake the
 first time.
 
-Open :monosp:`mitsuba.conf` in your favorite text editor and scroll down to the
+Open :monosp:`misuka.conf` in your favorite text editor and scroll down to the
 declaration of the enabled variants (around line 86):
 
 .. code-block:: text
 
     "enabled": [
-        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb", "llvm_ad_spectral"
+        "scalar_rgb", "scalar_acoustic", "llvm_ad_rgb", "llvm_ad_acoustic"
     ],
 
 The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
-``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
-of the list as some core components of Mitsuba depend on it. In addition,
-at least one ``ad``-enabled variant must also be compiled. When the ``mitsuba``
-command line executable is launched without a specific mode parameter, it will
-automatically select the most capable variant whose backend is available at
-runtime (preferring an RGB color representation).
+``scalar_rgb`` *must* currently be part of the list as some core components of
+Mitsuba depend on it, and at least one ``ad``-enabled variant must also be
+compiled. When the ``mitsuba`` command line executable is launched without a
+specific mode parameter, it will automatically select the most capable variant
+whose backend is available at runtime (preferring an RGB color representation).
+
+**Acoustic rendering requires an** ``*_acoustic`` **variant**. The example
+above enables ``scalar_acoustic`` and ``llvm_ad_acoustic``. Without one of
+these (or another ``*_acoustic`` variant) in the enabled list, acoustic scenes
+cannot be rendered, since the stock RGB/spectral variants use
+``Spectrum<Float, 3>``/``Spectrum<Float, N>`` color representations rather than
+the single-channel energy representation acoustic rendering needs. See
+:ref:`sec-acoustic-rendering` for background on the ``_acoustic`` variant family.
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
 
-TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
-``llvm_ad_rgb`` or ``llvm_ad_spectral`` for CPU rendering, or one of
-``cuda_ad_rgb`` or ``cuda_ad_spectral`` for differentiable GPU rendering.
+TLDR: If you plan to use misuka from Python, we recommend adding one of
+``llvm_ad_rgb`` or ``llvm_ad_spectral`` for optical CPU rendering, or
+``llvm_ad_acoustic`` for acoustic CPU rendering (substitute ``cuda_ad_*`` for
+differentiable GPU rendering).
 
 .. warning::
 
@@ -96,7 +104,7 @@ TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
 
 .. warning::
 
-    Mitsuba 3 also generates corresponding
+    misuka also generates corresponding
     `Python stub files <https://typing.readthedocs.io/en/latest/spec/distributing.html#stub-files>`_
     during compilation. The process involves selecting one of the available variants
     to extract the relevant type information. However, these stub files have to
@@ -136,7 +144,7 @@ interesting to you, also enter the following commands:
     sudo apt install python3-pytest python3-pytest-xdist python3-numpy
 
 Now, compilation should be as simple as running the following from
-inside the :monosp:`mitsuba3` root directory:
+inside the :monosp:`misuka` root directory:
 
 .. code-block:: bash
 
@@ -171,11 +179,11 @@ Windows
 
 On Windows, a recent version of `Visual Studio 2022
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
-CMake, or Python might need to be installed manually. Mitsuba's build system
-*requires* access to Python >= 3.9 even if you do not plan to use Mitsuba's
+CMake, or Python might need to be installed manually. misuka's build system
+*requires* access to Python >= 3.9 even if you do not plan to use misuka's
 python interface.
 
-From the root `mitsuba3` directory, the build can be configured with:
+From the root `misuka` directory, the build can be configured with:
 
 .. code-block:: bash
 
@@ -217,12 +225,12 @@ once might be necessary:
     xcode-select --install
 
 Note that the default Python version installed with macOS is not compatible with
-Mitsuba 3, and a more recent version (at least 3.9) needs to be installed (e.g.
+misuka, and a more recent version (at least 3.9) needs to be installed (e.g.
 via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew
 <https://brew.sh/>`_).
 
 Now, compilation should be as simple as running the following from inside the
-`mitsuba3` root directory:
+`misuka` root directory:
 
 .. code-block:: bash
 
@@ -241,12 +249,12 @@ Now, compilation should be as simple as running the following from inside the
 * Python 3.9.5
 
 
-Running Mitsuba
----------------
+Running misuka
+--------------
 
-Once Mitsuba is compiled, run the ``setpath.sh/.bat/.ps1`` script in your build
+Once misuka is compiled, run the ``setpath.sh/.bat/.ps1`` script in your build
 directory to configure environment variables (``PATH/PYTHONPATH``) that are
-required to run Mitsuba.
+required to run misuka.
 
 .. code-block:: bash
 
@@ -254,40 +262,41 @@ required to run Mitsuba.
     source setpath.sh
 
     # On Windows (cmd)
-    C:/.../mitsuba3/build/Release> setpath
+    C:/.../misuka/build/Release> setpath
 
     # On Windows (powershell)
-    C:/.../mitsuba3/build/Release> .\setpath.ps1
+    C:/.../misuka/build/Release> .\setpath.ps1
 
-Mitsuba can then be used to render scenes by typing
-
-.. code-block:: bash
-
-    mitsuba scene.xml
-
-where ``scene.xml`` is a Mitsuba scene file. Alternatively,
+misuka can then be used to render scenes by typing
 
 .. code-block:: bash
 
-    mitsuba -m scalar_spectral_polarized scene.xml
+    misuka scene.xml
+
+where ``scene.xml`` is a scene file in Mitsuba's XML format, which misuka
+inherits unchanged. Alternatively,
+
+.. code-block:: bash
+
+    misuka -m llvm_ad_acoustic scene.xml
 
 renders with a specific variant that was previously enabled in
-:monosp:`mitsuba.conf`. Call ``mitsuba --help`` to print additional information
+:monosp:`misuka.conf`. Call ``misuka --help`` to print additional information
 about the various possible command line options.
 
 
 GPU variants
 ------------
 
-Variants of Mitsuba that run on the GPU (e.g. :monosp:`cuda_rgb`,
-:monosp:`cuda_ad_spectral`, etc.) will try to dynamically load the CUDA shared
+Variants of misuka that run on the GPU (e.g. :monosp:`cuda_ad_acoustic`,
+:monosp:`cuda_ad_rgb`, etc.) will try to dynamically load the CUDA shared
 libraries from your system. There is no need to manually install any specific
 version of CUDA.
 
 Make sure to have an up-to-date GPU driver if the framework fails to compile
-the GPU variants of Mitsuba. The minimum requirement is currently v535.
+the GPU variants of misuka. The minimum requirement is currently v535.
 
-By default, Mitsuba is also able to resolve the OptiX API itself, and therefore
+By default, misuka is also able to resolve the OptiX API itself, and therefore
 does not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake
 flag can be used to turn off this feature if a developer wants to experiment
 with parts of the OptiX API not yet exposed to the framework.
@@ -295,8 +304,8 @@ with parts of the OptiX API not yet exposed to the framework.
 Embree
 ------
 
-By default, Mitsuba's ``scalar`` and ``llvm`` backends use Intel's Embree
-library for ray tracing instead of the builtin kd-tree in Mitsuba 3. To change
+By default, misuka's ``scalar`` and ``llvm`` backends use Intel's Embree
+library for ray tracing instead of the builtin kd-tree. To change
 this behavior, invoke CMake with the ``-DMI_ENABLE_EMBREE=0`` parameter
 or use a visual CMake tool like ``cmake-gui`` or ``ccmake`` to flip the value of
 this parameter. Embree tends to be faster but lacks some features such as
