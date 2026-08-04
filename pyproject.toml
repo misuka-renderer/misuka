@@ -27,6 +27,12 @@ authors = [
 license = "PolyForm-Noncommercial-1.0.0 AND BSD-3-Clause"
 license-files = ["LICENSE"]
 
+[project.optional-dependencies]
+test = [
+  "numpy",
+  "pytest>=8",
+]
+
 [project.urls]
 Homepage = "https://github.com/misuka-renderer/misuka"
 
