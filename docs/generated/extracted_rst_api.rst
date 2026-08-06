@@ -17961,7 +17961,28 @@
 
      * - speed_of_sound
          - |float|
-         - Speed of sound in meters per second. (Default: 343.0)
+         - Speed of sound in meters per second. If set explicitly, this value
+           is always used, regardless of ``medium`` or ``speed_method``.
+           (Default: 343.0, unless overridden by ``medium``)
+
+     * - medium
+         - |dict|
+         - Optional dictionary of environmental conditions used to compute the
+           speed of sound (see :py:func:`mitsuba.acoustic.speed_of_sound`),
+           unless ``speed_of_sound`` was set explicitly. Recognized fields:
+
+         - ``temperature``: Air temperature in degree Celsius. Required.
+         - ``relative_humidity``: Relative humidity in the range of 0 to 1.
+         - ``atmospheric_pressure``: Atmospheric pressure in Pascal.
+         - ``saturation_vapor_pressure``: Saturation vapor pressure in
+           Pascal. (Default: estimated from temperature)
+         - ``co2_ppm``: CO2 concentration in parts per million.
+
+     * - speed_method
+         - |string|
+         - Method used to compute the speed of sound from ``medium``:
+           ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
+           (Default: "auto")
 
      * - max_time
          - |float|
@@ -18030,6 +18051,18 @@
             'type': 'acoustic_ad',
             'max_time': 1.0,
             'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+        .. code-tab:: python
+            :name: integrator-acoustic_ad-medium
+
+            'type': 'acoustic_ad',
+            'max_time': 1.0,
+            'medium': {
+                'temperature': 20.0,
+                'relative_humidity': 0.5,
+            },
+            'speed_method': 'auto',
             'max_depth': -1,
 
     .. py:method:: __init__(self, arg)

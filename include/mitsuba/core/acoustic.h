@@ -204,54 +204,59 @@ Value energy_attenuation_coefficient(Value temperature,
                             Value relative_humidity,
                             Value atmospheric_pressure) {
 
-    // check limits
-    if (temperature < -73.0f) {
-        throw std::invalid_argument("Temperature must be above -73 °C for accuracy of +/-50% (and success)");
+    // Range checks rely on scalar branching and are only meaningful (and
+    // compilable) for scalar Value types. Vectorized/JIT callers (e.g. the
+    // acoustic path integrator, where each lane may carry a different
+    // frequency) skip validation and rely on the formula below, which is
+    // branch-free.
+    if constexpr (!dr::is_jit_v<Value>) {
+        if (temperature < -73.0f) {
+            throw std::invalid_argument("Temperature must be above -73 °C for accuracy of +/-50% (and success)");
+        }
+        else if (frequency < 50.0f) {
+            throw std::invalid_argument("Frequency in Hz. Must be greater than 50 Hz.");
+        }
+        else if (atmospheric_pressure > 200000.0f)
+        {
+            throw std::invalid_argument("Atmospheric pressure in Pascal. Must be less than 200 kPa.");
+        }
+        else if (frequency/atmospheric_pressure < 0.0004f || frequency/atmospheric_pressure > 10.0f) {
+            throw std::invalid_argument(" Frequency-to-pressure ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%. (and success)");
+        }
     }
-    else if (frequency < 50.0f) {
-        throw std::invalid_argument("Frequency in Hz. Must be greater than 50 Hz.");
-    }
-    else if (atmospheric_pressure > 200000.0f)
-    {
-        throw std::invalid_argument("Atmospheric pressure in Pascal. Must be less than 200 kPa.");
-    }
-    else if (frequency/atmospheric_pressure < 0.0004f || frequency/atmospheric_pressure > 10.0f) {
-        throw std::invalid_argument(" Frequency-to-pressure ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%. (and success)");
-    }
-    else {
-        constexpr float p_r  = 101325.0f; // reference atmospheric pressure
-        constexpr float T_0  = 293.15f;   // reference temperature (20°C)
-        constexpr float T_01 = 273.16f;   // triple point temperature of water
 
-        Value T = temperature + 273.15f;
+    constexpr float p_r  = 101325.0f; // reference atmospheric pressure
+    constexpr float T_0  = 293.15f;   // reference temperature (20°C)
+    constexpr float T_01 = 273.16f;   // triple point temperature of water
 
-        // saturation vapour pressure ratio p_sat/p_r (ISO 9613-1)
-        Value p_sat_ratio = dr::pow(Value(10.f),
-            Value(-6.8346f) * dr::pow(Value(T_01) / T, Value(1.261f)) + Value(4.6151f));
+    Value T = temperature + 273.15f;
 
-        // molar concentration of water vapor as a percentage (Eq. B.1)
-        Value h = (relative_humidity * 100.f) * p_sat_ratio * (atmospheric_pressure / p_r);
+    // saturation vapour pressure ratio p_sat/p_r (ISO 9613-1)
+    Value p_sat_ratio = dr::pow(Value(10.f),
+        Value(-6.8346f) * dr::pow(Value(T_01) / T, Value(1.261f)) + Value(4.6151f));
 
-        // Oxygen relaxation frequency
-        Value f_rO = (atmospheric_pressure / p_r) *
-            (24.f + 4.04e4f * h * (0.02f + h) / (0.391f + h));
+    // molar concentration of water vapor as a percentage (Eq. B.1)
+    Value h = (relative_humidity * 100.f) * p_sat_ratio * (atmospheric_pressure / p_r);
 
-        // Nitrogen relaxation frequency
-        Value f_rN = (atmospheric_pressure / p_r) * dr::pow(T / T_0, Value(-0.5f)) *
-            (9.f + 280.f * h * dr::exp(Value(-4.17f) *
-                (dr::pow(T / T_0, Value(-1.f / 3.f)) - 1.f)));
+    // Oxygen relaxation frequency
+    Value f_rO = (atmospheric_pressure / p_r) *
+        (24.f + 4.04e4f * h * (0.02f + h) / (0.391f + h));
 
-        // air attenuation
-        Value f2 = frequency * frequency;
-        Value alpha = 8.686f * f2 *
-            (1.84e-11f * (p_r / atmospheric_pressure) * dr::sqrt(T / T_0) +
-            dr::pow(T / T_0, Value(-2.5f)) *
-                (0.01275f * dr::exp(Value(-2239.1f) / T) / (f_rO + f2 / f_rO) +
-                0.1068f * dr::exp(Value(-3352.f) / T) / (f_rN + f2 / f_rN)));
+    // Nitrogen relaxation frequency
+    Value f_rN = (atmospheric_pressure / p_r) * dr::pow(T / T_0, Value(-0.5f)) *
+        (9.f + 280.f * h * dr::exp(Value(-4.17f) *
+            (dr::pow(T / T_0, Value(-1.f / 3.f)) - 1.f)));
 
-        // 10*log10(e) = 10/ln(10) ≈ 4.342944819f
-        return alpha / 4.342944819f;
-    }
+    // air attenuation
+    Value f2 = frequency * frequency;
+    Value alpha = 8.686f * f2 *
+        (1.84e-11f * (p_r / atmospheric_pressure) * dr::sqrt(T / T_0) +
+        dr::pow(T / T_0, Value(-2.5f)) *
+            (0.01275f * dr::exp(Value(-2239.1f) / T) / (f_rO + f2 / f_rO) +
+            0.1068f * dr::exp(Value(-3352.f) / T) / (f_rN + f2 / f_rN)));
+
+    // 10*log10(e) = 10/ln(10) ≈ 4.342944819f
+    return alpha / 4.342944819f;
 }
 
 /**

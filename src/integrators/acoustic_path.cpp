@@ -9,6 +9,7 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
+#include <mitsuba/core/acoustic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -23,7 +24,38 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
 
  * - speed_of_sound
    - |float|
-   - Speed of sound in meters per second. (Default: 343.0)
+   - Speed of sound in meters per second. If set explicitly, this value is
+     always used, regardless of ``medium`` or ``speed_method``.
+     (Default: 343.0, unless overridden by ``medium``)
+
+ * - medium
+   - dict
+   - Optional dictionary of environmental conditions used to compute the
+     speed of sound (see :py:func:`mitsuba.acoustic.speed_of_sound`), unless
+     ``speed_of_sound`` was set explicitly. Recognized fields:
+
+     - ``temperature``: Air temperature in degree Celsius. Required.
+     - ``relative_humidity``: Relative humidity in the range of 0 to 1.
+     - ``atmospheric_pressure``: Atmospheric pressure in Pascal.
+     - ``saturation_vapor_pressure``: Saturation vapor pressure in Pascal.
+       (Default: estimated from temperature)
+     - ``co2_ppm``: CO2 concentration in parts per million.
+
+ * - speed_method
+   - |string|
+   - Method used to compute the speed of sound from ``medium``:
+     ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
+     (Default: "auto")
+
+ * - apply_attenuation
+   - |bool|
+   - Whether to apply frequency-dependent air attenuation (ISO 9613-1,
+     see :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation`) to path
+     contributions during rendering, using ``medium``'s ``temperature``,
+     ``relative_humidity`` and ``atmospheric_pressure``. If ``medium``
+     does not provide these three fields, attenuation is silently skipped
+     unless ``apply_attenuation`` was set explicitly, in which case an
+     error is raised. (Default: |true|)
 
  * - max_time
    - |float|
@@ -74,7 +106,7 @@ Sound paths are terminated when any of the following conditions are met:
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
 - The path throughput drops below the energy loss threshold (``max_energy_loss``).
 
-.. note:: This integrator does not handle participating media or polarized
+.. note:: This integrator does not handle polarized
    rendering. It requires a ``Microphone`` sensor with a ``Tape`` film type.
 
 .. tabs::
@@ -94,6 +126,22 @@ Sound paths are terminated when any of the following conditions are met:
         'speed_of_sound': 343.0,
         'max_depth': -1,
 
+    .. code-tab:: python
+        :name: acoustic-path-integrator-medium
+
+        'type': 'acoustic_path',
+        'max_time': 1.0,
+        'medium': {
+            'temperature': 20.0,
+            'relative_humidity': 0.5,
+            'atmospheric_pressure': 101325.0,
+            'saturation_vapor_pressure': 3200.0,
+            'co2_ppm': 400
+        },
+        'speed_method': 'auto',
+        'apply_attenuation': True,
+        'max_depth': -1,
+
  */
 
 template <typename Float, typename Spectrum>
@@ -107,8 +155,52 @@ public:
 
         m_max_time    = props.get<float>("max_time");
         m_speed_of_sound = props.get<float>("speed_of_sound", 343.f);
+
+        // A 'medium' dict (see acoustic.h) is only used to derive the speed
+        // of sound when 'speed_of_sound' was not set explicitly. Its fields
+        // are read unconditionally so they're always marked as queried.
+        bool has_medium =
+            props.has_property("medium_temperature") ||
+            props.has_property("medium_relative_humidity") ||
+            props.has_property("medium_atmospheric_pressure") ||
+            props.has_property("medium_saturation_vapor_pressure") ||
+            props.has_property("medium_co2_ppm");
+        float medium_temperature = props.get<float>("medium_temperature", std::numeric_limits<float>::quiet_NaN());
+        float medium_relative_humidity = props.get<float>("medium_relative_humidity", std::numeric_limits<float>::quiet_NaN());
+        float medium_atmospheric_pressure = props.get<float>("medium_atmospheric_pressure", std::numeric_limits<float>::quiet_NaN());
+        float medium_saturation_vapor_pressure = props.get<float>("medium_saturation_vapor_pressure", -1.f);
+        float medium_co2_ppm = props.get<float>("medium_co2_ppm", std::numeric_limits<float>::quiet_NaN());
+        std::string speed_method = props.string("speed_method", "auto");
+
+        if (!props.has_property("speed_of_sound") && has_medium) {
+            m_speed_of_sound = acoustic::speed_of_sound<float>(
+                medium_temperature, medium_relative_humidity,
+                medium_atmospheric_pressure, medium_saturation_vapor_pressure,
+                medium_co2_ppm, speed_method);
+        }
         if (m_max_time <= 0.f || m_speed_of_sound <= 0.f)
             Throw("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!");
+
+        // Air attenuation (ISO 9613-1) needs temperature, relative_humidity
+        // and atmospheric_pressure from 'medium'; unlike the speed of sound,
+        // there is no fallback formula that needs fewer inputs.
+        bool apply_attenuation_explicit = props.has_property("apply_attenuation");
+        m_apply_attenuation = props.get<bool>("apply_attenuation", true);
+        bool has_attenuation_medium =
+            props.has_property("medium_temperature") &&
+            props.has_property("medium_relative_humidity") &&
+            props.has_property("medium_atmospheric_pressure");
+        if (m_apply_attenuation && !has_attenuation_medium) {
+            if (apply_attenuation_explicit)
+                Throw("\"apply_attenuation\" is enabled, but \"medium\" must "
+                      "provide 'temperature', 'relative_humidity' and "
+                      "'atmospheric_pressure' to compute air attenuation "
+                      "(ISO 9613-1).");
+            m_apply_attenuation = false;
+        }
+        m_medium_temperature           = medium_temperature;
+        m_medium_relative_humidity     = medium_relative_humidity;
+        m_medium_atmospheric_pressure  = medium_atmospheric_pressure;
 
         int max_depth = props.get<int>("max_depth", -1);
         if (max_depth < 0 && max_depth != -1)
@@ -396,6 +488,17 @@ public:
         Float distance                 = 0.f;
         const ScalarFloat max_distance = m_max_time * m_speed_of_sound;
 
+        // Air attenuation (ISO 9613-1) decay coefficient for this path's
+        // frequency. Constant along the whole path (only distance varies),
+        // so it is computed once upfront; 0 when attenuation is disabled,
+        // which makes the exp(-distance * decay) factor a no-op (== 1).
+        Float attenuation_decay = 0.f;
+        if (m_apply_attenuation) {
+            attenuation_decay = acoustic::energy_attenuation_coefficient<Float>(
+                Float(m_medium_temperature), ray.wavelengths[0],
+                Float(m_medium_relative_humidity), Float(m_medium_atmospheric_pressure));
+        }
+
         // If m_hide_emitters == true, directly visible emitters are hidden
         Mask valid_ray                 = !m_hide_emitters;
 
@@ -450,7 +553,7 @@ public:
 
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
-            [this, scene, bsdf_ctx, block, aovs, pos, ray, film, max_distance](LoopState& ls) {
+            [this, scene, bsdf_ctx, block, aovs, pos, ray, film, max_distance, attenuation_decay](LoopState& ls) {
 
             Float tau     = 0;
             Float tau_dir = 0;
@@ -496,8 +599,10 @@ public:
                 // Compute MIS weight for emitter sample from previous bounce
                 Float mis_bsdf = mis_weight(ls.prev_bsdf_pdf, em_pdf);
 
-                ls.time_bin = ((ls.distance + tau) / max_distance) * block->size()[1];
+                Float distance_bin = ls.distance + tau;
+                ls.time_bin = (distance_bin / max_distance) * block->size()[1];
                 Float result = (ls.throughput * ds.emitter->eval(si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf)[0];
+                result *= dr::exp(-distance_bin * attenuation_decay);
 
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "ls.throughput: %f, result = %s", ls.throughput, result);
 
@@ -590,11 +695,13 @@ public:
                         block->size(), block->size()[0], block->size()[1]);
 
                 tau_dir = dr::norm(ds.p - si.p);
-                ls.time_bin = ((ls.distance + tau + tau_dir) / max_distance) * block->size()[1];
+                Float distance_bin = ls.distance + tau + tau_dir;
+                ls.time_bin = (distance_bin / max_distance) * block->size()[1];
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace,
                     "ls.distance: %f, max_distance: %f, time bin: %f.",
                     ls.distance, max_distance, ls.time_bin);
                 Float result = (ls.throughput * bsdf_val * em_weight * mis_em)[0];
+                result *= dr::exp(-distance_bin * attenuation_decay);
                 active_em &= result > 0.f;
                 if constexpr (!dr::is_jit_v<Float>) Log(Trace, "result: %f, active_em: %s",
                     result, active_em);
@@ -699,7 +806,8 @@ public:
                     ? std::string("disabled")
                     : (std::to_string(-10.0f * log10(m_throughput_threshold)) +
                        " dB"))
-            << "\n  hide_emitters = " << m_hide_emitters << "\n]";
+            << "\n  hide_emitters = " << m_hide_emitters
+            << "\n  apply_attenuation = " << m_apply_attenuation << "\n]";
         return oss.str();
     }
 
@@ -766,6 +874,10 @@ protected:
     float m_max_time;
     float m_speed_of_sound;
     float m_throughput_threshold;
+    bool  m_apply_attenuation;
+    float m_medium_temperature;
+    float m_medium_relative_humidity;
+    float m_medium_atmospheric_pressure;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AcousticPathIntegrator, MonteCarloIntegrator)
