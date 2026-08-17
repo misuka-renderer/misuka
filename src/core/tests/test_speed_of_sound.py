@@ -12,7 +12,7 @@ def _simple(temperature):
     return c_ref*math.sqrt((temperature-t_0)/(t_ref-t_0))
 
 
-def _ideal_gas(temperature, relative_humidity, atmospheric_pressure):
+def _ideal_gas(temperature, relative_humidity, atmospheric_pressure, saturation_vapor_pressure=None):
     R = 8.314
     gamma_a = 1.400
     gamma_w = 1.330
@@ -23,7 +23,15 @@ def _ideal_gas(temperature, relative_humidity, atmospheric_pressure):
     temperature_kelvin = temperature + 273.15
     p = atmospheric_pressure
 
-    e = p * relative_humidity
+    # matches the Magnus-formula estimate used when saturation_vapor_pressure
+    # is not specified
+    if saturation_vapor_pressure is None:
+        e_s = 6.1094 * math.exp((17.625 * temperature) / (temperature + 243.04))
+        e_s = 100 * e_s  # hPa -> Pa
+    else:
+        e_s = saturation_vapor_pressure
+
+    e = e_s * relative_humidity  # water vapor partial pressure
     alpha = mu_a / mu_w
     delta = (1.0 - (1.0 / gamma_a)) / (1.0 - (1.0 / gamma_w))
     nu = (gamma_a - 1.0) / (gamma_w - 1.0)
@@ -262,3 +270,25 @@ def test17_invalid_method_raises(variants_all_acoustic):
 def test18_missing_temperature_raises(variants_all_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound()
+
+
+def test19_ideal_gas_explicit_saturation_vapor_pressure_matches_formula(variants_all_acoustic):
+    # regression test for a bug where the water vapor partial pressure was
+    # computed as atmospheric_pressure * relative_humidity instead of
+    # saturation_vapor_pressure * relative_humidity, making an explicitly
+    # provided saturation_vapor_pressure have no effect on the result
+    temperature, rh, pressure, e_s = 20.0, 1.0, 90000.0, 500.0
+    result = mi.acoustic.speed_of_sound(
+        temperature=temperature,
+        relative_humidity=rh,
+        atmospheric_pressure=pressure,
+        saturation_vapor_pressure=e_s,
+        method="ideal_gas",
+    )
+    expected = _ideal_gas(temperature, rh, pressure, e_s)
+    assert result == pytest.approx(expected, rel=1e-5)
+    # e_s=500 is far from the ~2340 Pa Magnus-formula default at 20°C, so
+    # using it explicitly must give a measurably different result than
+    # leaving saturation_vapor_pressure unspecified.
+    default_result = _ideal_gas(temperature, rh, pressure)
+    assert abs(result - default_result) > 0.5

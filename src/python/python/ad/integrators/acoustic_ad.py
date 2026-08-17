@@ -19,14 +19,16 @@ class AcousticADIntegrator(RBIntegrator):
      * - speed_of_sound
        - |float|
        - Speed of sound in meters per second. If set explicitly, this value
-         is always used, regardless of ``medium`` or ``speed_method``.
-         (Default: 343.0, unless overridden by ``medium``)
+         is always used, regardless of ``acoustic_medium``. If both
+         ``speed_of_sound`` and ``acoustic_medium`` are given, a warning is
+         logged. (Default: 343.0, unless overridden by ``acoustic_medium``)
 
-     * - medium
+     * - acoustic_medium
        - |dict|
-       - Optional dictionary of environmental conditions used to compute the
-         speed of sound (see :py:func:`mitsuba.acoustic.speed_of_sound`),
-         unless ``speed_of_sound`` was set explicitly. Recognized fields:
+       - Optional dictionary describing the propagation medium (air), used
+         to compute the speed of sound (see
+         :py:func:`mitsuba.acoustic.speed_of_sound`) unless
+         ``speed_of_sound`` was set explicitly. Recognized fields:
 
          - ``temperature``: Air temperature in degree Celsius. Required.
          - ``relative_humidity``: Relative humidity in the range of 0 to 1.
@@ -34,12 +36,9 @@ class AcousticADIntegrator(RBIntegrator):
          - ``saturation_vapor_pressure``: Saturation vapor pressure in
            Pascal. (Default: estimated from temperature)
          - ``co2_ppm``: CO2 concentration in parts per million.
-
-     * - speed_method
-       - |string|
-       - Method used to compute the speed of sound from ``medium``:
-         ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
-         (Default: "auto")
+         - ``speed_of_sound_method``: Method used to compute the speed of
+           sound: ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
+           (Default: "auto")
 
      * - max_time
        - |float|
@@ -115,14 +114,14 @@ class AcousticADIntegrator(RBIntegrator):
 
             'type': 'acoustic_ad',
             'max_time': 1.0,
-            'medium': {
+            'acoustic_medium': {
                 'temperature': 20.0,
                 'relative_humidity': 0.5,
                 'atmospheric_pressure': 101325.0,
                 'saturation_vapor_pressure': 3200.0,
-                'co2_ppm': 400
+                'co2_ppm': 400,
+                'speed_of_sound_method': 'auto',
             },
-            'speed_method': 'auto',
             'max_depth': -1,
     """
 
@@ -136,21 +135,23 @@ class AcousticADIntegrator(RBIntegrator):
 
         self.speed_of_sound = props.get("speed_of_sound", 343.)
 
-        # A 'medium' dict (see acoustic.h) is only used to derive the speed
-        # of sound when 'speed_of_sound' was not set explicitly. Its fields
-        # are read unconditionally so they're always marked as queried.
+        # An 'acoustic_medium' dict (see acoustic.h) is only used to derive
+        # the speed of sound when 'speed_of_sound' was not set explicitly.
+        # Its fields are read unconditionally so they're always marked as
+        # queried. Named 'acoustic_medium' (not 'medium') to avoid confusion
+        # with mitsuba's existing Medium plugin (participating media).
         has_medium = (
-            props.has_property("medium_temperature") or
-            props.has_property("medium_relative_humidity") or
-            props.has_property("medium_atmospheric_pressure") or
-            props.has_property("medium_saturation_vapor_pressure") or
-            props.has_property("medium_co2_ppm"))
-        medium_temperature = props.get("medium_temperature", float('nan'))
-        medium_relative_humidity = props.get("medium_relative_humidity", float('nan'))
-        medium_atmospheric_pressure = props.get("medium_atmospheric_pressure", float('nan'))
-        medium_saturation_vapor_pressure = props.get("medium_saturation_vapor_pressure", -1.)
-        medium_co2_ppm = props.get("medium_co2_ppm", float('nan'))
-        speed_method = props.get("speed_method", "auto")
+            props.has_property("acoustic_medium_temperature") or
+            props.has_property("acoustic_medium_relative_humidity") or
+            props.has_property("acoustic_medium_atmospheric_pressure") or
+            props.has_property("acoustic_medium_saturation_vapor_pressure") or
+            props.has_property("acoustic_medium_co2_ppm"))
+        medium_temperature = props.get("acoustic_medium_temperature", float('nan'))
+        medium_relative_humidity = props.get("acoustic_medium_relative_humidity", float('nan'))
+        medium_atmospheric_pressure = props.get("acoustic_medium_atmospheric_pressure", float('nan'))
+        medium_saturation_vapor_pressure = props.get("acoustic_medium_saturation_vapor_pressure", -1.)
+        medium_co2_ppm = props.get("acoustic_medium_co2_ppm", float('nan'))
+        speed_method = props.get("acoustic_medium_speed_of_sound_method", "auto")
 
         if not props.has_property("speed_of_sound") and has_medium:
             self.speed_of_sound = mi.acoustic.speed_of_sound(
@@ -160,6 +161,11 @@ class AcousticADIntegrator(RBIntegrator):
                 saturation_vapor_pressure=medium_saturation_vapor_pressure,
                 co2_ppm=medium_co2_ppm,
                 method=speed_method)
+        elif props.has_property("speed_of_sound") and has_medium:
+            mi.Log(mi.LogLevel.Warn,
+                   "Both \"speed_of_sound\" and \"acoustic_medium\" were "
+                   f"specified: the explicit \"speed_of_sound\" value ({self.speed_of_sound}) "
+                   "is used, \"acoustic_medium\" is ignored for the speed of sound.")
         if self.speed_of_sound is None or self.speed_of_sound <= 0.:
             raise ValueError("Property \"speed_of_sound\" must be set to a value greater than zero!")
 

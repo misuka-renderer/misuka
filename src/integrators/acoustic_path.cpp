@@ -25,14 +25,17 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
  * - speed_of_sound
    - |float|
    - Speed of sound in meters per second. If set explicitly, this value is
-     always used, regardless of ``medium`` or ``speed_method``.
-     (Default: 343.0, unless overridden by ``medium``)
+     always used, regardless of ``acoustic_medium``. If both
+     ``speed_of_sound`` and ``acoustic_medium`` are given, a warning is
+     logged. (Default: 343.0, unless overridden by ``acoustic_medium``)
 
- * - medium
+ * - acoustic_medium
    - dict
-   - Optional dictionary of environmental conditions used to compute the
-     speed of sound (see :py:func:`mitsuba.acoustic.speed_of_sound`), unless
-     ``speed_of_sound`` was set explicitly. Recognized fields:
+   - Optional dictionary describing the propagation medium (air), used to
+     compute the speed of sound (see
+     :py:func:`mitsuba.acoustic.speed_of_sound`) unless ``speed_of_sound``
+     was set explicitly, and to apply air attenuation (ISO 9613-1) during
+     rendering. Recognized fields:
 
      - ``temperature``: Air temperature in degree Celsius. Required.
      - ``relative_humidity``: Relative humidity in the range of 0 to 1.
@@ -40,22 +43,17 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
      - ``saturation_vapor_pressure``: Saturation vapor pressure in Pascal.
        (Default: estimated from temperature)
      - ``co2_ppm``: CO2 concentration in parts per million.
-
- * - speed_method
-   - |string|
-   - Method used to compute the speed of sound from ``medium``:
-     ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
-     (Default: "auto")
-
- * - apply_attenuation
-   - |bool|
-   - Whether to apply frequency-dependent air attenuation (ISO 9613-1,
-     see :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation`) to path
-     contributions during rendering, using ``medium``'s ``temperature``,
-     ``relative_humidity`` and ``atmospheric_pressure``. If ``medium``
-     does not provide these three fields, attenuation is silently skipped
-     unless ``apply_attenuation`` was set explicitly, in which case an
-     error is raised. (Default: |true|)
+     - ``speed_of_sound_method``: Method used to compute the speed of sound:
+       ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
+       (Default: "auto")
+     - ``apply_attenuation``: |bool|. Whether to apply frequency-dependent
+       air attenuation (ISO 9613-1, see
+       :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation`) to path
+       contributions during rendering, using ``temperature``,
+       ``relative_humidity`` and ``atmospheric_pressure`` above. If those
+       three fields are not all provided, attenuation is silently skipped
+       unless ``apply_attenuation`` was set explicitly, in which case an
+       error is raised. (Default: |true|)
 
  * - max_time
    - |float|
@@ -131,15 +129,15 @@ Sound paths are terminated when any of the following conditions are met:
 
         'type': 'acoustic_path',
         'max_time': 1.0,
-        'medium': {
+        'acoustic_medium': {
             'temperature': 20.0,
             'relative_humidity': 0.5,
             'atmospheric_pressure': 101325.0,
             'saturation_vapor_pressure': 3200.0,
-            'co2_ppm': 400
+            'co2_ppm': 400,
+            'speed_of_sound_method': 'auto',
+            'apply_attenuation': True,
         },
-        'speed_method': 'auto',
-        'apply_attenuation': True,
         'max_depth': -1,
 
  */
@@ -156,46 +154,53 @@ public:
         m_max_time    = props.get<float>("max_time");
         m_speed_of_sound = props.get<float>("speed_of_sound", 343.f);
 
-        // A 'medium' dict (see acoustic.h) is only used to derive the speed
-        // of sound when 'speed_of_sound' was not set explicitly. Its fields
-        // are read unconditionally so they're always marked as queried.
+        // An 'acoustic_medium' dict (see acoustic.h) is only used to derive
+        // the speed of sound when 'speed_of_sound' was not set explicitly.
+        // Its fields are read unconditionally so they're always marked as
+        // queried. Named 'acoustic_medium' (not 'medium') to avoid confusion
+        // with mitsuba's existing Medium plugin (participating media).
         bool has_medium =
-            props.has_property("medium_temperature") ||
-            props.has_property("medium_relative_humidity") ||
-            props.has_property("medium_atmospheric_pressure") ||
-            props.has_property("medium_saturation_vapor_pressure") ||
-            props.has_property("medium_co2_ppm");
-        float medium_temperature = props.get<float>("medium_temperature", std::numeric_limits<float>::quiet_NaN());
-        float medium_relative_humidity = props.get<float>("medium_relative_humidity", std::numeric_limits<float>::quiet_NaN());
-        float medium_atmospheric_pressure = props.get<float>("medium_atmospheric_pressure", std::numeric_limits<float>::quiet_NaN());
-        float medium_saturation_vapor_pressure = props.get<float>("medium_saturation_vapor_pressure", -1.f);
-        float medium_co2_ppm = props.get<float>("medium_co2_ppm", std::numeric_limits<float>::quiet_NaN());
-        std::string speed_method = props.string("speed_method", "auto");
+            props.has_property("acoustic_medium_temperature") ||
+            props.has_property("acoustic_medium_relative_humidity") ||
+            props.has_property("acoustic_medium_atmospheric_pressure") ||
+            props.has_property("acoustic_medium_saturation_vapor_pressure") ||
+            props.has_property("acoustic_medium_co2_ppm");
+        float medium_temperature = props.get<float>("acoustic_medium_temperature", std::numeric_limits<float>::quiet_NaN());
+        float medium_relative_humidity = props.get<float>("acoustic_medium_relative_humidity", std::numeric_limits<float>::quiet_NaN());
+        float medium_atmospheric_pressure = props.get<float>("acoustic_medium_atmospheric_pressure", std::numeric_limits<float>::quiet_NaN());
+        float medium_saturation_vapor_pressure = props.get<float>("acoustic_medium_saturation_vapor_pressure", -1.f);
+        float medium_co2_ppm = props.get<float>("acoustic_medium_co2_ppm", std::numeric_limits<float>::quiet_NaN());
+        std::string speed_method = props.string("acoustic_medium_speed_of_sound_method", "auto");
 
         if (!props.has_property("speed_of_sound") && has_medium) {
             m_speed_of_sound = acoustic::speed_of_sound<float>(
                 medium_temperature, medium_relative_humidity,
                 medium_atmospheric_pressure, medium_saturation_vapor_pressure,
                 medium_co2_ppm, speed_method);
+        } else if (props.has_property("speed_of_sound") && has_medium) {
+            Log(Warn, "Both \"speed_of_sound\" and \"acoustic_medium\" were "
+                      "specified: the explicit \"speed_of_sound\" value "
+                      "(%f) is used, \"acoustic_medium\" is ignored for the "
+                      "speed of sound.", m_speed_of_sound);
         }
         if (m_max_time <= 0.f || m_speed_of_sound <= 0.f)
             Throw("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!");
 
         // Air attenuation (ISO 9613-1) needs temperature, relative_humidity
-        // and atmospheric_pressure from 'medium'; unlike the speed of sound,
-        // there is no fallback formula that needs fewer inputs.
-        bool apply_attenuation_explicit = props.has_property("apply_attenuation");
-        m_apply_attenuation = props.get<bool>("apply_attenuation", true);
+        // and atmospheric_pressure from 'acoustic_medium'; unlike the speed
+        // of sound, there is no fallback formula that needs fewer inputs.
+        bool apply_attenuation_explicit = props.has_property("acoustic_medium_apply_attenuation");
+        m_apply_attenuation = props.get<bool>("acoustic_medium_apply_attenuation", true);
         bool has_attenuation_medium =
-            props.has_property("medium_temperature") &&
-            props.has_property("medium_relative_humidity") &&
-            props.has_property("medium_atmospheric_pressure");
+            props.has_property("acoustic_medium_temperature") &&
+            props.has_property("acoustic_medium_relative_humidity") &&
+            props.has_property("acoustic_medium_atmospheric_pressure");
         if (m_apply_attenuation && !has_attenuation_medium) {
             if (apply_attenuation_explicit)
-                Throw("\"apply_attenuation\" is enabled, but \"medium\" must "
-                      "provide 'temperature', 'relative_humidity' and "
-                      "'atmospheric_pressure' to compute air attenuation "
-                      "(ISO 9613-1).");
+                Throw("\"acoustic_medium.apply_attenuation\" is enabled, but "
+                      "\"acoustic_medium\" must provide 'temperature', "
+                      "'relative_humidity' and 'atmospheric_pressure' to "
+                      "compute air attenuation (ISO 9613-1).");
             m_apply_attenuation = false;
         }
         m_medium_temperature           = medium_temperature;

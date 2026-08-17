@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/core/logger.h>
 #include <drjit/math.h>
 #include <cmath>
 #include <limits>
@@ -25,9 +26,188 @@ inline bool is_missing_value(const Value &value) {
 // -----------------------------------------------------------------------
 
 /**
+ * \brief Speed of sound in air following ISO 9613-1 (Formula A.5).
+ *
+ * \param temperature
+ *      The temperature in degree Celsius. Must be in the range of -20°C to
+ *      50°C.
+ *
+ * \return
+ *      The speed of sound in meters per second
+ */
+template <typename Value>
+float speed_of_sound_simple(const Value temperature) {
+    if (temperature < -20.0f || temperature > 50.0f) {
+        throw std::invalid_argument("Temperature out of range for simple method (-20°C to 50°C).");
+    }
+    return 343.2f * dr::sqrt((temperature + 273.15f) / 293.15f);
+}
+
+/**
+ * \brief Speed of sound in air based on chapter 6.3 in V. E. Ostashev and
+ * D. K. Wilson, Acoustics in Moving Inhomogeneous Media, 2nd ed. London:
+ * CRC Press, 2015. doi: 10.1201/b18922.
+ *
+ * \param temperature
+ *      The temperature in degree Celsius.
+ * \param relative_humidity
+ *     Relative humidity in the range of 0 to 1.
+ * \param atmospheric_pressure
+ *    Atmospheric pressure in Pascal, must be non-negative.
+ * \param saturation_vapor_pressure
+ *    Saturation vapor pressure in Pascal. A negative value (see default)
+ *    means "not specified": it is then estimated from \p temperature via
+ *    the Magnus formula.
+ *
+ * \return
+ *      The speed of sound in meters per second
+ */
+template <typename Value>
+float speed_of_sound_ideal_gas(const Value temperature,
+                               const Value relative_humidity,
+                               const Value atmospheric_pressure,
+                               const Value saturation_vapor_pressure = Value(-1)) {
+    if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
+        throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
+    }
+    if (atmospheric_pressure < 0.0f) {
+        throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+    }
+
+    float temperature_kelvin = static_cast<float>(temperature) + 273.15f;
+
+    // Ideal gas calculation based on Ostashev and Wilson
+    float R = 8.314f; // J/(mol*K)
+    float gamma_a = 1.400f;
+    float gamma_w = 1.330f;
+    float mu_a = 28.97f * 1e-3f; //kg/mol
+    float mu_w = 18.02f * 1e-3f; //kg/mol
+    float R_a = R / mu_a;
+
+    // saturation_vapor_pressure < 0 means "not specified" (matches the
+    // Python binding's default of -1). Estimate it from temperature using
+    // the Magnus formula (see e.g. O. A. Alduchov and R. E. Eskridge,
+    // "Improved Magnus Form Approximation of Saturation Vapor Pressure,"
+    // J. Appl. Meteor., 1996).
+    Value e_s;
+    if (saturation_vapor_pressure < Value(0)) {
+        e_s = Value(6.1094f) * dr::exp((Value(17.625f) * temperature) /
+                                       (temperature + Value(243.04f)));
+        e_s = Value(100) * e_s; // hPa → Pa
+    } else {
+        e_s = saturation_vapor_pressure;
+    }
+
+    float e = static_cast<float>(e_s) * static_cast<float>(relative_humidity); // water vapor partial pressure
+    float alpha = mu_a / mu_w;
+    float delta = (1.0f - (1.0f / gamma_a)) / (1.0f - (1.0f / gamma_w));
+    float nu = (gamma_a - 1.0f) / (gamma_w - 1.0f);
+    float C = (e / static_cast<float>(atmospheric_pressure)) /
+              (alpha * (1.0f - e / static_cast<float>(atmospheric_pressure)));
+
+    return dr::sqrt(gamma_a * R_a * temperature_kelvin *
+                    (1.0f + (alpha * (1.0f + delta - nu) - 1.0f) * C));
+}
+
+/**
+ * \brief Speed of sound in air using Cramer's method described in
+ * O. Cramer, "The variation of the specific heat ratio and the speed of
+ * sound in air with temperature, pressure, humidity, and CO2
+ * concentration," The Journal of the Acoustical Society of America,
+ * vol. 93, no. 5, pp. 2510-2516, May 1993, doi: 10.1121/1.405827.
+ *
+ * \param temperature
+ *      The temperature in degree Celsius. Must be in the range of 0°C to
+ *      30°C.
+ * \param relative_humidity
+ *     Relative humidity in the range of 0 to 1.
+ * \param atmospheric_pressure
+ *    Atmospheric pressure in Pascal, must be non-negative and in the range
+ *    of 75,000 Pa to 102,000 Pa. Missing values (see is_missing_value())
+ *    default to 101,325 Pa (standard atmosphere).
+ * \param co2_ppm
+ *   CO2 concentration in parts per million (ppm), must be in the range of
+ *   0 ppm to 10,000 ppm. Missing values (see is_missing_value()) default to
+ *   428.73 ppm, the global monthly mean for 2026-07 reported by NOAA GML
+ *   (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
+ *
+ * \return
+ *      The speed of sound in meters per second
+ */
+template <typename Value>
+float speed_of_sound_cramer(const Value temperature,
+                            const Value relative_humidity,
+                            Value atmospheric_pressure,
+                            Value co2_ppm = Value(std::numeric_limits<float>::quiet_NaN())) {
+    if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
+        throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
+    }
+    if (atmospheric_pressure < 0.0f) {
+        throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+    }
+
+    // Resolve missing values to their defaults before validating ranges, so
+    // that the value actually used in the calculation is the one checked.
+    if (is_missing_value(atmospheric_pressure)) {
+        atmospheric_pressure = Value(101325.0f); // standard atmosphere
+    }
+    if (is_missing_value(co2_ppm)) {
+        co2_ppm = Value(428.73f); // NOAA GML global mean, doi.org/10.15138/9N0H-ZH07
+    }
+
+    // Cramer's specific bounds for temperature and pressure
+    if (temperature < 0.0f || temperature > 30.0f) {
+        throw std::invalid_argument("Temperature out of range for Cramer's method (0°C to 30°C).");
+    }
+    else if (atmospheric_pressure < 75000.0f || atmospheric_pressure > 102000.0f) {
+        throw std::invalid_argument("Atmospheric pressure out of range for Cramer's method (75,000 Pa to 102,000 Pa).");
+    }
+    else if (co2_ppm < 0.0f || co2_ppm > 10000.0f) {
+        throw std::invalid_argument("CO2 concentration out of range for Cramer's method (0 ppm to 10,000 ppm).");
+    }
+
+    float x_c = co2_ppm * 1e-6f; // Convert ppm to mole fraction
+    float T = temperature + 273.15f; // Convert to Kelvin
+    float p = atmospheric_pressure; // in Pa
+
+    float p_sv = dr::exp(1.2811805e-5f * T * T - 1.9509874e-2f * T +
+                         34.04926034f - 6.3536311e3f / T);
+
+    float x_w = relative_humidity * p_sv / p; // Mole fraction of water vapor
+
+    // cannot happen with inut parameter limitation
+    // if (x_w < 0.0f || x_w > 0.06f) {
+    //     throw std::invalid_argument("Calculated mole fraction of water vapor is out of range (0 to 0.06). Check input parameters. This input combination of values is not allowed for cramer.");
+    // }
+
+    float a0 = 331.5024f;
+    float a1 = 0.603055f;
+    float a2 = -0.000528f;
+    float a3 = 51.471935f;
+    float a4 = 0.1495874f;
+    float a5 = -0.000782f;
+    float a6 = -1.82e-7f;
+    float a7 = 3.73e-8f;
+    float a8 = -2.93e-10f;
+    float a9 = -85.20931f;
+    float a10 = -0.228525f;
+    float a11 = 5.91e-5f;
+    float a12 = -2.835149f;
+    float a13 = -2.15e-13f;
+    float a14 = 29.179762f;
+    float a15 = 0.000486f;
+
+    return  a0 + a1*temperature + a2*temperature*temperature
+            + (a3 + a4*temperature + a5*temperature*temperature) * x_w
+            + (a6 + a7*temperature + a8*temperature*temperature) * p
+            + (a9 + a10*temperature + a11*temperature*temperature) * x_c
+            + (a12*x_w*x_w + a13*p*p + a14*x_c*x_c + a15*x_c*p*x_w);
+}
+
+/**
  * \brief Calculation methods and automatic method selector for the speed of sound
  *
- * This Function calculates the speed of sound in air 
+ * This Function calculates the speed of sound in air
  *
  * \param temperature
  *      The temperature in degree Celsius.
@@ -36,16 +216,20 @@ inline bool is_missing_value(const Value &value) {
  * \param atmospheric_pressure
  *    Atmospheric pressure in Pascal
  * \param saturation_vapor_pressure
- *    Saturation vapor pressure in Pascal.
+ *    Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
+ *    method, where a missing value is estimated from temperature; see
+ *    speed_of_sound_ideal_gas().
  * \param co2_ppm
- *   CO2 concentration in parts per million (ppm).
+ *   CO2 concentration in parts per million (ppm). Only used by the "cramer"
+ *   method (and to auto-select it, see below), where a missing value
+ *   defaults to a recent global mean; see speed_of_sound_cramer().
  * \param method
  *  The method to use for the calculation. Possible values are:
  *   - "auto" (default): automatically selects the method based on the types of input parameters.
- *   - "simple" The calculation follows ISO 9613-1 (Formula A.5).
- *   - "ideal_gas": calculates based on chapter 6.3 in V. E. Ostashev and D. K. Wilson, Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC Press, 2015. doi: 10.1201/b18922.
- *   - "cramer": calculates using Cramers method described in O. Cramer, “The variation of the specific heat ratio and the speed of sound in air with temperature, pressure, humidity, and CO2 concentration,” The Journal of the Acoustical Society of America, vol. 93, no. 5, pp. 2510-2516, May 1993, doi: 10.1121/1.405827.
- * 
+ *   - "simple": see speed_of_sound_simple().
+ *   - "ideal_gas": see speed_of_sound_ideal_gas().
+ *   - "cramer": see speed_of_sound_cramer().
+ *
  * \return
  *      The speed of sound in meters per second
  */
@@ -56,7 +240,7 @@ float speed_of_sound(const Value temperature,
                      const Value saturation_vapor_pressure,
                      const Value co2_ppm,
                      const std::string& method = "auto") {
-    
+
     // input validation - at least temperature must be provided
     if (is_missing_value(temperature)) {
         throw std::invalid_argument("Temperature must be provided.");
@@ -73,107 +257,23 @@ float speed_of_sound(const Value temperature,
         } else {
             selected_method = "ideal_gas";
         }
+        // No method was explicitly: let the user know which one was picked
+        // Note: the extra parentheses around the function name prevent this
+        // call from being expanded by the member-function-only `Log(...)`
+        // macro defined in logger.h (this is a free function, no m_class).
+        (mitsuba::detail::Log)(Info, nullptr, __FILE__, __LINE__,
+            "speed_of_sound(): no method specified, automatically selected "
+            "\"%s\" based on the provided parameters.", selected_method);
     }
 
     if (selected_method == "simple") {
-        if (temperature < -20.0f || temperature > 50.0f) {
-            throw std::invalid_argument("Temperature out of range for simple method (-20°C to 50°C).");
-        }
-        return 343.2f * dr::sqrt((temperature + 273.15f) / 293.15f);
-    }
-
-    else if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
-        throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
-    }
-    else if (atmospheric_pressure < 0.0f) {
-        throw std::invalid_argument("Atmospheric pressure must be non-negative.");
-    }
-
-    else if (selected_method == "ideal_gas") {
-
-        float temperature_kelvin = static_cast<float>(temperature) + 273.15f;
-
-        // Ideal gas calculation based on Ostashev and Wilson
-        float R = 8.314f; // J/(mol*K)
-        float gamma_a = 1.400f;
-        float gamma_w = 1.330f;
-        float mu_a = 28.97f * 1e-3f; //kg/mol
-        float mu_w = 18.02f * 1e-3f; //kg/mol
-        float R_a = R / mu_a;
-        float p = static_cast<float>(atmospheric_pressure);
-
-        // saturation_vapor_pressure: -1 bedeutet "nicht angegeben"
-        Value e_s;
-        if (saturation_vapor_pressure < Value(0)) {
-            e_s = Value(6.1094f) * dr::exp((Value(17.625f) * temperature) /
-                                           (temperature + Value(243.04f)));
-            e_s = Value(100) * e_s; // hPa → Pa
-        } else {
-            e_s = saturation_vapor_pressure;
-        }
-
-        float e = p * static_cast<float>(relative_humidity);
-        float alpha = mu_a / mu_w;
-        float delta = (1.0f - (1.0f / gamma_a)) / (1.0f - (1.0f / gamma_w));
-        float nu = (gamma_a - 1.0f) / (gamma_w - 1.0f);
-        float C = (e / static_cast<float>(atmospheric_pressure)) /
-                  (alpha * (1.0f - e / static_cast<float>(atmospheric_pressure)));
-
-        return dr::sqrt(gamma_a * R_a * temperature_kelvin *
-                        (1.0f + (alpha * (1.0f + delta - nu) - 1.0f) * C));
-    } 
-    else if (selected_method == "cramer") {
-        // Cramer's specific bounds for temperature and pressure
-        if (temperature < 0.0f || temperature > 30.0f) {
-            throw std::invalid_argument("Temperature out of range for Cramer's method (0°C to 30°C).");
-        }
-        else if (atmospheric_pressure < 75000.0f || atmospheric_pressure > 102000.0f) {
-            throw std::invalid_argument("Atmospheric pressure out of range for Cramer's method (75,000 Pa to 102,000 Pa).");
-        }
-        else if (co2_ppm < 0.0f || co2_ppm > 10000.0f) {
-            throw std::invalid_argument("CO2 concentration out of range for Cramer's method (0 ppm to 10,000 ppm).");
-        }
-        if (is_missing_value(atmospheric_pressure)) {
-            atmospheric_pressure = Value(101325.0f);
-        }
-
-        float x_c = co2_ppm * 1e-6f; // Convert ppm to mole fraction
-        float T = temperature + 273.15f; // Convert to Kelvin
-        float p = atmospheric_pressure; // in Pa
-
-        float p_sv = dr::exp(1.2811805e-5f * T * T - 1.9509874e-2f * T +
-                             34.04926034f - 6.3536311e3f / T);
-
-        float x_w = relative_humidity * p_sv / p; // Mole fraction of water vapor
-
-        // cannot happen with inut parameter limitation
-        // if (x_w < 0.0f || x_w > 0.06f) {
-        //     throw std::invalid_argument("Calculated mole fraction of water vapor is out of range (0 to 0.06). Check input parameters. This input combination of values is not allowed for cramer.");
-        // }
-
-        float a0 = 331.5024f;
-        float a1 = 0.603055f;
-        float a2 = -0.000528f;
-        float a3 = 51.471935f;
-        float a4 = 0.1495874f;
-        float a5 = -0.000782f;
-        float a6 = -1.82e-7f;
-        float a7 = 3.73e-8f;
-        float a8 = -2.93e-10f;
-        float a9 = -85.20931f;
-        float a10 = -0.228525f;
-        float a11 = 5.91e-5f;
-        float a12 = -2.835149f;
-        float a13 = -2.15e-13f;
-        float a14 = 29.179762f;
-        float a15 = 0.000486f;
-
-        return  a0 + a1*temperature + a2*temperature*temperature 
-                + (a3 + a4*temperature + a5*temperature*temperature) * x_w 
-                + (a6 + a7*temperature + a8*temperature*temperature) * p 
-                + (a9 + a10*temperature + a11*temperature*temperature) * x_c
-                + (a12*x_w*x_w + a13*p*p + a14*x_c*x_c + a15*x_c*p*x_w);
-
+        return speed_of_sound_simple<Value>(temperature);
+    } else if (selected_method == "ideal_gas") {
+        return speed_of_sound_ideal_gas<Value>(temperature, relative_humidity,
+                                               atmospheric_pressure, saturation_vapor_pressure);
+    } else if (selected_method == "cramer") {
+        return speed_of_sound_cramer<Value>(temperature, relative_humidity,
+                                            atmospheric_pressure, co2_ppm);
     } else {
         throw std::invalid_argument("Invalid method specified for speed of sound calculation. "
                                     "Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.");
