@@ -42,7 +42,9 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
      - ``atmospheric_pressure``: Atmospheric pressure in Pascal.
      - ``saturation_vapor_pressure``: Saturation vapor pressure in Pascal.
        (Default: estimated from temperature)
-     - ``co2_ppm``: CO2 concentration in parts per million.
+     - ``co2_ppm``: CO2 concentration in parts per million. Default to
+        428.73 ppm, the global monthly mean for 2026-07 reported by NOAA GML
+        (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28)
      - ``speed_of_sound_method``: Method used to compute the speed of sound:
        ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
        (Default: "auto")
