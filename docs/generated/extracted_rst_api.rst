@@ -17431,56 +17431,155 @@
 
 .. py:function:: mitsuba.acoustic.apply_pure_tone_attenuation(etc, sampling_rate, speed_of_sound_ms, temperature, frequencies, relative_humidity, atmospheric_pressure)
 
-    Apply air attenuation to an energy time curve (ETC), computing the air attenuation decay coefficients from temperature, frequencies, relative humidity and atmospheric pressure (ISO 9613-1:1993). Accepts etc as a flat sequence, numpy array, or a drjit/mitsuba tensor (e.g. the TensorXf returned by mi.render) of arbitrary shape; the number of frequency bands is inferred from len(frequencies), and etc's total size must be a multiple of it. Returns the same type as the input (TensorXf in, TensorXf out; otherwise a numpy array), reshaped to match.
+    Apply pure tone attenuation to an energy time curve (ETC).
+
+    Multiplies each time bin of the ETC with a frequency-dependent
+    exponential decay factor derived from the distance the sound has
+    travelled and the air attenuation coefficient computed for each
+    frequency band, following ISO 9613-1:1993.
+
+    From Python, this is a drop-in post-processing step for the output of
+    ``mitsuba.render()``: it accepts a ``TensorXf`` of arbitrary shape
+    (not just a flat/2-D array) directly, and returns a ``TensorXf`` of
+    that exact same shape and type, as long as its total size is a
+    multiple of ``len(frequencies)``.
 
     Parameter ``etc`` (object):
-        *no description available*
+        Input energy time curve as a 2-D array of shape (n_time_bins,
+        n_frequencies). From Python, the output of ``mitsuba.render()`` (a
+        ``TensorXf`` of arbitrary shape, e.g. also including a frequency
+        axis) can be passed directly, e.g.
+        ``apply_pure_tone_attenuation(etc=:py:obj:`mitsuba.render`(scene,
+        sensor=microphone, integrator=integrator), ...)``.
 
     Parameter ``sampling_rate`` (float):
-        *no description available*
+        Sampling rate in Hz used to convert sample indices to times.
 
     Parameter ``speed_of_sound_ms`` (float):
-        *no description available*
+        Speed of sound in m/s (use the return value of speed_of_sound()).
 
     Parameter ``temperature`` (float):
-        *no description available*
+        Temperature in degree Celsius.
 
     Parameter ``frequencies`` (collections.abc.Sequence[float]):
-        *no description available*
+        Center frequencies in Hz, one value per frequency band. Must have
+        the same number of entries as \p etc has columns.
 
     Parameter ``relative_humidity`` (float):
-        *no description available*
+        Relative humidity in the range of 0 to 1.
 
     Parameter ``atmospheric_pressure`` (float):
-        *no description available*
+        Atmospheric pressure in Pascal.
 
     Returns → object:
-        *no description available*
+        A new vector containing the attenuated ETC with the same layout as
+        the input (row-major, n_time_bins × n_frequencies). From Python,
+        when \p etc was a ``TensorXf`` (e.g. straight from
+        ``mitsuba.render()``), the result is a ``TensorXf`` of that same
+        shape, ready to be used like any other rendered output (plotted,
+        saved, compared, etc.).
 
 .. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity=nan, atmospheric_pressure=nan, saturation_vapor_pressure=-1.0, co2_ppm=nan, method='auto')
 
-    Return the speed of sound in air. Chooses calculation method based on input parameters.
+    Calculation methods and automatic method selector for the speed of
+    sound
+
+    This Function calculates the speed of sound in air
 
     Parameter ``temperature`` (float):
-        *no description available*
+        The temperature in degree Celsius.
 
     Parameter ``relative_humidity`` (float):
-        *no description available*
+        Relative humidity in the range of 0 to 1.
 
     Parameter ``atmospheric_pressure`` (float):
-        *no description available*
+        Atmospheric pressure in Pascal
 
     Parameter ``saturation_vapor_pressure`` (float):
-        *no description available*
+        Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
+        method, where a missing value is estimated from temperature; see
+        speed_of_sound_ideal_gas().
 
     Parameter ``co2_ppm`` (float):
-        *no description available*
+        CO2 concentration in parts per million (ppm). Only used by the
+        "cramer" method (and to auto-select it, see below), where a
+        missing value defaults to a recent global mean; see
+        speed_of_sound_cramer().
 
     Parameter ``method`` (str):
-        *no description available*
+        The method to use for the calculation. Possible values are: -
+        "auto" (default): automatically selects the method based on the
+        types of input parameters. - "simple": see
+        speed_of_sound_simple(). - "ideal_gas": see
+        speed_of_sound_ideal_gas(). - "cramer": see
+        speed_of_sound_cramer().
 
     Returns → float:
-        *no description available*
+        The speed of sound in meters per second
+
+.. py:function:: mitsuba.acoustic.speed_of_sound_cramer(temperature, relative_humidity, atmospheric_pressure, co2_ppm=nan)
+
+    Speed of sound in air using Cramer's method described in O. Cramer,
+    "The variation of the specific heat ratio and the speed of sound in
+    air with temperature, pressure, humidity, and CO2 concentration," The
+    Journal of the Acoustical Society of America, vol. 93, no. 5, pp.
+    2510-2516, May 1993, doi: 10.1121/1.405827.
+
+    Parameter ``temperature`` (float):
+        The temperature in degree Celsius. Must be in the range of 0°C to
+        30°C.
+
+    Parameter ``relative_humidity`` (float):
+        Relative humidity in the range of 0 to 1.
+
+    Parameter ``atmospheric_pressure`` (float):
+        Atmospheric pressure in Pascal, must be non-negative and in the
+        range of 75,000 Pa to 102,000 Pa. Missing values (see
+        is_missing_value()) default to 101,325 Pa (standard atmosphere).
+
+    Parameter ``co2_ppm`` (float):
+        CO2 concentration in parts per million (ppm), must be in the range
+        of 0 ppm to 10,000 ppm. Missing values (see is_missing_value())
+        default to 428.73 ppm, the global monthly mean for 2026-07
+        reported by NOAA GML (https://doi.org/10.15138/9N0H-ZH07,
+        retrieved 2026-08-28).
+
+    Returns → float:
+        The speed of sound in meters per second
+
+.. py:function:: mitsuba.acoustic.speed_of_sound_ideal_gas(temperature, relative_humidity, atmospheric_pressure, saturation_vapor_pressure=-1.0)
+
+    Speed of sound in air based on chapter 6.3 in V. E. Ostashev and D. K.
+    Wilson, Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC
+    Press, 2015. doi: 10.1201/b18922.
+
+    Parameter ``temperature`` (float):
+        The temperature in degree Celsius.
+
+    Parameter ``relative_humidity`` (float):
+        Relative humidity in the range of 0 to 1.
+
+    Parameter ``atmospheric_pressure`` (float):
+        Atmospheric pressure in Pascal, must be non-negative.
+
+    Parameter ``saturation_vapor_pressure`` (float):
+        Saturation vapor pressure in Pascal. A negative value (see
+        default) means "not specified": it is then estimated from \p
+        temperature via the Magnus formula.
+
+    Returns → float:
+        The speed of sound in meters per second
+
+.. py:function:: mitsuba.acoustic.speed_of_sound_simple(temperature)
+
+    Speed of sound in air following ISO 9613-1 (Formula A.5).
+
+    Parameter ``temperature`` (float):
+        The temperature in degree Celsius. Must be in the range of -20°C
+        to 50°C.
+
+    Returns → float:
+        The speed of sound in meters per second
 
 .. py:class:: mitsuba.ad.Adam
 
@@ -17962,14 +18061,16 @@
      * - speed_of_sound
          - |float|
          - Speed of sound in meters per second. If set explicitly, this value
-           is always used, regardless of ``medium`` or ``speed_method``.
-           (Default: 343.0, unless overridden by ``medium``)
+           is always used, regardless of ``acoustic_medium``. If both
+           ``speed_of_sound`` and ``acoustic_medium`` are given, a warning is
+           logged. (Default: 343.0, unless overridden by ``acoustic_medium``)
 
-     * - medium
+     * - acoustic_medium
          - |dict|
-         - Optional dictionary of environmental conditions used to compute the
-           speed of sound (see :py:func:`mitsuba.acoustic.speed_of_sound`),
-           unless ``speed_of_sound`` was set explicitly. Recognized fields:
+         - Optional dictionary describing the propagation medium (air), used
+           to compute the speed of sound (see
+           :py:func:`mitsuba.acoustic.speed_of_sound`) unless
+           ``speed_of_sound`` was set explicitly. Recognized fields:
 
          - ``temperature``: Air temperature in degree Celsius. Required.
          - ``relative_humidity``: Relative humidity in the range of 0 to 1.
@@ -17977,11 +18078,8 @@
          - ``saturation_vapor_pressure``: Saturation vapor pressure in
            Pascal. (Default: estimated from temperature)
          - ``co2_ppm``: CO2 concentration in parts per million.
-
-     * - speed_method
-         - |string|
-         - Method used to compute the speed of sound from ``medium``:
-           ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
+         - ``speed_of_sound_method``: Method used to compute the speed of
+           sound: ``"auto"``, ``"simple"``, ``"ideal_gas"`` or ``"cramer"``.
            (Default: "auto")
 
      * - max_time
@@ -18058,11 +18156,14 @@
 
             'type': 'acoustic_ad',
             'max_time': 1.0,
-            'medium': {
+            'acoustic_medium': {
                 'temperature': 20.0,
                 'relative_humidity': 0.5,
+                'atmospheric_pressure': 101325.0,
+                'saturation_vapor_pressure': 3200.0,
+                'co2_ppm': 400,
+                'speed_of_sound_method': 'auto',
             },
-            'speed_method': 'auto',
             'max_depth': -1,
 
     .. py:method:: __init__(self, arg)

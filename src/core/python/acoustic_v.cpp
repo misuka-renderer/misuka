@@ -6,6 +6,22 @@
 MI_PY_EXPORT(acoustic) {
     MI_PY_IMPORT_TYPES()
 
+    m.def("speed_of_sound_simple",
+          acoustic::speed_of_sound_simple<float>,
+          "temperature"_a, D(acoustic, speed_of_sound_simple));
+
+    m.def("speed_of_sound_ideal_gas",
+          acoustic::speed_of_sound_ideal_gas<float>,
+          "temperature"_a, "relative_humidity"_a, "atmospheric_pressure"_a,
+          "saturation_vapor_pressure"_a = -1.f,
+          D(acoustic, speed_of_sound_ideal_gas));
+
+    m.def("speed_of_sound_cramer",
+          acoustic::speed_of_sound_cramer<float>,
+          "temperature"_a, "relative_humidity"_a, "atmospheric_pressure"_a,
+          "co2_ppm"_a = std::numeric_limits<float>::quiet_NaN(),
+          D(acoustic, speed_of_sound_cramer));
+
     m.def("speed_of_sound",
           [](float temperature,
              float relative_humidity,
@@ -26,7 +42,7 @@ MI_PY_EXPORT(acoustic) {
           "saturation_vapor_pressure"_a = -1.f,
           "co2_ppm"_a = std::numeric_limits<float>::quiet_NaN(),
           "method"_a = std::string("auto"),
-          "Return the speed of sound in air. Chooses calculation method based on input parameters.");
+          D(acoustic, speed_of_sound));
 
     m.def("apply_pure_tone_attenuation",
           [](nb::object etc,
@@ -76,13 +92,5 @@ MI_PY_EXPORT(acoustic) {
           "frequencies"_a,
           "relative_humidity"_a,
           "atmospheric_pressure"_a,
-          "Apply air attenuation to an energy time curve (ETC), computing the "
-          "air attenuation decay coefficients from temperature, frequencies, "
-          "relative humidity and atmospheric pressure (ISO 9613-1:1993). "
-          "Accepts etc as a flat sequence, numpy array, or a drjit/mitsuba "
-          "tensor (e.g. the TensorXf returned by mi.render) of arbitrary "
-          "shape; the number of frequency bands is inferred from "
-          "len(frequencies), and etc's total size must be a multiple of it. "
-          "Returns the same type as the input (TensorXf in, TensorXf out; "
-          "otherwise a numpy array), reshaped to match.");
+          D(acoustic, apply_pure_tone_attenuation));
 }

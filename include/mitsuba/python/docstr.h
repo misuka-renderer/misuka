@@ -9523,9 +9523,19 @@ exponential decay factor derived from the distance the sound has
 travelled and the air attenuation coefficient computed for each
 frequency band, following ISO 9613-1:1993.
 
+From Python, this is a drop-in post-processing step for the output of
+``mitsuba.render()``: it accepts a ``TensorXf`` of arbitrary shape
+(not just a flat/2-D array) directly, and returns a ``TensorXf`` of
+that exact same shape and type, as long as its total size is a
+multiple of ``len(frequencies)``.
+
 Parameter ``etc``:
     Input energy time curve as a 2-D array of shape (n_time_bins,
-    n_frequencies).
+    n_frequencies). From Python, the output of ``mitsuba.render()`` (a
+    ``TensorXf`` of arbitrary shape, e.g. also including a frequency
+    axis) can be passed directly, e.g.
+    ``apply_pure_tone_attenuation(etc=mitsuba.render(scene,
+    sensor=microphone, integrator=integrator), ...)``.
 
 Parameter ``sampling_rate``:
     Sampling rate in Hz used to convert sample indices to times.
@@ -9548,7 +9558,11 @@ Parameter ``atmospheric_pressure``:
 
 Returns:
     A new vector containing the attenuated ETC with the same layout as
-    the input (row-major, n_time_bins × n_frequencies).)doc";
+    the input (row-major, n_time_bins × n_frequencies). From Python,
+    when \p etc was a ``TensorXf`` (e.g. straight from
+    ``mitsuba.render()``), the result is a ``TensorXf`` of that same
+    shape, ready to be used like any other rendered output (plotted,
+    saved, compared, etc.).)doc";
 
 static const char *__doc_mitsuba_acoustic_energy_attenuation_coefficient =
 R"doc(Pure tone energy attenuation coefficient, following ISO 9613-1:1993.
@@ -9591,24 +9605,84 @@ Parameter ``atmospheric_pressure``:
     Atmospheric pressure in Pascal
 
 Parameter ``saturation_vapor_pressure``:
-    Saturation vapor pressure in Pascal.
+    Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
+    method, where a missing value is estimated from temperature; see
+    speed_of_sound_ideal_gas().
 
 Parameter ``co2_ppm``:
-    CO2 concentration in parts per million (ppm).
+    CO2 concentration in parts per million (ppm). Only used by the
+    "cramer" method (and to auto-select it, see below), where a
+    missing value defaults to a recent global mean; see
+    speed_of_sound_cramer().
 
 Parameter ``method``:
     The method to use for the calculation. Possible values are: -
     "auto" (default): automatically selects the method based on the
-    types of input parameters. - "simple" The calculation follows ISO
-    9613-1 (Formula A.5). - "ideal_gas": calculates based on chapter
-    6.3 in V. E. Ostashev and D. K. Wilson, Acoustics in Moving
-    Inhomogeneous Media, 2nd ed. London: CRC Press, 2015. doi:
-    10.1201/b18922. - "cramer": calculates using Cramers method
-    described in O. Cramer, “The variation of the specific heat ratio
-    and the speed of sound in air with temperature, pressure,
-    humidity, and CO2 concentration,” The Journal of the Acoustical
-    Society of America, vol. 93, no. 5, pp. 2510-2516, May 1993, doi:
-    10.1121/1.405827.
+    types of input parameters. - "simple": see
+    speed_of_sound_simple(). - "ideal_gas": see
+    speed_of_sound_ideal_gas(). - "cramer": see
+    speed_of_sound_cramer().
+
+Returns:
+    The speed of sound in meters per second)doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound_cramer =
+R"doc(Speed of sound in air using Cramer's method described in O. Cramer,
+"The variation of the specific heat ratio and the speed of sound in
+air with temperature, pressure, humidity, and CO2 concentration," The
+Journal of the Acoustical Society of America, vol. 93, no. 5, pp.
+2510-2516, May 1993, doi: 10.1121/1.405827.
+
+Parameter ``temperature``:
+    The temperature in degree Celsius. Must be in the range of 0°C to
+    30°C.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal, must be non-negative and in the
+    range of 75,000 Pa to 102,000 Pa. Missing values (see
+    is_missing_value()) default to 101,325 Pa (standard atmosphere).
+
+Parameter ``co2_ppm``:
+    CO2 concentration in parts per million (ppm), must be in the range
+    of 0 ppm to 10,000 ppm. Missing values (see is_missing_value())
+    default to 428.73 ppm, the global monthly mean for 2026-07
+    reported by NOAA GML (https://doi.org/10.15138/9N0H-ZH07,
+    retrieved 2026-08-28).
+
+Returns:
+    The speed of sound in meters per second)doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound_ideal_gas =
+R"doc(Speed of sound in air based on chapter 6.3 in V. E. Ostashev and D. K.
+Wilson, Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC
+Press, 2015. doi: 10.1201/b18922.
+
+Parameter ``temperature``:
+    The temperature in degree Celsius.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal, must be non-negative.
+
+Parameter ``saturation_vapor_pressure``:
+    Saturation vapor pressure in Pascal. A negative value (see
+    default) means "not specified": it is then estimated from \p
+    temperature via the Magnus formula.
+
+Returns:
+    The speed of sound in meters per second)doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound_simple =
+R"doc(Speed of sound in air following ISO 9613-1 (Formula A.5).
+
+Parameter ``temperature``:
+    The temperature in degree Celsius. Must be in the range of -20°C
+    to 50°C.
 
 Returns:
     The speed of sound in meters per second)doc";

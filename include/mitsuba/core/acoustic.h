@@ -212,23 +212,23 @@ float speed_of_sound_cramer(const Value temperature,
  * \param temperature
  *      The temperature in degree Celsius.
  * \param relative_humidity
- *     Relative humidity in the range of 0 to 1.
+ *      Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
- *    Atmospheric pressure in Pascal
+ *      Atmospheric pressure in Pascal
  * \param saturation_vapor_pressure
- *    Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
- *    method, where a missing value is estimated from temperature; see
- *    speed_of_sound_ideal_gas().
+ *      Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
+ *      method, where a missing value is estimated from temperature; see
+ *      speed_of_sound_ideal_gas().
  * \param co2_ppm
- *   CO2 concentration in parts per million (ppm). Only used by the "cramer"
- *   method (and to auto-select it, see below), where a missing value
- *   defaults to a recent global mean; see speed_of_sound_cramer().
+ *      CO2 concentration in parts per million (ppm). Only used by the "cramer"
+ *      method (and to auto-select it, see below), where a missing value
+ *      defaults to a recent global mean; see speed_of_sound_cramer().
  * \param method
- *  The method to use for the calculation. Possible values are:
- *   - "auto" (default): automatically selects the method based on the types of input parameters.
- *   - "simple": see speed_of_sound_simple().
- *   - "ideal_gas": see speed_of_sound_ideal_gas().
- *   - "cramer": see speed_of_sound_cramer().
+ *      The method to use for the calculation. Possible values are:
+ *      - "auto" (default): automatically selects the method based on the types of input parameters.
+ *      - "simple": see speed_of_sound_simple().
+ *      - "ideal_gas": see speed_of_sound_ideal_gas().
+ *      - "cramer": see speed_of_sound_cramer().
  *
  * \return
  *      The speed of sound in meters per second
@@ -367,9 +367,18 @@ Value energy_attenuation_coefficient(Value temperature,
  * air attenuation coefficient computed for each frequency band, following
  * ISO 9613-1:1993.
  *
+ * From Python, this is a drop-in post-processing step for the output of
+ * ``mitsuba.render()``: it accepts a ``TensorXf`` of arbitrary shape (not
+ * just a flat/2-D array) directly, and returns a ``TensorXf`` of that exact
+ * same shape and type, as long as its total size is a multiple of
+ * ``len(frequencies)``.
+ *
  * \param etc
  *      Input energy time curve as a 2-D array of shape
- *      (n_time_bins, n_frequencies).
+ *      (n_time_bins, n_frequencies). From Python, the output of
+ *      ``mitsuba.render()`` (a ``TensorXf`` of arbitrary shape, e.g. also
+ *      including a frequency axis) can be passed directly, e.g.
+ *      ``apply_pure_tone_attenuation(etc=mitsuba.render(scene, sensor=microphone, integrator=integrator), ...)``.
  * \param sampling_rate
  *      Sampling rate in Hz used to convert sample indices to times.
  * \param speed_of_sound_ms
@@ -386,7 +395,11 @@ Value energy_attenuation_coefficient(Value temperature,
  *
  * \return
  *      A new vector containing the attenuated ETC with the same layout as
- *      the input (row-major, n_time_bins × n_frequencies).
+ *      the input (row-major, n_time_bins × n_frequencies). From Python,
+ *      when \p etc was a ``TensorXf`` (e.g. straight from
+ *      ``mitsuba.render()``), the result is a ``TensorXf`` of that same
+ *      shape, ready to be used like any other rendered output (plotted,
+ *      saved, compared, etc.).
  */
 template <typename Value>
 std::vector<Value> apply_pure_tone_attenuation(
