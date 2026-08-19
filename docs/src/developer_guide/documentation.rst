@@ -76,10 +76,17 @@ Detailed build steps
 
    .. warning::
 
-       Do this only on a Linux machine with a ``cuda`` variant enabled.
+       Do this only on a Linux machine, using the default variant set from ``misuka.conf`` so that a ``cuda`` variant is enabled.
        The target is only available on Unix systems, so it won't work on Windows.
        On macOS, a regeneration silently deletes around 800 lines of OptiX docstrings.
        If you edit a header file and don't have access to a Linux machine, make a note in your pull request that the docstrings need to be regenerated.
+
+   .. warning::
+
+       The generated file depends on the *enabled variants*, not just on the headers.
+       ``MI_EXTERN_CLASS`` and ``MI_EXTERN_STRUCT`` expand to one ``extern template`` declaration per enabled variant, and ``pybind11_mkdoc`` emits a numbered ``__doc_mitsuba_<Name>_<N>`` entry for each of them.
+       Regenerating with a shortened or extended ``"enabled"`` list therefore adds or removes empty entries for every class declared with those macros, which buries the real changes in hundreds of lines of noise.
+       Restore the default variant set before regenerating.
 
    .. note::
 
@@ -94,6 +101,10 @@ Detailed build steps
            export LIBCLANG_PATH=/usr/lib/libclang.so
 
        macOS needs no configuration, ``pybind11_mkdoc`` finds Xcode's libclang on its own.
+
+       The libclang version also affects how symbols are named.
+       A regeneration on a different LLVM release can rename entries, for example ``__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_Array`` to ``__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_drjit_Array``.
+       Such renames are harmless as long as nothing references the entry, but they make the diff harder to read.
 
 
 2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings, required before generating API documentation.
