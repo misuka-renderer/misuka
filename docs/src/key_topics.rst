@@ -28,3 +28,4 @@ documentation. Both are linked below.
     key_topics/*
     Choosing variants <{MI_DOCS}/src/key_topics/variants.html>
     Scene XML file format <{MI_DOCS}/src/key_topics/scene_format.html>
+    Dictionary-based scene format <{MI_DOCS}/src/key_topics/scene_format.html#dictionary-based-scene-format>
