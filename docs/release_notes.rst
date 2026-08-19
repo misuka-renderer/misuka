@@ -8,7 +8,7 @@ misuka 0.1.0
 ~~~~~~~~~~~~
 *Unreleased*
 
-- **Mitsuba update**. misuka now builds on Mitsuba 3.9.0, so all of its features
+- **Mitsuba update**. misuka now builds on Mitsuba 3.9.1, so all of its features
   are available (e.g. function freezing, Dr.Jit's new gradient-based optimizers, and
   the Metal backend for GPU rendering on macOS). `[PR #7] <https://github.com/misuka-renderer/misuka/pull/7>`_
 
@@ -53,7 +53,7 @@ Mitsuba release notes
 ----------------------
 
 Mitsuba 3.9.1
--------------
+~~~~~~~~~~~~~
 *August 7, 2026*
 
 - Upgrade to `Dr.Jit 1.5.0
