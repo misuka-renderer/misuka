@@ -295,26 +295,20 @@ Now, compilation should be as simple as running the following from inside the
 
 **Tested version**
 
-.. tabularcolumns:: |p{0.49\width}|p{0.49\width}|
+* macOS 26.5.2
+* Xcode 26.6
+* AppleClang 21.0.0
+* LLVM 22.1.7
+* cmake 4.3.0
+* ninja 1.12.1
+* Python 3.14.3
 
-+--------------------------+--------------------------+
-| **macOS (Intel)**        | **macOS (Apple Silicon)**|
-|                          |                          |
-| - macOS 26.6             | - macOS 26.5.2 (M2 Pro)  |
-| - Xcode 26.6             | - Xcode 26.6             |
-| - AppleClang 21.0.0      | - AppleClang 21.0.0      |
-| - LLVM 18.1.8            | - LLVM 22.1.7            |
-| - cmake 4.4.2            | - cmake 4.3.0            |
-| - ninja 1.13.0           | - ninja 1.13.2           |
-| - python 3.12.14         | - python 3.14.3          |
-+--------------------------+--------------------------+
-
-The ``Noble`` and ``macOS (Intel)`` columns describe the GitHub Actions runners
-used by the workflows in ``.github/workflows``. They build the same variants
-(``scalar_rgb``, ``scalar_acoustic``, ``llvm_ad_rgb``, ``llvm_ad_acoustic``) and
-run the test suite with ``pytest -m 'not slow'``. The compiler is the one
-shipped by the runner image and cannot be pinned; every other tool version is
-fixed by the workflow.
+The ``Noble`` column above describes a GitHub Actions runner. The workflows in
+``.github/workflows`` build misuka on Ubuntu 24.04, macOS 26 (Apple Silicon) and
+Windows with the same variants (``scalar_rgb``, ``scalar_acoustic``,
+``llvm_ad_rgb``, ``llvm_ad_acoustic``) and run the test suite with
+``pytest -m 'not slow'``. The compiler is the one shipped by the runner image and
+cannot be pinned; every other tool version is fixed by the workflow.
 
 
 After compiling

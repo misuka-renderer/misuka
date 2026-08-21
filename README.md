@@ -4,9 +4,9 @@
 
 # misuka
 
-|  Documentation  | Linux | macOS (Intel) | macOS (Apple Silicon) | Windows |       PyPI      |
-|      :---:      | :---: | :---: | :---: | :---: |      :---:      |
-| [![docs][1]][2] | [![Linux][6]][7] | [![macOS (Intel)][8]][9] | [![macOS (Apple Silicon)][10]][11] | [![Windows][12]][13] | [![pypi][3]][4] |
+|  Documentation  | Linux | macOS | Windows |       PyPI      |
+|      :---:      | :---: | :---: | :---: |      :---:      |
+| [![docs][1]][2] | [![Linux][6]][7] | [![macOS][8]][9] | [![Windows][10]][11] | [![pypi][3]][4] |
 
 [1]: https://readthedocs.org/projects/misuka/badge/?version=latest
 [2]: https://misuka.readthedocs.io/en/latest/
@@ -15,12 +15,10 @@
 [5]: https://dl.acm.org/doi/pdf/10.1145/3730900
 [6]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-linux.yml/badge.svg?branch=master
 [7]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-linux.yml
-[8]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-intel.yml/badge.svg?branch=master
-[9]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-intel.yml
-[10]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml/badge.svg?branch=master
-[11]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml
-[12]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml/badge.svg?branch=master
-[13]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml
+[8]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml/badge.svg?branch=master
+[9]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml
+[10]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml/badge.svg?branch=master
+[11]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml
 
 ## Introduction
 
