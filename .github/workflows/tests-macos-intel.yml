@@ -18,4 +18,4 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     uses: ./.github/workflows/test-build.yml
     with:
-      os: macos-13
+      os: macos-26-intel

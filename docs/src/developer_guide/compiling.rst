@@ -300,7 +300,7 @@ Now, compilation should be as simple as running the following from inside the
 +--------------------------+--------------------------+
 | **macOS (Intel)**        | **macOS (Apple Silicon)**|
 |                          |                          |
-| - macOS 13               | - macOS 26.5.2 (M2 Pro)  |
+| - macOS 26.6             | - macOS 26.5.2 (M2 Pro)  |
 | - Xcode 26.6             | - Xcode 26.6             |
 | - AppleClang 21.0.0      | - AppleClang 21.0.0      |
 | - LLVM 18.1.8            | - LLVM 22.1.7            |
