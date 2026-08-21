@@ -10,6 +10,7 @@ on:
 
 env:
   VARIANTS: "scalar_rgb,scalar_acoustic,llvm_ad_rgb,llvm_ad_acoustic"
+  PYTHON_VERSION: "3.14.3"
   CMAKE_VERSION: "4.4.2"
   NINJA_VERSION: "1.13.0"
   LLVM_VERSION: "18.1.8"
@@ -37,7 +38,7 @@ jobs:
       - name: Create the build environment
         shell: bash
         run: |
-          uv venv --prompt misukadev
+          uv venv --prompt misukadev --python ${{ env.PYTHON_VERSION }}
           if [ "$RUNNER_OS" = "Windows" ]; then
             echo "$GITHUB_WORKSPACE/.venv/Scripts" >> "$GITHUB_PATH"
           else
