@@ -2,13 +2,6 @@ name: Compile and test
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-  pull_request:
-    types:
-      - opened
-      - synchronize
 
 env:
   VARIANTS: "scalar_rgb,scalar_acoustic,llvm_ad_rgb,llvm_ad_acoustic"
