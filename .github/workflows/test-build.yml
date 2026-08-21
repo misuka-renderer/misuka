@@ -106,12 +106,24 @@ jobs:
       # Configure and build
       ###########################################################
       - name: Configure
+        if: runner.os != 'Windows'
         run: |
           cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DMI_DEFAULT_VARIANTS="${{ env.VARIANTS }}"
 
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -G "Visual Studio 17 2022" -A x64 -B build -DMI_DEFAULT_VARIANTS="${{ env.VARIANTS }}"
+
       - name: Build
+        if: runner.os != 'Windows'
         run: |
           cmake --build build
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake --build build --config Release
 
       ###########################################################
       # Run the test suite
@@ -131,5 +143,5 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          .\build\setpath.ps1
+          .\build\Release\setpath.ps1
           pytest src -m "not slow" -n auto
