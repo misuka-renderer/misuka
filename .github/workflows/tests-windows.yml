@@ -1,0 +1,10 @@
+name: Tests / Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test-build.yml
+    with:
+      os: windows-latest

@@ -1,28 +1,20 @@
-name: Compile and test
+name: Compile and test (reusable)
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      os:
+        description: Runner image to build and test on
+        type: string
+        required: true
 
 env:
   VARIANTS: "scalar_rgb,scalar_acoustic,llvm_ad_rgb,llvm_ad_acoustic"
 
 jobs:
   build_and_test:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            name: Ubuntu 24.04
-          - os: macos-13
-            name: macOS 13 (Intel)
-          - os: macos-26
-            name: macOS 26 (Apple Silicon)
-          - os: windows-latest
-            name: Windows
-      fail-fast: false
-
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
     timeout-minutes: 180
 
     steps:

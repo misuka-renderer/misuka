@@ -4,17 +4,28 @@
 
 # misuka
 
-|  Documentation  |      Tests      |       PyPI      |
-|      :---:      |      :---:      |      :---:      |
-| [![docs][1]][2] | [![tests][6]][7]| [![pypi][3]][4] |
+|  Documentation  | Linux | macOS (Intel) | macOS (Apple Silicon) | Windows |       PyPI      |
+|      :---:      | :---: | :---: | :---: | :---: |      :---:      |
+| [![docs][1]][2] | [![Linux][6]][7] | [![macOS (Intel)][9]][10] | [![macOS (Apple Silicon)][12]][13] | [![Windows][15]][16] | [![pypi][3]][4] |
+|                 | [![Linux date][8]][7] | [![macOS (Intel) date][11]][10] | [![macOS (Apple Silicon) date][14]][13] | [![Windows date][17]][16] |                 |
 
 [1]: https://readthedocs.org/projects/misuka/badge/?version=latest
 [2]: https://misuka.readthedocs.io/en/latest/
 [3]: https://img.shields.io/pypi/v/misuka.svg?color=orange
 [4]: https://pypi.org/project/misuka/
 [5]: https://dl.acm.org/doi/pdf/10.1145/3730900
-[6]: https://github.com/misuka-renderer/misuka/actions/workflows/tests.yml/badge.svg?branch=master
-[7]: https://github.com/misuka-renderer/misuka/actions/workflows/tests.yml
+[6]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-linux.yml/badge.svg?branch=master
+[7]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-linux.yml
+[8]: https://img.shields.io/badge/dynamic/json?label=run&query=%24.workflow_runs%5B0%5D.updated_at&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmisuka-renderer%2Fmisuka%2Factions%2Fworkflows%2Ftests-linux.yml%2Fruns%3Fper_page%3D1%26status%3Dcompleted%26branch%3Dmaster&color=informational
+[9]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-intel.yml/badge.svg?branch=master
+[10]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-intel.yml
+[11]: https://img.shields.io/badge/dynamic/json?label=run&query=%24.workflow_runs%5B0%5D.updated_at&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmisuka-renderer%2Fmisuka%2Factions%2Fworkflows%2Ftests-macos-intel.yml%2Fruns%3Fper_page%3D1%26status%3Dcompleted%26branch%3Dmaster&color=informational
+[12]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml/badge.svg?branch=master
+[13]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml
+[14]: https://img.shields.io/badge/dynamic/json?label=run&query=%24.workflow_runs%5B0%5D.updated_at&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmisuka-renderer%2Fmisuka%2Factions%2Fworkflows%2Ftests-macos-arm.yml%2Fruns%3Fper_page%3D1%26status%3Dcompleted%26branch%3Dmaster&color=informational
+[15]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml/badge.svg?branch=master
+[16]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml
+[17]: https://img.shields.io/badge/dynamic/json?label=run&query=%24.workflow_runs%5B0%5D.updated_at&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmisuka-renderer%2Fmisuka%2Factions%2Fworkflows%2Ftests-windows.yml%2Fruns%3Fper_page%3D1%26status%3Dcompleted%26branch%3Dmaster&color=informational
 
 ## Introduction
 

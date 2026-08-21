@@ -1,0 +1,10 @@
+name: Tests / macOS (Apple Silicon)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test-build.yml
+    with:
+      os: macos-26
