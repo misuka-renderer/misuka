@@ -222,24 +222,31 @@ without modifications in those cases.
 Windows
 -------
 
-On Windows, a recent version of `Visual Studio 2022
-<https://visualstudio.microsoft.com/vs/>`_ is required. The Community Edition is
-free and sufficient. Two components have to be selected in the Visual Studio
-installer:
-
-* *Desktop development with C++*
-* *MSVC v143* build tools for x64/x86
+On Windows, a recent version of `Visual Studio
+<https://visualstudio.microsoft.com/vs/>`_ is required; 2022 and 2026 both work.
+The Community Edition is free and sufficient. Select the *Desktop development
+with C++* workload in the Visual Studio installer, which brings in the MSVC
+build tools (*MSVC v143* for x64/x86 on Visual Studio 2022).
 
 Some tools such as git, CMake, or Python might need to be installed manually.
 misuka's build system *requires* access to Python >= 3.9 even if you do not plan
 to use misuka's python interface.
 
-From the root `misuka` directory, the build can be configured with:
+From the root `misuka` directory, the build can be configured with the generator
+matching your Visual Studio version:
 
 .. code-block:: bash
 
     # To be safe, explicitly ask for the 64 bit version of Visual Studio
+
+    # Visual Studio 2022
     cmake -G "Visual Studio 17 2022" -A x64 -B build
+
+    # Visual Studio 2026 (requires CMake 4.2 or newer)
+    cmake -G "Visual Studio 18 2026" -A x64 -B build
+
+Naming a generator that is not installed fails with ``could not find any
+instance of Visual Studio``.
 
 
 Afterwards, open the generated ``mitsuba.sln`` file in the build folder and
