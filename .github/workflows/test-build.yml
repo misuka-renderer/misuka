@@ -20,7 +20,7 @@ jobs:
   build_and_test:
     name: ${{ inputs.os }}
     runs-on: ${{ inputs.os }}
-    environment: ci
+    environment: CI
     timeout-minutes: 180
 
     steps:
