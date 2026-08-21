@@ -214,7 +214,7 @@ without modifications in those cases.
 | - LLVM 18.1.8            | - LLVM 22.1.8            |
 | - cmake 4.4.2            | - cmake 4.4.2            |
 | - ninja 1.13.0           | - ninja 1.13.2           |
-| - python 3.12.14         | - python 3.14.7          |
+| - python (image)         | - python 3.14.7          |
 +--------------------------+--------------------------+
 
 .. _sec-compiling-windows:
