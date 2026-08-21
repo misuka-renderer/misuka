@@ -88,6 +88,8 @@ jobs:
           choco install nasm -y
           echo "C:\Program Files\NASM" >> $env:GITHUB_PATH
           echo "DRJIT_LIBLLVM_PATH=$env:LLVM_PATH\bin\LLVM-C.dll" >> $env:GITHUB_ENV
+          echo "CC=cl" >> $env:GITHUB_ENV
+          echo "CXX=cl" >> $env:GITHUB_ENV
 
       - name: Install pinned build tools
         run: |
