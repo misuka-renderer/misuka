@@ -366,8 +366,11 @@ if (MSVC)
   # Unreachable code (MSVC frequently warns in functions using "if constexpr")
   add_compile_options(/wd4702)
 
-  # Parallel build on MSVC
-  add_compile_options(/MP)
+  # Parallel build on MSVC. Ninja already runs one compiler process per source
+  # file, so this only helps the Visual Studio generator.
+  if (CMAKE_GENERATOR MATCHES "Visual Studio")
+    add_compile_options(/MP)
+  endif()
 
   # Permit many sections in .obj files
   add_compile_options(/bigobj)
