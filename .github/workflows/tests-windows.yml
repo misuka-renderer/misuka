@@ -1,4 +1,4 @@
-name: Tests / Windows
+name: build
 
 on:
   workflow_dispatch:
