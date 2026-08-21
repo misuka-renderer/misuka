@@ -56,7 +56,6 @@ jobs:
           sudo apt-get install -y g++-13 nasm libllvm18
           echo "CC=gcc-13" >> $GITHUB_ENV
           echo "CXX=g++-13" >> $GITHUB_ENV
-          echo "DRJIT_LIBLLVM_PATH=/usr/lib/x86_64-linux-gnu/libLLVM-18.so.1" >> $GITHUB_ENV
 
       - name: Select Xcode (macOS)
         if: runner.os == 'macOS'
