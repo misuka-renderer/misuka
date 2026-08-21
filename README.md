@@ -4,15 +4,17 @@
 
 # misuka
 
-|  Documentation  |       PyPI      |
-|      :---:      |      :---:      |
-| [![docs][1]][2] | [![pypi][3]][4] |
+|  Documentation  |      Tests      |       PyPI      |
+|      :---:      |      :---:      |      :---:      |
+| [![docs][1]][2] | [![tests][6]][7]| [![pypi][3]][4] |
 
 [1]: https://readthedocs.org/projects/misuka/badge/?version=latest
 [2]: https://misuka.readthedocs.io/en/latest/
 [3]: https://img.shields.io/pypi/v/misuka.svg?color=orange
 [4]: https://pypi.org/project/misuka/
 [5]: https://dl.acm.org/doi/pdf/10.1145/3730900
+[6]: https://github.com/misuka-renderer/misuka/actions/workflows/tests.yml/badge.svg?branch=master
+[7]: https://github.com/misuka-renderer/misuka/actions/workflows/tests.yml
 
 ## Introduction
 

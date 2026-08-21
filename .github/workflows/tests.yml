@@ -2,6 +2,9 @@ name: Compile and test
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
   pull_request:
     types:
       - opened
@@ -19,6 +22,8 @@ jobs:
             name: Ubuntu 24.04
           - os: macos-13
             name: macOS 13 (Intel)
+          - os: macos-26
+            name: macOS 26 (Apple Silicon)
           - os: windows-latest
             name: Windows
       fail-fast: false
