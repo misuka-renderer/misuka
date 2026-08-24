@@ -222,25 +222,55 @@ without modifications in those cases.
 Windows
 -------
 
-On Windows, a recent version of `Visual Studio 2022
-<https://visualstudio.microsoft.com/vs/>`_ is required. The Community Edition is
-free and sufficient. Two components have to be selected in the Visual Studio
-installer:
+On Windows, a recent version of `Visual Studio
+<https://visualstudio.microsoft.com/vs/>`_ is required; 2022 and 2026 both work.
+The Community Edition is free and sufficient. The following components have to
+be selected in the Visual Studio installer:
 
 * *Desktop development with C++*
-* *MSVC v143* build tools for x64/x86
+* *MSVC* build tools for x64/x86
+* *C++ CMake tools for Windows*
 
-Some tools such as git, CMake, or Python might need to be installed manually.
-misuka's build system *requires* access to Python >= 3.9 even if you do not plan
-to use misuka's python interface.
+The last of these provides CMake and `Ninja <https://ninja-build.org/>`_. Some
+tools such as git or Python might still need to be installed manually. misuka's
+build system *requires* access to Python >= 3.9 even if you do not plan to use
+misuka's python interface.
 
-From the root `misuka` directory, the build can be configured with:
+Ninja needs the MSVC toolchain on ``PATH``, so run the build from a *Developer
+Command Prompt* or a *Developer PowerShell* for your Visual Studio version
+rather than a plain shell. Both are installed alongside Visual Studio. From the
+root `misuka` directory:
+
+.. code-block:: bash
+
+    mkdir build
+    cd build
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
+    ninja
+
+Note that the build tree ends up in a ``Release`` subdirectory of ``build``:
+misuka places its build products in ``build/<config>`` whenever the compiler is
+MSVC, independently of the generator. The working ``setpath`` scripts therefore
+live in ``build/Release``.
+
+Building from Visual Studio
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you would rather work inside the IDE, configure the Visual Studio generator
+instead:
 
 .. code-block:: bash
 
     # To be safe, explicitly ask for the 64 bit version of Visual Studio
+
+    # Visual Studio 2022
     cmake -G "Visual Studio 17 2022" -A x64 -B build
 
+    # Visual Studio 2026 (requires CMake 4.2 or newer)
+    cmake -G "Visual Studio 18 2026" -A x64 -B build
+
+Naming a generator that is not installed fails with ``could not find any
+instance of Visual Studio``.
 
 Afterwards, open the generated ``mitsuba.sln`` file in the build folder and
 proceed building as usual from within Visual Studio. You will probably also
@@ -253,15 +283,23 @@ command:
 
     cmake --build build --config Release
 
+Unlike Ninja, this generator is multi-config: the build mode is chosen per
+build rather than at configure time. The build tree lands in
+``build/<config>`` just the same.
+
 
 **Tested version**
 
-* Windows 10
-* Visual Studio 17 2022 (Community Edition)
-* MSVC 19.41.34123.0
-* cmake 3.28.1 (64bit)
-* git 2.34.1 (64bit)
-* Python 3.11.1 (64bit)
+The Windows CI job builds the Ninja configuration above with these pinned tool versions:
+
+* Windows Server 2025 (the ``windows-latest`` runner image)
+* MSVC toolchain of the Visual Studio version shipped in that image
+* LLVM 18.1.8
+* cmake 4.4.2
+* ninja 1.13.0
+* Python 3.14.3
+
+The Visual Studio generator is not covered by CI.
 
 
 .. _sec-compiling-macos:
@@ -331,12 +369,12 @@ required to run misuka.
 
 .. note::
 
-    On Windows, note the ``Release`` in those paths. The Visual Studio compiler
-    writes the working scripts into that subdirectory, while the ``setpath``
-    scripts sitting directly in ``build`` do not set the environment up
-    correctly. Running the wrong one fails silently, and the symptom appears
-    later as a ``ModuleNotFoundError`` for ``drjit`` or an unrecognised
-    ``misuka`` command.
+    On Windows, note the ``Release`` in those paths. MSVC builds write the
+    working scripts into that subdirectory regardless of the generator, while
+    the ``setpath`` scripts sitting directly in ``build`` do not set the
+    environment up correctly. Running the wrong one fails silently, and the
+    symptom appears later as a ``ModuleNotFoundError`` for ``drjit`` or an
+    unrecognised ``misuka`` command.
 
 Sourcing this script in every new shell gets old quickly. See
 :ref:`sec-python-environments` for how to run it automatically whenever your
