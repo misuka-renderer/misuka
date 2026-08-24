@@ -57,9 +57,13 @@ pip install misuka
 on the command line. The Python package includes the following variants by default:
 
 - `scalar_rgb`
+- `scalar_acoustic`
+- `cuda_ad_rgb`
 - `cuda_ad_acoustic`
-- `metal_ad_acoustic`
+- `llvm_ad_rgb`
 - `llvm_ad_acoustic`
+- `metal_ad_rgb`
+- `metal_ad_acoustic`
 
 Additional variants can be enabled by compiling misuka.
 Please refer to the [Developer's Guide](https://misuka.readthedocs.io/en/latest/src/developer_guide/compiling.html) for instructions.

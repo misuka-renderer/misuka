@@ -40,6 +40,20 @@ the code.
 
 .. This command will also install :monosp:`Dr.Jit` on your system if not already available.
 
+.. The Python package includes the following variants by default:
+
+.. - :monosp:`scalar_rgb`
+.. - :monosp:`scalar_acoustic`
+.. - :monosp:`cuda_ad_rgb`
+.. - :monosp:`cuda_ad_acoustic`
+.. - :monosp:`llvm_ad_rgb`
+.. - :monosp:`llvm_ad_acoustic`
+.. - :monosp:`metal_ad_rgb`
+.. - :monosp:`metal_ad_acoustic`
+
+.. Additional variants can be enabled by compiling misuka, see the
+.. :ref:`compilation guide <sec-compiling>`.
+
 .. See the :ref:`developer guide <sec-compiling>` for complete instructions on building
 .. from the git source tree.
 

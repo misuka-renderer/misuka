@@ -57,8 +57,8 @@ render an ``rgb`` image will not work as expected.
 See the :doc:`../rendering/shoebox_scene` tutorial for an example of how to
 render images of acoustic scenes, evaluated at specific frequencies.
 
-The ``pip`` package ships with ``ad_acoustic`` variants for all vectorized
-backends (``cuda``, ``metal`` and ``llvm``).
+The ``pip`` package ships with ``ad_rgb`` and ``ad_acoustic`` variants for all
+vectorized backends (``cuda``, ``metal`` and ``llvm``).
 When using misuka in python, selecting multiple variants in ``mi.set_variant()``
 results in the first available variant being used.
 We recommend setting the variants in the following way, so the code runs on all
