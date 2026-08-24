@@ -58,7 +58,7 @@ static void help(int thread_count) {
     std::cout << util::info_copyright() << std::endl;
     std::cout << util::info_features() << std::endl;
     std::cout << R"(
-Usage: mitsuba [options] <One or more scene XML files>
+Usage: misuka [options] <One or more scene XML files>
 
 Options:
 

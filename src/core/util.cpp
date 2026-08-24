@@ -275,7 +275,7 @@ std::string info_build(int thread_count) {
     constexpr size_t PacketSize = dr::Packet<float>::Size;
 
     std::ostringstream oss;
-    oss << "Mitsuba version " << MI_VERSION << " (";
+    oss << "misuka version " << MI_VERSION << " (";
     oss << MI_BRANCH << "[" << MI_HASH << "], ";
 #if defined(_WIN32)
     oss << "Windows, ";
