@@ -1,8 +1,9 @@
 """
 Install build dependencies for stable ABI (abi3) wheel builds.
 
-Reads build-system.requires from pyproject.toml, installs all dependencies,
-then force-reinstalls drjit with the abi3 wheel variant.
+Reads build-system.requires from pyproject.toml, installs all dependencies
+(plus cmake, which pip skips with --no-build-isolation), then force-reinstalls
+drjit with the abi3 wheel variant.
 
 Usage:
   python install_build_deps_abi3.py                # install all build deps + abi3 drjit
@@ -27,7 +28,7 @@ def main():
     drjit_req = next(r for r in reqs if r.startswith("drjit"))
 
     if not drjit_only:
-        pip("install", *reqs)
+        pip("install", *reqs, "cmake>=3.15")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pip("download", "--only-binary=:all:", "--python-version", "3.999",
