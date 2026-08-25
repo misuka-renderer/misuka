@@ -12,6 +12,13 @@ on:
         type: boolean
         required: true
         default: false
+      testpypi_build_tag:
+        description: >
+          TestPyPI build tag. Leave empty to continue from the highest tag
+          already published for this version.
+        type: string
+        required: false
+        default: ''
 
 env:
   VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic,metal_ad_rgb,metal_ad_acoustic"
@@ -130,17 +137,61 @@ jobs:
       id-token: write
 
     steps:
+      # Checkout must come first. It cleans the workspace, so running it after
+      # the download would wipe dist/.
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install repack tooling
+        run: python -m pip install 'wheel>=0.40'
+
+      #####################################################################
+      # An index never lets a filename be reused, so uploading the same
+      # version twice needs new filenames. A wheel build tag supplies them
+      # without changing the version, and pip treats the highest tag as the
+      # newest wheel. This is a TestPyPI convenience only: PyPI publishes
+      # the pristine artifacts below.
+      #####################################################################
+      - name: Pick the build tag
+        id: build_tag
+        env:
+          BUILD_TAG_OVERRIDE: ${{ github.event.inputs.testpypi_build_tag }}
+        run: python .github/next_build_tag.py dist >> "$GITHUB_OUTPUT"
+
+      - name: Re-tag wheels
+        env:
+          BUILD_TAG: ${{ steps.build_tag.outputs.build_tag }}
+        run: |
+          mkdir -p retagged
+          for whl in dist/*.whl; do
+              rm -rf unpacked && mkdir unpacked
+              python -m wheel unpack -d unpacked "$whl"
+              python -m wheel pack --build-number "$BUILD_TAG" -d retagged unpacked/*/
+          done
+
+          built=$(ls -1 dist/*.whl | wc -l)
+          tagged=$(ls -1 retagged/*.whl | wc -l)
+          if [ "$built" != "$tagged" ]; then
+              echo "::error::re-tagged $tagged of $built wheels"
+              exit 1
+          fi
+          ls -1 retagged
+
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           user: __token__
           password: ${{secrets.TESTPYPI_TOKEN}}
+          packages-dir: retagged
 
   upload_pypi:
     name: Upload wheels to PyPI
