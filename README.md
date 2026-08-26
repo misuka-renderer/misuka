@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/misuka_logo.png" width="300" alt="misuka logo">
+  <img src="https://raw.githubusercontent.com/misuka-renderer/misuka/master/docs/images/misuka_logo.png" width="300" alt="misuka logo">
 </p>
 
 # misuka
