@@ -10,7 +10,7 @@
 
 [1]: https://img.shields.io/readthedocs/misuka/latest
 [2]: https://misuka.readthedocs.io/en/latest/
-[3]: https://img.shields.io/pypi/v/misuka.svg?color=orange
+[3]: https://img.shields.io/pypi/v/misuka.svg?color=green
 [4]: https://pypi.org/project/misuka/
 [5]: https://dl.acm.org/doi/pdf/10.1145/3730900
 [6]: https://img.shields.io/github/actions/workflow/status/misuka-renderer/misuka/tests-linux.yml?branch=master&label=build
