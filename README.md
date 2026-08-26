@@ -96,14 +96,13 @@ When using misuka in academic projects, please cite:
   title = {{{misuka}}: {{An}} Open-Source Differentiable Room Acoustic Renderer},
   shorttitle = {Misuka},
   author = {J{\"u}terbock, Tobias and Finnendahl, Ugo and Worchel, Markus and Wujecki, Daniel and Alexa, Marc and Weinzierl, Stefan},
-  year = 2026,
-  month = jan,
+  year = 2025,
   journal = {Proceedings of Meetings on Acoustics},
   volume = {58},
   number = {1},
   pages = {022004:1--022004:13},
   publisher = {Acoustical Society of America},
-  doi = {10.1121/2.0002193}
+  doi = {10.1121/2.0002193},
   issn = {1939-800X},
 }
 ```
@@ -116,7 +115,7 @@ If your work uses Time-Resolved Path Replay Backpropagation, please also cite:
   author = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and Alexa, Marc},
   year = 2025,
   month = jul,
-  issue_date = {August 2025}
+  issue_date = {August 2025},
   journal = {ACM Transactions on Graphics},
   volume = {44},
   number = {4},

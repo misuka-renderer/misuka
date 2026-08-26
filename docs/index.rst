@@ -31,7 +31,7 @@ misuka can be installed via ``pip`` from `PyPI
 
 .. code-block:: bash
 
-pip install misuka
+    pip install misuka
 
 This command will also install `Dr.Jit <https://drjit.readthedocs.io/en/stable/>`_ on your system if not already available.
 
@@ -131,15 +131,17 @@ When using misuka in academic projects, please cite:
 .. code-block:: bibtex
 
     @article{misuka,
-        title   = {{misuka}: An Open-Source Differentiable Room Acoustic Renderer},
-        author  = {J{\"u}terbock, Tobias and Finnendahl, Ugo and Worchel, Markus and
-                   Wujecki, Daniel and Alexa, Marc and Weinzierl, Stefan},
-        journal = {Proceedings of Meetings on Acoustics},
-        volume  = {58},
-        number  = {1},
-        pages   = {022004:1--022004:13},
-        year    = {2026},
-        doi     = {10.1121/2.0002193},
+      title = {{{misuka}}: {{An}} Open-Source Differentiable Room Acoustic Renderer},
+      shorttitle = {Misuka},
+      author = {J{\"u}terbock, Tobias and Finnendahl, Ugo and Worchel, Markus and Wujecki, Daniel and Alexa, Marc and Weinzierl, Stefan},
+      year = 2025,
+      journal = {Proceedings of Meetings on Acoustics},
+      volume = {58},
+      number = {1},
+      pages = {022004:1--022004:13},
+      publisher = {Acoustical Society of America},
+      doi = {10.1121/2.0002193},
+      issn = {1939-800X},
     }
 
 When using Time-Resolved Path Replay Backpropagation, please also cite:
@@ -147,17 +149,19 @@ When using Time-Resolved Path Replay Backpropagation, please also cite:
 .. code-block:: bibtex
 
     @article{acoustic_prb,
-        title   = {Differentiable Geometric Acoustic Path Tracing Using
-                   Time-Resolved Path Replay Backpropagation},
-        author  = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and
-                   Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and
-                   Alexa, Marc},
-        journal = {ACM Transactions on Graphics},
-        volume  = {44},
-        number  = {4},
-        pages   = {82:1--82:17},
-        year    = {2025},
-        doi     = {10.1145/3730900},
+      title = {Differentiable Geometric Acoustic Path Tracing Using Time-Resolved Path Replay Backpropagation},
+      author = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and Alexa, Marc},
+      year = 2025,
+      month = jul,
+      issue_date = {August 2025},
+      journal = {ACM Transactions on Graphics},
+      volume = {44},
+      number = {4},
+      pages = {82:1--82:17},
+      publisher = {Association for Computing Machinery},
+      address = {New York, NY, USA},
+      issn = {0730-0301},
+      doi = {10.1145/3730900},
     }
 
 misuka is built on :external+mitsuba:doc:`Mitsuba 3 <index>`. When
