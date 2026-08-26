@@ -1,7 +1,7 @@
 How to make a new release?
 --------------------------
 
-1. Ensure that the most recent version of Mitsuba is checked out (including all
+1. Ensure that the most recent version of misuka is checked out (including all
    submodules).
 
 2. Regenerate the documentation using the `docstrings`, `mkdoc-api` and `mkdoc`
@@ -46,9 +46,9 @@ How to make a new release?
 17. Run the GHA "Build Python Wheels" with option "1".
 
 18. Check that the new version is available on
-    `readthedocs <https://mitsuba.readthedocs.io/>`__.
+    `readthedocs <https://misuka.readthedocs.io/>`__.
 
-19. Create a `release on GitHub <https://github.com/mitsuba-renderer/mitsuba3/releases/new>`__
+19. Create a `release on GitHub <https://github.com/misuka-renderer/misuka/releases/new>`__
     from the tag created at step 10. The changelog can be copied from step 2.
 
 20. Checkout the ``stable`` branch and run ``git pull --ff-only origin vX.Y.Z``
