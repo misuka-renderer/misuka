@@ -26,36 +26,31 @@ misuka inherits from Mitsuba 3 and Dr.Jit.
 Installation
 ------------
 
-A PyPi package will be released very soon!
-For now, either :ref:`install from source <sec-installing-from-source>` or
-follow the :ref:`compilation guide <sec-compiling>` if you plan on working on
-the code.
+misuka can be installed via ``pip`` from `PyPI
+<https://pypi.org/project/misuka/>`_. This is the recommended method of installation.
 
-.. misuka can be installed via :monosp:`pip` from `PyPI
-.. <https://pypi.org/project/misuka/>`_. This is the recommended method of installation.
+.. code-block:: bash
 
-.. .. code-block:: bash
+pip install misuka
 
-..     pip install misuka
+This command will also install `Dr.Jit <https://drjit.readthedocs.io/en/stable/>`_ on your system if not already available.
 
-.. This command will also install :monosp:`Dr.Jit` on your system if not already available.
+The Python package includes the following variants by default:
 
-.. The Python package includes the following variants by default:
+- :monosp:`scalar_rgb`
+- :monosp:`scalar_acoustic`
+- :monosp:`cuda_ad_rgb`
+- :monosp:`cuda_ad_acoustic`
+- :monosp:`llvm_ad_rgb`
+- :monosp:`llvm_ad_acoustic`
+- :monosp:`metal_ad_rgb`
+- :monosp:`metal_ad_acoustic`
 
-.. - :monosp:`scalar_rgb`
-.. - :monosp:`scalar_acoustic`
-.. - :monosp:`cuda_ad_rgb`
-.. - :monosp:`cuda_ad_acoustic`
-.. - :monosp:`llvm_ad_rgb`
-.. - :monosp:`llvm_ad_acoustic`
-.. - :monosp:`metal_ad_rgb`
-.. - :monosp:`metal_ad_acoustic`
+Additional variants can be enabled by compiling misuka, see the
+:ref:`compilation guide <sec-compiling>`.
 
-.. Additional variants can be enabled by compiling misuka, see the
-.. :ref:`compilation guide <sec-compiling>`.
-
-.. See the :ref:`developer guide <sec-compiling>` for complete instructions on building
-.. from the git source tree.
+See the :ref:`developer guide <sec-compiling>` for complete instructions on building
+from the git source tree.
 
 Requirements
 ^^^^^^^^^^^^
