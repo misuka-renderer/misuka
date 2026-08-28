@@ -198,6 +198,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.upload_pypi == 'true' }}
     needs: [build_wheels]
+    environment: pypi-release
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       #########################
@@ -210,6 +214,3 @@ jobs:
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
