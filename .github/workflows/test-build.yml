@@ -104,11 +104,11 @@ jobs:
       ###########################################################
       # Configure and build
       ###########################################################
-      - name: Patch drjit-core to emit ELF objects in the JIT (Windows)
+      - name: Force drjit-core to use the MCJIT backend instead of ORCv2 (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          git -C ext/drjit/ext/drjit-core apply "$GITHUB_WORKSPACE/.github/patches/drjit-core-elf-triple.patch"
+          git -C ext/drjit/ext/drjit-core apply "$GITHUB_WORKSPACE/.github/patches/drjit-core-force-mcjit.patch"
           git -C ext/drjit/ext/drjit-core diff --stat
 
       - name: Configure
