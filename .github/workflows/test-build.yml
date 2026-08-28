@@ -153,6 +153,8 @@ jobs:
         if: runner.os != 'Windows'
         timeout-minutes: 45
         shell: bash
+        env:
+          OBJC_DISABLE_INITIALIZE_FORK_SAFETY: YES
         run: |
           source build/setpath.sh
           pytest src -m "not slow" -n auto
