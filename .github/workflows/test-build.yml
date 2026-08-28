@@ -70,9 +70,10 @@ jobs:
 
       - name: Install LLVM (Windows)
         if: runner.os == 'Windows'
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: ${{ env.LLVM_VERSION }}
+        run: |
+          choco install llvm --version=${{ env.LLVM_VERSION }} -y --no-progress
+          echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+        shell: pwsh
 
       - name: Prepare compiler environment (Windows)
         if: runner.os == 'Windows'
@@ -85,7 +86,7 @@ jobs:
         run: |
           choco install nasm -y
           echo "C:\Program Files\NASM" >> $env:GITHUB_PATH
-          echo "DRJIT_LIBLLVM_PATH=$env:LLVM_PATH\bin\LLVM-C.dll" >> $env:GITHUB_ENV
+          echo "DRJIT_LIBLLVM_PATH=C:\Program Files\LLVM\bin\LLVM-C.dll" >> $env:GITHUB_ENV
           echo "CC=cl" >> $env:GITHUB_ENV
           echo "CXX=cl" >> $env:GITHUB_ENV
 
@@ -104,13 +105,6 @@ jobs:
       ###########################################################
       # Configure and build
       ###########################################################
-      - name: Patch drjit-core to emit ELF objects in the JIT (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          git -C ext/drjit/ext/drjit-core apply "$GITHUB_WORKSPACE/.github/patches/drjit-core-elf-triple.patch"
-          git -C ext/drjit/ext/drjit-core diff --stat
-
       - name: Configure
         run: |
           cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DMI_DEFAULT_VARIANTS="${{ env.VARIANTS }}"
