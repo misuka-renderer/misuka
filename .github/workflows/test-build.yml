@@ -71,7 +71,7 @@ jobs:
       - name: Install LLVM (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install llvm --version=${{ env.LLVM_VERSION }} -y --no-progress
+          choco install llvm --version=${{ env.LLVM_VERSION }} -y --no-progress --allow-downgrade
           echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
         shell: pwsh
 
