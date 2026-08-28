@@ -6,7 +6,7 @@ misuka release notes
 
 misuka 0.1.0
 ~~~~~~~~~~~~
-*Unreleased*
+*August 28, 2026*
 
 - **Mitsuba update**. misuka now builds on Mitsuba 3.9.1, so all of its features
   are available (e.g. function freezing, Dr.Jit's new gradient-based optimizers, and
@@ -42,7 +42,6 @@ misuka 0.1.0
 
 misuka 0.0.0
 ~~~~~~~~~~~~
-
 *August 24, 2025*
 
 - **Initial release**. Source code release, branched off Mitsuba 3.6.4. `[f4bb42e] <https://github.com/misuka-renderer/misuka/commit/f4bb42e43ab68df3b0c8a5ecd4df04106e2bb582>`_
