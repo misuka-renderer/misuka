@@ -13,7 +13,7 @@ env:
   PYTHON_VERSION: "3.14.3"
   CMAKE_VERSION: "4.4.2"
   NINJA_VERSION: "1.13.0"
-  LLVM_VERSION: "18.1.8"
+  LLVM_VERSION: "16"
   XCODE_VERSION: "26.6"
 
 jobs:
@@ -104,13 +104,6 @@ jobs:
       ###########################################################
       # Configure and build
       ###########################################################
-      - name: Patch drjit-core to emit ELF objects in the JIT (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          git -C ext/drjit/ext/drjit-core apply "$GITHUB_WORKSPACE/.github/patches/drjit-core-elf-triple.patch"
-          git -C ext/drjit/ext/drjit-core diff --stat
-
       - name: Configure
         run: |
           cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DMI_DEFAULT_VARIANTS="${{ env.VARIANTS }}"
