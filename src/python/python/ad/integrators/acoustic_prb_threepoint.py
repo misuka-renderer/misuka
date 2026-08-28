@@ -89,8 +89,13 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
        i.e., only affecting immediate neighbor vertices on a path.
 
     .. note:: Unlike :ref:`acoustic_prb <integrator-acoustic_prb>`, this
-       integrator is unbiased even with moving geometry, though its gradient
-       estimates are noisier.
+       integrator includes derivatives arising from differential transport
+       in scenes with non-static geometry, so its geometry derivatives
+       can be considered more "complete". It does not handle parametric 
+       discontinuities, though, so the gradient estimates are still biased.
+       The underlying reparameterization to surface integrals affects the
+       gradient variance: depending on the scene, gradient estimates
+       may be noisier :cite:`rb_nonstatic`.
 
     .. warning:: Gradients with respect to geometry need the time derivatives
        that ``track_time_derivatives`` enables, so leave it at |true| when
@@ -118,6 +123,11 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                    "track_time_derivatives is set to False: gradients with "
                    "respect to moving geometry will be biased, since this "
                    "integrator relies on time derivatives to account for it.")
+
+        if not self.is_detached:
+            mi.Log(mi.LogLevel.Warn,
+                   "Setting `is_detached` to false indicates attached sampling, but only "
+                   "detached sampling is supported by this integrator (the flag is ignored).")
 
     @dr.syntax
     def sample(self,

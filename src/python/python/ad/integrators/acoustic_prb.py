@@ -73,12 +73,13 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`
     instead.
 
-    .. warning:: This integrator is biased when used with moving geometry. It
-       omits the gradient contributions that the :ref:`three-point variants
-       <integrator-acoustic_prb_threepoint>` compute explicitly. The time
-       derivatives it does track carry overlapping information, though, so
-       geometry optimization can still converge in practice, depending on
-       the scene and optimization setting.
+    .. warning:: The derivatives produced by this integrator are biased
+       if the scene is non-static: it neither handles parametric discontinuities,
+       nor computes the non-local term in differential transport :cite:`rb_nonstatic`.
+       The :ref:`three-point variants <integrator-acoustic_prb_threepoint>` include the second 
+       contribution and are generally better suited for non-static scenes.
+       This integrator does track derivatives of transport time, though, so geometry optimization 
+       may still converge in practice, depending on the scene and optimization setting.
 
     .. tabs::
         .. code-tab:: python
@@ -94,6 +95,11 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
     def __init__(self, props):
         super().__init__(props)
         self.track_time_derivatives = props.get("track_time_derivatives", False)
+        
+        if not self.is_detached:
+            mi.Log(mi.LogLevel.Warn,
+                   "Setting `is_detached` to false indicates attached sampling, but only "
+                   "detached sampling is supported by this integrator (the flag is ignored).")
 
     @dr.syntax
     def sample(self,

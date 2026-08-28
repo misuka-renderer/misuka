@@ -52,9 +52,9 @@ class AcousticADIntegrator(RBIntegrator):
 
      * - is_detached
        - |bool|
-       - Whether the sampling strategy should be detached from the optimized
-         parameters. This is the only acoustic AD integrator that acts on it.
-         The others accept it and ignore it. (Default: |true|)
+       - Whether the integrator should implement a detached sampling strategy (= true) or
+         an attached sampling strategy (= false). In the latter case, the sampling process
+         is differentiated. (Default: |true|)
 
     This is the base class for differentiable acoustic integrators. It extends
     the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
@@ -73,13 +73,10 @@ class AcousticADIntegrator(RBIntegrator):
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` for
     non-static scenes.
 
-    .. warning:: With the default ``is_detached`` setting, this integrator is
-       biased when used with moving geometry. It omits the gradient
-       contributions that the :ref:`three-point variants
-       <integrator-acoustic_prb_threepoint>` compute explicitly. The time
-       derivatives it does track carry overlapping information, though, so
-       geometry optimization can still converge in practice, depending on
-       the scene and optimization setting.
+    .. warning:: This integrator does not consider parametric discontinuities, so
+       derivatives will be biased if the scene is non-static. It does track
+       derivatives of transport time, so geometry optimization may still converge 
+       in practice, depending on the scene and optimization setting.
 
     .. warning:: Because time derivatives are always tracked, the film's
        reconstruction filter has to be differentiable for those time gradients
@@ -179,7 +176,6 @@ class AcousticADIntegrator(RBIntegrator):
                 aovs=self.aov_names()
             )
 
-            # Generate a set of rays starting at the sensor,
             # Generate a set of rays starting at the sensor,
             # pos.x stores normalized frequency index, ray.wavelengths stores frequency
             ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
