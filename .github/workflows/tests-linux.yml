@@ -19,7 +19,7 @@ concurrency:
 jobs:
   test:
     name: build & test
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: false  # temporary: this experiment PR only exercises the Windows leg
     uses: ./.github/workflows/test-build.yml
     with:
       os: ubuntu-24.04
