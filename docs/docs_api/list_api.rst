@@ -552,12 +552,6 @@
 
 .. autofunction:: mitsuba.acoustic.speed_of_sound
 
-.. autofunction:: mitsuba.acoustic.speed_of_sound_cramer
-
-.. autofunction:: mitsuba.acoustic.speed_of_sound_ideal_gas
-
-.. autofunction:: mitsuba.acoustic.speed_of_sound_simple
-
 .. autoclass:: mitsuba.ad.Adam
 
 .. autoclass:: mitsuba.ad.BaseGuidingDistr

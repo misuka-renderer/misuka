@@ -9548,7 +9548,7 @@ Parameter ``temperature``:
 
 Parameter ``frequencies``:
     Center frequencies in Hz, one value per frequency band. Must have
-    the same number of entries as \p etc has columns.
+    the same number of entries as ``etc`` has columns.
 
 Parameter ``relative_humidity``:
     Relative humidity in the range of 0 to 1.
@@ -9559,7 +9559,7 @@ Parameter ``atmospheric_pressure``:
 Returns:
     A new vector containing the attenuated ETC with the same layout as
     the input (row-major, n_time_bins × n_frequencies). From Python,
-    when \p etc was a ``TensorXf`` (e.g. straight from
+    when ``etc`` was a ``TensorXf`` (e.g. straight from
     ``mitsuba.render()``), the result is a ``TensorXf`` of that same
     shape, ready to be used like any other rendered output (plotted,
     saved, compared, etc.).)doc";
@@ -9593,7 +9593,38 @@ static const char *__doc_mitsuba_acoustic_speed_of_sound =
 R"doc(Calculation methods and automatic method selector for the speed of
 sound
 
-This Function calculates the speed of sound in air
+This function calculates the speed of sound in air, using one of the
+following methods:
+
+"simple": following ISO 9613-1 (Formula A.5), ``c = 343.2 * sqrt((T +
+273.15) / 293.15)``. Only uses ``temperature`` (``T``), which must be
+in the range of -20°C to 50°C.
+
+"ideal_gas": speed of sound of a humid-air mixture treated as an ideal
+gas, based on chapter 6.3 in V. E. Ostashev and D. K. Wilson,
+Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC Press,
+2015. doi: 10.1201/b18922, ``c = sqrt(gamma_a * R_a * T_K * (1 +
+(alpha * (1 + delta - nu) - 1) * C))``, where ``T_K`` is
+``temperature`` in Kelvin, ``R_a`` the specific gas constant of dry
+air, ``gamma_a``/``gamma_w`` the heat capacity ratios of dry air and
+water vapor, ``alpha`` the ratio of their molar masses, and ``C`` the
+water vapor mole fraction term derived from ``relative_humidity``,
+``atmospheric_pressure`` and ``saturation_vapor_pressure``; see
+speed_of_sound_ideal_gas() for the exact constants.
+
+"cramer": O. Cramer, "The variation of the specific heat ratio and the
+speed of sound in air with temperature, pressure, humidity, and CO2
+concentration," The Journal of the Acoustical Society of America, vol.
+93, no. 5, pp. 2510-2516, May 1993, doi: 10.1121/1.405827, an
+empirical quadratic fit ``c = a0 + a1*T + a2*T^2 + (a3 + a4*T +
+a5*T^2)*x_w + (a6 + a7*T + a8*T^2)*p + (a9 + a10*T + a11*T^2)*x_c +
+a12*x_w^2 + a13*p^2 + a14*x_c^2 + a15*x_c*p*x_w``, where ``x_w`` is
+the water vapor mole fraction (derived from ``relative_humidity`` and
+``p``), ``p`` is ``atmospheric_pressure`` and ``x_c`` is the CO2 mole
+fraction (derived from ``co2_ppm``); the 16 empirical coefficients
+``a0`` ... ``a15`` are given in speed_of_sound_cramer(). Requires
+``temperature`` in the range of 0°C to 30°C and
+``atmospheric_pressure`` in the range of 75,000 Pa to 102,000 Pa.
 
 Parameter ``temperature``:
     The temperature in degree Celsius.
@@ -9602,26 +9633,32 @@ Parameter ``relative_humidity``:
     Relative humidity in the range of 0 to 1.
 
 Parameter ``atmospheric_pressure``:
-    Atmospheric pressure in Pascal
+    Atmospheric pressure in Pascal, must be non-negative. For
+    "cramer", a missing value (see is_missing_value()) defaults to
+    101,325 Pa (standard atmosphere).
 
 Parameter ``saturation_vapor_pressure``:
     Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
-    method, where a missing value is estimated from temperature; see
-    speed_of_sound_ideal_gas().
+    method. A negative value (see default) means "not specified": it
+    is then estimated from ``temperature`` via the Magnus formula (see
+    e.g. O. A. Alduchov and R. E. Eskridge, "Improved Magnus Form
+    Approximation of Saturation Vapor Pressure," J. Appl. Meteor.,
+    1996).
 
 Parameter ``co2_ppm``:
     CO2 concentration in parts per million (ppm). Only used by the
-    "cramer" method (and to auto-select it, see below), where a
-    missing value defaults to a recent global mean; see
-    speed_of_sound_cramer().
+    "cramer" method (and to auto-select it, see below), must be in the
+    range of 0 ppm to 10,000 ppm. A missing value (see
+    is_missing_value()) defaults to 428.73 ppm, the global monthly
+    mean for 2026-07 reported by NOAA GML
+    (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
 
 Parameter ``method``:
-    The method to use for the calculation. Possible values are: -
-    "auto" (default): automatically selects the method based on the
-    types of input parameters. - "simple": see
-    speed_of_sound_simple(). - "ideal_gas": see
-    speed_of_sound_ideal_gas(). - "cramer": see
-    speed_of_sound_cramer().
+    The method to use for the calculation: "simple", "ideal_gas",
+    "cramer", or "auto" (default), which automatically selects one of
+    the other three based on which of the parameters above were
+    provided (see the warning logged at runtime for which one was
+    picked).
 
 Returns:
     The speed of sound in meters per second)doc";
@@ -9671,8 +9708,8 @@ Parameter ``atmospheric_pressure``:
 
 Parameter ``saturation_vapor_pressure``:
     Saturation vapor pressure in Pascal. A negative value (see
-    default) means "not specified": it is then estimated from \p
-    temperature via the Magnus formula.
+    default) means "not specified": it is then estimated from
+    ``temperature`` via the Magnus formula.
 
 Returns:
     The speed of sound in meters per second)doc";

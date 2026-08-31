@@ -6,22 +6,6 @@
 MI_PY_EXPORT(acoustic) {
     MI_PY_IMPORT_TYPES()
 
-    m.def("speed_of_sound_simple",
-          acoustic::speed_of_sound_simple<float>,
-          "temperature"_a, D(acoustic, speed_of_sound_simple));
-
-    m.def("speed_of_sound_ideal_gas",
-          acoustic::speed_of_sound_ideal_gas<float>,
-          "temperature"_a, "relative_humidity"_a, "atmospheric_pressure"_a,
-          "saturation_vapor_pressure"_a = -1.f,
-          D(acoustic, speed_of_sound_ideal_gas));
-
-    m.def("speed_of_sound_cramer",
-          acoustic::speed_of_sound_cramer<float>,
-          "temperature"_a, "relative_humidity"_a, "atmospheric_pressure"_a,
-          "co2_ppm"_a = std::numeric_limits<float>::quiet_NaN(),
-          D(acoustic, speed_of_sound_cramer));
-
     m.def("speed_of_sound",
           [](float temperature,
              float relative_humidity,

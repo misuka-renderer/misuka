@@ -56,7 +56,7 @@ float speed_of_sound_simple(const Value temperature) {
  *    Atmospheric pressure in Pascal, must be non-negative.
  * \param saturation_vapor_pressure
  *    Saturation vapor pressure in Pascal. A negative value (see default)
- *    means "not specified": it is then estimated from \p temperature via
+ *    means "not specified": it is then estimated from \c temperature via
  *    the Magnus formula.
  *
  * \return
@@ -207,28 +207,69 @@ float speed_of_sound_cramer(const Value temperature,
 /**
  * \brief Calculation methods and automatic method selector for the speed of sound
  *
- * This Function calculates the speed of sound in air
+ * This function calculates the speed of sound in air, using one of the
+ * following methods:
+ *
+ * "simple": following ISO 9613-1 (Formula A.5),
+ * ``c = 343.2 * sqrt((T + 273.15) / 293.15)``. Only uses \c
+ * temperature (``T``), which must be in the range of -20°C to 50°C.
+ *
+ * "ideal_gas": speed of sound of a humid-air mixture treated as an
+ * ideal gas, based on chapter 6.3 in V. E. Ostashev and D. K. Wilson,
+ * Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC Press,
+ * 2015. doi: 10.1201/b18922,
+ * ``c = sqrt(gamma_a * R_a * T_K * (1 + (alpha * (1 + delta - nu) - 1)
+ * * C))``, where ``T_K`` is \c temperature in Kelvin, ``R_a`` the
+ * specific gas constant of dry air, ``gamma_a``/``gamma_w`` the heat
+ * capacity ratios of dry air and water vapor, ``alpha`` the ratio of
+ * their molar masses, and ``C`` the water vapor mole fraction term
+ * derived from \c relative_humidity, \c atmospheric_pressure and \c
+ * saturation_vapor_pressure; see speed_of_sound_ideal_gas() for the
+ * exact constants.
+ *
+ * "cramer": O. Cramer, "The variation of the specific heat ratio and
+ * the speed of sound in air with temperature, pressure, humidity, and
+ * CO2 concentration," The Journal of the Acoustical Society of
+ * America, vol. 93, no. 5, pp. 2510-2516, May 1993,
+ * doi: 10.1121/1.405827, an empirical quadratic fit
+ * ``c = a0 + a1*T + a2*T^2 + (a3 + a4*T + a5*T^2)*x_w + (a6 + a7*T +
+ * a8*T^2)*p + (a9 + a10*T + a11*T^2)*x_c + a12*x_w^2 + a13*p^2 +
+ * a14*x_c^2 + a15*x_c*p*x_w``, where ``x_w`` is the water vapor mole
+ * fraction (derived from \c relative_humidity and ``p``), ``p`` is \c
+ * atmospheric_pressure and ``x_c`` is the CO2 mole fraction (derived
+ * from \c co2_ppm); the 16 empirical coefficients ``a0`` ... ``a15``
+ * are given in speed_of_sound_cramer(). Requires \c temperature in
+ * the range of 0°C to 30°C and \c atmospheric_pressure in the range
+ * of 75,000 Pa to 102,000 Pa.
  *
  * \param temperature
  *      The temperature in degree Celsius.
  * \param relative_humidity
  *      Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
- *      Atmospheric pressure in Pascal
+ *      Atmospheric pressure in Pascal, must be non-negative. For "cramer",
+ *      a missing value (see is_missing_value()) defaults to 101,325 Pa
+ *      (standard atmosphere).
  * \param saturation_vapor_pressure
  *      Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
- *      method, where a missing value is estimated from temperature; see
- *      speed_of_sound_ideal_gas().
+ *      method. A negative value (see default) means "not specified": it is
+ *      then estimated from \c temperature via the Magnus formula (see e.g.
+ *      O. A. Alduchov and R. E. Eskridge, "Improved Magnus Form
+ *      Approximation of Saturation Vapor Pressure," J. Appl. Meteor.,
+ *      1996).
  * \param co2_ppm
- *      CO2 concentration in parts per million (ppm). Only used by the "cramer"
- *      method (and to auto-select it, see below), where a missing value
- *      defaults to a recent global mean; see speed_of_sound_cramer().
+ *      CO2 concentration in parts per million (ppm). Only used by the
+ *      "cramer" method (and to auto-select it, see below), must be in the
+ *      range of 0 ppm to 10,000 ppm. A missing value (see
+ *      is_missing_value()) defaults to 428.73 ppm, the global monthly mean
+ *      for 2026-07 reported by NOAA GML
+ *      (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
  * \param method
- *      The method to use for the calculation. Possible values are:
- *      - "auto" (default): automatically selects the method based on the types of input parameters.
- *      - "simple": see speed_of_sound_simple().
- *      - "ideal_gas": see speed_of_sound_ideal_gas().
- *      - "cramer": see speed_of_sound_cramer().
+ *      The method to use for the calculation: "simple", "ideal_gas",
+ *      "cramer", or "auto" (default), which automatically selects one of
+ *      the other three based on which of the parameters above were
+ *      provided (see the warning logged at runtime for which one was
+ *      picked).
  *
  * \return
  *      The speed of sound in meters per second
@@ -257,11 +298,16 @@ float speed_of_sound(const Value temperature,
         } else {
             selected_method = "ideal_gas";
         }
-        // No method was explicitly: let the user know which one was picked
+        // No method was explicitly requested: let the user know which one
+        // was picked, since it depends on which parameters were provided
+        // and silently changes if that set of parameters changes later.
+        // Logged at Warn (not Info) since mitsuba's default log level is
+        // Warn; an Info-level message here would be silently suppressed
+        // unless the user explicitly lowers the log level.
         // Note: the extra parentheses around the function name prevent this
         // call from being expanded by the member-function-only `Log(...)`
         // macro defined in logger.h (this is a free function, no m_class).
-        (mitsuba::detail::Log)(Info, nullptr, __FILE__, __LINE__,
+        (mitsuba::detail::Log)(Warn, nullptr, __FILE__, __LINE__,
             "speed_of_sound(): no method specified, automatically selected "
             "\"%s\" based on the provided parameters.", selected_method);
     }
@@ -387,7 +433,7 @@ Value energy_attenuation_coefficient(Value temperature,
  *      Temperature in degree Celsius.
  * \param frequencies
  *      Center frequencies in Hz, one value per frequency band. Must have
- *      the same number of entries as \p etc has columns.
+ *      the same number of entries as \c etc has columns.
  * \param relative_humidity
  *      Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
@@ -396,7 +442,7 @@ Value energy_attenuation_coefficient(Value temperature,
  * \return
  *      A new vector containing the attenuated ETC with the same layout as
  *      the input (row-major, n_time_bins × n_frequencies). From Python,
- *      when \p etc was a ``TensorXf`` (e.g. straight from
+ *      when \c etc was a ``TensorXf`` (e.g. straight from
  *      ``mitsuba.render()``), the result is a ``TensorXf`` of that same
  *      shape, ready to be used like any other rendered output (plotted,
  *      saved, compared, etc.).
