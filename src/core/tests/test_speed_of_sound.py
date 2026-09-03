@@ -2,6 +2,16 @@ import math
 import pytest
 import mitsuba as mi
 
+
+def _as_float(x):
+    """speed_of_sound()/apply_pure_tone_attenuation() return the variant's
+    native Float (needed so gradients survive under *_ad_* variants, see
+    acoustic.h) -- a bare Python float for scalar variants, a width-1 drjit
+    array otherwise. Extract a plain Python float uniformly for comparison
+    against pytest.approx()/==, which can't handle drjit arrays directly."""
+    return float(x) if isinstance(x, float) else x[0]
+
+
 #copied python implementation from pyfar constants:
 
 def _simple(temperature):
@@ -90,69 +100,75 @@ def test01_hasattr_acoustic(variants_all_acoustic):
 
 
 def test02_method_selection(variants_all_acoustic):
-    assert mi.acoustic.speed_of_sound(temperature=20.0) == pytest.approx(_simple(20.0), rel=1e-6) # function selects automatically
-    assert mi.acoustic.speed_of_sound(temperature=20.0, method="auto") == pytest.approx(_simple(20.0), rel=1e-6)  # function selects automatically
-    assert mi.acoustic.speed_of_sound(temperature=25.0, method="simple") == pytest.approx(_simple(25.0), rel=1e-6)  # function should use simple method
+    assert _as_float(mi.acoustic.speed_of_sound(temperature=20.0)) == pytest.approx(_simple(20.0), rel=1e-6) # function selects automatically
+    assert _as_float(mi.acoustic.speed_of_sound(temperature=20.0, method="auto")) == pytest.approx(_simple(20.0), rel=1e-6)  # function selects automatically
+    assert _as_float(mi.acoustic.speed_of_sound(temperature=25.0, method="simple")) == pytest.approx(_simple(25.0), rel=1e-6)  # function should use simple method
 
 
 def test03_auto_selects_simple_without_humidity(variants_all_acoustic):
     # relative_humidity not provided -> "auto" should fall back to "simple"
-    result = mi.acoustic.speed_of_sound(temperature=15.0)
+    result = _as_float(mi.acoustic.speed_of_sound(temperature=15.0))
     assert result == pytest.approx(_simple(15.0), rel=1e-6)
 
 
 def test04_auto_selects_ideal_gas_with_humidity_only(variants_all_acoustic):
     # relative_humidity provided, co2_ppm not provided -> "auto" should select "ideal_gas"
-    result = mi.acoustic.speed_of_sound(
+    result = _as_float(mi.acoustic.speed_of_sound(
         temperature=20.0,
         relative_humidity=0.5,
         atmospheric_pressure=101325.0,
-    )
+    ))
     expected = _ideal_gas(20.0, 0.5, 101325.0)
     assert result == pytest.approx(expected, rel=1e-5)
 
 
 def test05_auto_selects_cramer_with_humidity_and_co2(variants_all_acoustic):
     # relative_humidity and co2_ppm both provided -> "auto" should select "cramer"
-    result = mi.acoustic.speed_of_sound(
+    result = _as_float(mi.acoustic.speed_of_sound(
         temperature=20.0,
         relative_humidity=0.5,
         atmospheric_pressure=101325.0,
         co2_ppm=400.0,
-    )
+    ))
     expected = _cramer(20.0, 0.5, 101325.0, 400.0)
     assert result == pytest.approx(expected, rel=1e-5)
 
 
 def test06_simple_method_matches_formula(variants_all_acoustic):
     for temperature in (-10.0, 0.0, 25.0, 40.0):
-        result = mi.acoustic.speed_of_sound(temperature=temperature, method="simple")
+        result = _as_float(mi.acoustic.speed_of_sound(temperature=temperature, method="simple"))
         assert result == pytest.approx(_simple(temperature), rel=1e-6)
 
 
-def test07_simple_method_temperature_too_low_raises(variants_all_acoustic):
+# Range checks (this and the other *_raises tests below) are scalar-only by
+# design, matching energy_attenuation_coefficient()'s established pattern:
+# vectorized/JIT Value skips them and relies on the branch-free formula
+# instead (a host `if` can't collapse a per-lane JIT comparison to a single
+# bool). variant_scalar_acoustic exercises exactly the code path that does
+# validate.
+def test07_simple_method_temperature_too_low_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(temperature=-25.0, method="simple")
 
 
-def test08_simple_method_temperature_too_high_raises(variants_all_acoustic):
+def test08_simple_method_temperature_too_high_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(temperature=55.0, method="simple")
 
 
 def test09_ideal_gas_method_matches_formula(variants_all_acoustic):
     temperature, rh, pressure = 22.5, 0.4, 100000.0
-    result = mi.acoustic.speed_of_sound(
+    result = _as_float(mi.acoustic.speed_of_sound(
         temperature=temperature,
         relative_humidity=rh,
         atmospheric_pressure=pressure,
         method="ideal_gas",
-    )
+    ))
     expected = _ideal_gas(temperature, rh, pressure)
     assert result == pytest.approx(expected, rel=1e-5)
 
 
-def test10_ideal_gas_relative_humidity_out_of_range_raises(variants_all_acoustic):
+def test10_ideal_gas_relative_humidity_out_of_range_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(
             temperature=20.0,
@@ -169,7 +185,7 @@ def test10_ideal_gas_relative_humidity_out_of_range_raises(variants_all_acoustic
         )
 
 
-def test11_ideal_gas_negative_pressure_raises(variants_all_acoustic):
+def test11_ideal_gas_negative_pressure_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(
             temperature=20.0,
@@ -181,18 +197,18 @@ def test11_ideal_gas_negative_pressure_raises(variants_all_acoustic):
 
 def test12_cramer_method_matches_formula(variants_all_acoustic):
     temperature, rh, pressure, co2 = 20.0, 0.5, 101325.0, 400.0
-    result = mi.acoustic.speed_of_sound(
+    result = _as_float(mi.acoustic.speed_of_sound(
         temperature=temperature,
         relative_humidity=rh,
         atmospheric_pressure=pressure,
         co2_ppm=co2,
         method="cramer",
-    )
+    ))
     expected = _cramer(temperature, rh, pressure, co2)
     assert result == pytest.approx(expected, rel=1e-5)
 
 
-def test13_cramer_temperature_out_of_range_raises(variants_all_acoustic):
+def test13_cramer_temperature_out_of_range_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(
             temperature=-5.0,
@@ -211,7 +227,7 @@ def test13_cramer_temperature_out_of_range_raises(variants_all_acoustic):
         )
 
 
-def test14_cramer_pressure_out_of_range_raises(variants_all_acoustic):
+def test14_cramer_pressure_out_of_range_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(
             temperature=20.0,
@@ -230,7 +246,7 @@ def test14_cramer_pressure_out_of_range_raises(variants_all_acoustic):
         )
 
 
-def test15_cramer_co2_out_of_range_raises(variants_all_acoustic):
+def test15_cramer_co2_out_of_range_raises(variant_scalar_acoustic):
     with pytest.raises(Exception):
         mi.acoustic.speed_of_sound(
             temperature=20.0,
@@ -278,13 +294,13 @@ def test19_ideal_gas_explicit_saturation_vapor_pressure_matches_formula(variants
     # saturation_vapor_pressure * relative_humidity, making an explicitly
     # provided saturation_vapor_pressure have no effect on the result
     temperature, rh, pressure, e_s = 20.0, 1.0, 90000.0, 500.0
-    result = mi.acoustic.speed_of_sound(
+    result = _as_float(mi.acoustic.speed_of_sound(
         temperature=temperature,
         relative_humidity=rh,
         atmospheric_pressure=pressure,
         saturation_vapor_pressure=e_s,
         method="ideal_gas",
-    )
+    ))
     expected = _ideal_gas(temperature, rh, pressure, e_s)
     assert result == pytest.approx(expected, rel=1e-5)
     # e_s=500 is far from the ~2340 Pa Magnus-formula default at 20°C, so

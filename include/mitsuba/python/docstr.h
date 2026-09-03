@@ -9518,10 +9518,41 @@ array that can potentially live on the GPU and/or be differentiable.)doc";
 static const char *__doc_mitsuba_acoustic_apply_pure_tone_attenuation =
 R"doc(Apply pure tone attenuation to an energy time curve (ETC).
 
+Differentiable: under an ``*_ad_*`` variant, gradients set on ``etc``
+(e.g. a gradient-tracked ``TensorXf`` from ``mitsuba.render()``) or on
+``temperature``, ``speed_of_sound_ms``, ``relative_humidity`` or
+``atmospheric_pressure`` propagate through to the returned ETC.
+
 Multiplies each time bin of the ETC with a frequency-dependent
 exponential decay factor derived from the distance the sound has
 travelled and the air attenuation coefficient computed for each
-frequency band, following ISO 9613-1:1993.
+frequency band, following ISO 9613-1:1993: bin :math:`t` of frequency
+band :math:`f` is scaled by :math:`\exp(-d_t \, \alpha_f)`, where:
+
+* :math:`d_t` is implied distance by time and ``speed_of_sound_ms``
+
+* :math:`\alpha_f` is that band's decay coefficient, in dB/m
+
+* :math:`\alpha_f = 8.686 f^2 (\alpha_{cl} + \alpha_{vib})`
+
+* :math:`\alpha_{cl}=1.84\cdot10^{-11}(p_r/p_a)\cdot\sqrt{T/T_0}`
+
+* :math:`\alpha_{vib}=(T/T_0)^{-5/2}\cdot(\alpha_O + \alpha_N)`
+
+* :math:`\alpha_O=\frac{0.01275 e^{-2239.1/T}}{(f_{rO}+f^2/f_{rO})}`
+
+* :math:`\alpha_N=\frac{0.1068 e^{-3352/T}}{(f_{rN}+f^2/f_{rN})}`.
+
+Here :math:`T` is ``temperature`` in Kelvin, :math:`T_0` and
+:math:`p_r` the reference temperature/pressure, :math:`p_a` is
+``atmospheric_pressure``, and :math:`f_{rO}`, :math:`f_{rN}` are the
+oxygen/nitrogen relaxation frequencies, :math:`f_{rO} = (p_a / p_r)
+(24 + 4.04 \cdot 10^4 h (0.02 + h) / (0.391 + h))` and :math:`f_{rN} =
+(p_a / p_r) (T / T_0)^{-1/2} (9 + 280 h \cdot e^{-4.17 [(T /
+T_0)^{-1/3} - 1]})`, where :math:`h` is the molar concentration of
+water vapor (as a percentage), derived from ``relative_humidity``.
+:math:`\alpha` is converted from dB/m to the natural (1/m) coefficient
+used above via :math:`\alpha_f = \alpha / (10 / \ln 10)`.
 
 From Python, this is a drop-in post-processing step for the output of
 ``mitsuba.render()``: it accepts a ``TensorXf`` of arbitrary shape
@@ -9565,27 +9596,48 @@ Returns:
     saved, compared, etc.).)doc";
 
 static const char *__doc_mitsuba_acoustic_energy_attenuation_coefficient =
-R"doc(Pure tone energy attenuation coefficient, following ISO 9613-1:1993.
+R"doc(Pure tone energy attenuation coefficient following ISO 9613-1:1993.
+Calculates the energy attenuation coefficient in air for a given
+frequency, temperature, relative humidity and atmospheric pressure.
+The attenuation coefficient in dB/m is :math:`\alpha = 8.686 f^2
+(\alpha_{cl} + \alpha_{vib})`, consisting of a classical absorption
+term :math:`\alpha_{cl}` and a molecular relaxation term
+:math:`\alpha_{vib}`: :math:`\alpha_{cl} = 1.84 \cdot 10^{-11} (p_r /
+p_a) \sqrt{T / T_0}` :math:`\alpha_{vib} = (T / T_0)^{-5/2}(\alpha_O +
+\alpha_N)` where :math:`\alpha_O` and :math:`\alpha_N` are the oxygen
+and nitrogen relaxation contributions. The relaxation frequencies
+depend on atmospheric pressure, temperature and water vapor
+concentration. Here :math:`f` is ``frequency``, :math:`T` is
+temperature in Kelvin, :math:`T_0 = 293.15` K and :math:`p_r = 101325`
+Pa are the reference temperature and pressure, and :math:`p_a` is
+``atmospheric_pressure``. The water vapor concentration is derived
+from ``relative_humidity`` and the saturation vapor pressure. The
+returned coefficient is converted from dB/m to the natural energy
+decay coefficient in 1/m via :math:`\alpha / (10 / \ln 10)`. Validity
+ranges according to ISO 9613-1:
+
+* ``temperature`` must be greater than -73 °C for an accuracy of
++/-50% and is in the range of -20 °C to 50 °C for an accuracy of
++/-10%.
+
+* ``frequency`` must be greater than 50 Hz.
+
+* ``atmospheric_pressure`` must be less than 200 kPa.
 
 Parameter ``temperature``:
-    Temperature in degree Celsius. Must be greater than -73 °C for
-    accuracy of +/-50% (and success). Must be in the range of -20 °C
-    to 50 °C for accuracy of +/-10%.
+    Temperature in degree Celsius.
 
 Parameter ``frequency``:
-    Frequency in Hz. Must be greater than 50 Hz. Frequency-to-pressure
-    ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%.
+    Frequency in Hz.
 
 Parameter ``relative_humidity``:
     Relative humidity in the range of 0 to 1.
 
 Parameter ``atmospheric_pressure``:
-    Atmospheric pressure in Pascal. Must be less than 200 kPa.
-    Frequency-to-pressure ratio: 4 x 10-4 HzjPa to 10 Hz/Pa for
-    accuracy of +/-50%.
+    Atmospheric pressure in Pascal.
 
 Returns:
-    Energy decay coefficient m in 1/m.)doc";
+    Energy decay coefficient in 1/m.)doc";
 
 static const char *__doc_mitsuba_acoustic_is_missing_value = R"doc()doc";
 
@@ -9593,36 +9645,54 @@ static const char *__doc_mitsuba_acoustic_speed_of_sound =
 R"doc(Calculation methods and automatic method selector for the speed of
 sound
 
+Differentiable: under an ``*_ad_*`` variant, gradients set on
+``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
+``saturation_vapor_pressure`` or ``co2_ppm`` propagate through to the
+returned speed of sound.
+
 This function calculates the speed of sound in air, using one of the
 following methods:
 
-"simple": following ISO 9613-1 (Formula A.5), ``c = 343.2 * sqrt((T +
-273.15) / 293.15)``. Only uses ``temperature`` (``T``), which must be
-in the range of -20°C to 50°C.
+"simple": following ISO 9613-1 (Formula A.5), :math:`c = 343.2 \cdot
+\sqrt{(T + 273.15) / 293.15}`. Only uses ``temperature`` (:math:`T`),
+which must be in the range of -20°C to 50°C.
 
 "ideal_gas": speed of sound of a humid-air mixture treated as an ideal
 gas, based on chapter 6.3 in V. E. Ostashev and D. K. Wilson,
 Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC Press,
-2015. doi: 10.1201/b18922, ``c = sqrt(gamma_a * R_a * T_K * (1 +
-(alpha * (1 + delta - nu) - 1) * C))``, where ``T_K`` is
-``temperature`` in Kelvin, ``R_a`` the specific gas constant of dry
-air, ``gamma_a``/``gamma_w`` the heat capacity ratios of dry air and
-water vapor, ``alpha`` the ratio of their molar masses, and ``C`` the
-water vapor mole fraction term derived from ``relative_humidity``,
-``atmospheric_pressure`` and ``saturation_vapor_pressure``; see
-speed_of_sound_ideal_gas() for the exact constants.
+2015. doi: 10.1201/b18922, :math:`c = \sqrt{\gamma_a R_a T_K (1 +
+(\alpha (1 + \delta - \nu) - 1) C)}`, where :math:`T_K` is
+``temperature`` in Kelvin, :math:`R_a` the specific gas constant of
+dry air, :math:`\gamma_a, \gamma_w` the heat capacity ratios of dry
+air and water vapor, :math:`\alpha` the ratio of their molar masses,
+and :math:`C` the water vapor mole fraction term derived from
+``relative_humidity``, ``atmospheric_pressure`` and
+``saturation_vapor_pressure``; see speed_of_sound_ideal_gas() for the
+exact constants.
 
 "cramer": O. Cramer, "The variation of the specific heat ratio and the
 speed of sound in air with temperature, pressure, humidity, and CO2
 concentration," The Journal of the Acoustical Society of America, vol.
 93, no. 5, pp. 2510-2516, May 1993, doi: 10.1121/1.405827, an
-empirical quadratic fit ``c = a0 + a1*T + a2*T^2 + (a3 + a4*T +
-a5*T^2)*x_w + (a6 + a7*T + a8*T^2)*p + (a9 + a10*T + a11*T^2)*x_c +
-a12*x_w^2 + a13*p^2 + a14*x_c^2 + a15*x_c*p*x_w``, where ``x_w`` is
-the water vapor mole fraction (derived from ``relative_humidity`` and
-``p``), ``p`` is ``atmospheric_pressure`` and ``x_c`` is the CO2 mole
-fraction (derived from ``co2_ppm``); the 16 empirical coefficients
-``a0`` ... ``a15`` are given in speed_of_sound_cramer(). Requires
+empirical quadratic fit, the sum of:
+
+* a temperature-only term :math:`(a_0 + a_1 T + a_2 T^2)`
+
+* a water-vapor term :math:`(a_3 + a_4 T + a_5 T^2) x_w`
+
+* a pressure term :math:`(a_6 + a_7 T + a_8 T^2) p`
+
+* a CO2 term :math:`(a_9 + a_{10} T + a_{11} T^2) x_c`
+
+* squared terms :math:`a_{12} x_w^2 + a_{13} p^2 + a_{14} x_c^2`
+
+* a cross term :math:`a_{15} x_c\, p\, x_w`
+
+where :math:`x_w` is the water vapor mole fraction (derived from
+``relative_humidity`` and :math:`p`), :math:`p` is
+``atmospheric_pressure`` and :math:`x_c` is the CO2 mole fraction
+(derived from ``co2_ppm``); the 16 empirical coefficients :math:`a_0
+\ldots a_{15}` are given in speed_of_sound_cramer(). Requires
 ``temperature`` in the range of 0°C to 30°C and
 ``atmospheric_pressure`` in the range of 75,000 Pa to 102,000 Pa.
 
@@ -9639,11 +9709,10 @@ Parameter ``atmospheric_pressure``:
 
 Parameter ``saturation_vapor_pressure``:
     Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
-    method. A negative value (see default) means "not specified": it
-    is then estimated from ``temperature`` via the Magnus formula (see
-    e.g. O. A. Alduchov and R. E. Eskridge, "Improved Magnus Form
-    Approximation of Saturation Vapor Pressure," J. Appl. Meteor.,
-    1996).
+    method. A missing value (see is_missing_value()) is estimated from
+    ``temperature`` via the Magnus formula (see e.g. O. A. Alduchov
+    and R. E. Eskridge, "Improved Magnus Form Approximation of
+    Saturation Vapor Pressure," J. Appl. Meteor., 1996).
 
 Parameter ``co2_ppm``:
     CO2 concentration in parts per million (ppm). Only used by the
@@ -9707,9 +9776,9 @@ Parameter ``atmospheric_pressure``:
     Atmospheric pressure in Pascal, must be non-negative.
 
 Parameter ``saturation_vapor_pressure``:
-    Saturation vapor pressure in Pascal. A negative value (see
-    default) means "not specified": it is then estimated from
-    ``temperature`` via the Magnus formula.
+    Saturation vapor pressure in Pascal. Missing values (see
+    is_missing_value()) are estimated from ``temperature`` via the
+    Magnus formula.
 
 Returns:
     The speed of sound in meters per second)doc";

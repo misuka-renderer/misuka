@@ -14,7 +14,13 @@ NAMESPACE_BEGIN(acoustic)
 
 template <typename Value>
 inline bool is_missing_value(const Value &value) {
-    if constexpr (std::is_floating_point_v<Value>) {
+    if constexpr (dr::is_jit_v<Value>) {
+        // JIT/AD arrays (e.g. Float under an *_ad_* variant): these
+        // parameters are always broadcast scalars in practice (one
+        // physical value per render, never per-sample), so a dr::all()
+        // reduction to a host bool is cheap and correct.
+        return dr::all(dr::isnan(value));
+    } else if constexpr (std::is_floating_point_v<Value>) {
         return std::isnan(static_cast<double>(value));
     } else {
         return false;
@@ -36,11 +42,16 @@ inline bool is_missing_value(const Value &value) {
  *      The speed of sound in meters per second
  */
 template <typename Value>
-float speed_of_sound_simple(const Value temperature) {
-    if (temperature < -20.0f || temperature > 50.0f) {
-        throw std::invalid_argument("Temperature out of range for simple method (-20°C to 50°C).");
+Value speed_of_sound_simple(const Value temperature) {
+    // Range check relies on scalar branching and is only meaningful (and
+    // compilable) for scalar Value types; see energy_attenuation_coefficient()
+    // for the established pattern.
+    if constexpr (!dr::is_jit_v<Value>) {
+        if (temperature < -20.0f || temperature > 50.0f) {
+            throw std::invalid_argument("Temperature out of range for simple method (-20°C to 50°C).");
+        }
     }
-    return 343.2f * dr::sqrt((temperature + 273.15f) / 293.15f);
+    return Value(343.2f) * dr::sqrt((temperature + Value(273.15f)) / Value(293.15f));
 }
 
 /**
@@ -55,26 +66,28 @@ float speed_of_sound_simple(const Value temperature) {
  * \param atmospheric_pressure
  *    Atmospheric pressure in Pascal, must be non-negative.
  * \param saturation_vapor_pressure
- *    Saturation vapor pressure in Pascal. A negative value (see default)
- *    means "not specified": it is then estimated from \c temperature via
- *    the Magnus formula.
+ *    Saturation vapor pressure in Pascal. Missing values (see
+ *    is_missing_value()) are estimated from \c temperature via the Magnus
+ *    formula.
  *
  * \return
  *      The speed of sound in meters per second
  */
 template <typename Value>
-float speed_of_sound_ideal_gas(const Value temperature,
+Value speed_of_sound_ideal_gas(const Value temperature,
                                const Value relative_humidity,
                                const Value atmospheric_pressure,
-                               const Value saturation_vapor_pressure = Value(-1)) {
-    if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
-        throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
-    }
-    if (atmospheric_pressure < 0.0f) {
-        throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+                               const Value saturation_vapor_pressure = Value(std::numeric_limits<float>::quiet_NaN())) {
+    if constexpr (!dr::is_jit_v<Value>) {
+        if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
+            throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
+        }
+        if (atmospheric_pressure < 0.0f) {
+            throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+        }
     }
 
-    float temperature_kelvin = static_cast<float>(temperature) + 273.15f;
+    Value temperature_kelvin = temperature + Value(273.15f);
 
     // Ideal gas calculation based on Ostashev and Wilson
     float R = 8.314f; // J/(mol*K)
@@ -84,13 +97,12 @@ float speed_of_sound_ideal_gas(const Value temperature,
     float mu_w = 18.02f * 1e-3f; //kg/mol
     float R_a = R / mu_a;
 
-    // saturation_vapor_pressure < 0 means "not specified" (matches the
-    // Python binding's default of -1). Estimate it from temperature using
-    // the Magnus formula (see e.g. O. A. Alduchov and R. E. Eskridge,
+    // A missing saturation_vapor_pressure is estimated from temperature
+    // using the Magnus formula (see e.g. O. A. Alduchov and R. E. Eskridge,
     // "Improved Magnus Form Approximation of Saturation Vapor Pressure,"
     // J. Appl. Meteor., 1996).
     Value e_s;
-    if (saturation_vapor_pressure < Value(0)) {
+    if (is_missing_value(saturation_vapor_pressure)) {
         e_s = Value(6.1094f) * dr::exp((Value(17.625f) * temperature) /
                                        (temperature + Value(243.04f)));
         e_s = Value(100) * e_s; // hPa → Pa
@@ -98,15 +110,15 @@ float speed_of_sound_ideal_gas(const Value temperature,
         e_s = saturation_vapor_pressure;
     }
 
-    float e = static_cast<float>(e_s) * static_cast<float>(relative_humidity); // water vapor partial pressure
+    Value e = e_s * relative_humidity; // water vapor partial pressure
     float alpha = mu_a / mu_w;
     float delta = (1.0f - (1.0f / gamma_a)) / (1.0f - (1.0f / gamma_w));
     float nu = (gamma_a - 1.0f) / (gamma_w - 1.0f);
-    float C = (e / static_cast<float>(atmospheric_pressure)) /
-              (alpha * (1.0f - e / static_cast<float>(atmospheric_pressure)));
+    Value C = (e / atmospheric_pressure) /
+              (alpha * (Value(1.0f) - e / atmospheric_pressure));
 
     return dr::sqrt(gamma_a * R_a * temperature_kelvin *
-                    (1.0f + (alpha * (1.0f + delta - nu) - 1.0f) * C));
+                    (Value(1.0f) + (alpha * (1.0f + delta - nu) - 1.0f) * C));
 }
 
 /**
@@ -135,15 +147,17 @@ float speed_of_sound_ideal_gas(const Value temperature,
  *      The speed of sound in meters per second
  */
 template <typename Value>
-float speed_of_sound_cramer(const Value temperature,
+Value speed_of_sound_cramer(const Value temperature,
                             const Value relative_humidity,
                             Value atmospheric_pressure,
                             Value co2_ppm = Value(std::numeric_limits<float>::quiet_NaN())) {
-    if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
-        throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
-    }
-    if (atmospheric_pressure < 0.0f) {
-        throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+    if constexpr (!dr::is_jit_v<Value>) {
+        if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
+            throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
+        }
+        if (atmospheric_pressure < 0.0f) {
+            throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+        }
     }
 
     // Resolve missing values to their defaults before validating ranges, so
@@ -155,25 +169,27 @@ float speed_of_sound_cramer(const Value temperature,
         co2_ppm = Value(428.73f); // NOAA GML global mean, doi.org/10.15138/9N0H-ZH07
     }
 
-    // Cramer's specific bounds for temperature and pressure
-    if (temperature < 0.0f || temperature > 30.0f) {
-        throw std::invalid_argument("Temperature out of range for Cramer's method (0°C to 30°C).");
-    }
-    else if (atmospheric_pressure < 75000.0f || atmospheric_pressure > 102000.0f) {
-        throw std::invalid_argument("Atmospheric pressure out of range for Cramer's method (75,000 Pa to 102,000 Pa).");
-    }
-    else if (co2_ppm < 0.0f || co2_ppm > 10000.0f) {
-        throw std::invalid_argument("CO2 concentration out of range for Cramer's method (0 ppm to 10,000 ppm).");
+    if constexpr (!dr::is_jit_v<Value>) {
+        // Cramer's specific bounds for temperature and pressure
+        if (temperature < 0.0f || temperature > 30.0f) {
+            throw std::invalid_argument("Temperature out of range for Cramer's method (0°C to 30°C).");
+        }
+        else if (atmospheric_pressure < 75000.0f || atmospheric_pressure > 102000.0f) {
+            throw std::invalid_argument("Atmospheric pressure out of range for Cramer's method (75,000 Pa to 102,000 Pa).");
+        }
+        else if (co2_ppm < 0.0f || co2_ppm > 10000.0f) {
+            throw std::invalid_argument("CO2 concentration out of range for Cramer's method (0 ppm to 10,000 ppm).");
+        }
     }
 
-    float x_c = co2_ppm * 1e-6f; // Convert ppm to mole fraction
-    float T = temperature + 273.15f; // Convert to Kelvin
-    float p = atmospheric_pressure; // in Pa
+    Value x_c = co2_ppm * 1e-6f; // Convert ppm to mole fraction
+    Value T = temperature + Value(273.15f); // Convert to Kelvin
+    Value p = atmospheric_pressure; // in Pa
 
-    float p_sv = dr::exp(1.2811805e-5f * T * T - 1.9509874e-2f * T +
-                         34.04926034f - 6.3536311e3f / T);
+    Value p_sv = dr::exp(1.2811805e-5f * T * T - 1.9509874e-2f * T +
+                         Value(34.04926034f) - 6.3536311e3f / T);
 
-    float x_w = relative_humidity * p_sv / p; // Mole fraction of water vapor
+    Value x_w = relative_humidity * p_sv / p; // Mole fraction of water vapor
 
     // cannot happen with inut parameter limitation
     // if (x_w < 0.0f || x_w > 0.06f) {
@@ -207,40 +223,53 @@ float speed_of_sound_cramer(const Value temperature,
 /**
  * \brief Calculation methods and automatic method selector for the speed of sound
  *
+ * Differentiable: under an ``*_ad_*`` variant, gradients set on
+ * \c temperature, \c relative_humidity, \c atmospheric_pressure,
+ * \c saturation_vapor_pressure or \c co2_ppm propagate through to the
+ * returned speed of sound.
+ *
  * This function calculates the speed of sound in air, using one of the
  * following methods:
  *
  * "simple": following ISO 9613-1 (Formula A.5),
- * ``c = 343.2 * sqrt((T + 273.15) / 293.15)``. Only uses \c
- * temperature (``T``), which must be in the range of -20°C to 50°C.
+ * \f$c = 343.2 \cdot \sqrt{(T + 273.15) / 293.15}\f$. Only uses \c
+ * temperature (\f$T\f$), which must be in the range of -20°C to 50°C.
  *
  * "ideal_gas": speed of sound of a humid-air mixture treated as an
  * ideal gas, based on chapter 6.3 in V. E. Ostashev and D. K. Wilson,
  * Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC Press,
  * 2015. doi: 10.1201/b18922,
- * ``c = sqrt(gamma_a * R_a * T_K * (1 + (alpha * (1 + delta - nu) - 1)
- * * C))``, where ``T_K`` is \c temperature in Kelvin, ``R_a`` the
- * specific gas constant of dry air, ``gamma_a``/``gamma_w`` the heat
- * capacity ratios of dry air and water vapor, ``alpha`` the ratio of
- * their molar masses, and ``C`` the water vapor mole fraction term
- * derived from \c relative_humidity, \c atmospheric_pressure and \c
- * saturation_vapor_pressure; see speed_of_sound_ideal_gas() for the
- * exact constants.
+ * \f$c = \sqrt{\gamma_a R_a T_K (1 + (\alpha (1 + \delta - \nu) - 1)
+ * C)}\f$, where \f$T_K\f$ is \c temperature in Kelvin, \f$R_a\f$
+ * the specific gas constant of dry air, \f$\gamma_a, \gamma_w\f$ the
+ * heat capacity ratios of dry air and water vapor, \f$\alpha\f$ the
+ * ratio of their molar masses, and \f$C\f$ the water vapor mole
+ * fraction term derived from \c relative_humidity, \c
+ * atmospheric_pressure and \c saturation_vapor_pressure; see
+ * speed_of_sound_ideal_gas() for the exact constants.
  *
  * "cramer": O. Cramer, "The variation of the specific heat ratio and
  * the speed of sound in air with temperature, pressure, humidity, and
  * CO2 concentration," The Journal of the Acoustical Society of
  * America, vol. 93, no. 5, pp. 2510-2516, May 1993,
- * doi: 10.1121/1.405827, an empirical quadratic fit
- * ``c = a0 + a1*T + a2*T^2 + (a3 + a4*T + a5*T^2)*x_w + (a6 + a7*T +
- * a8*T^2)*p + (a9 + a10*T + a11*T^2)*x_c + a12*x_w^2 + a13*p^2 +
- * a14*x_c^2 + a15*x_c*p*x_w``, where ``x_w`` is the water vapor mole
- * fraction (derived from \c relative_humidity and ``p``), ``p`` is \c
- * atmospheric_pressure and ``x_c`` is the CO2 mole fraction (derived
- * from \c co2_ppm); the 16 empirical coefficients ``a0`` ... ``a15``
- * are given in speed_of_sound_cramer(). Requires \c temperature in
- * the range of 0°C to 30°C and \c atmospheric_pressure in the range
- * of 75,000 Pa to 102,000 Pa.
+ * doi: 10.1121/1.405827, an empirical quadratic fit, the sum of:
+ *
+ * <ul>
+ *   <li>a temperature-only term \f$(a_0 + a_1 T + a_2 T^2)\f$</li>
+ *   <li>a water-vapor term \f$(a_3 + a_4 T + a_5 T^2) x_w\f$</li>
+ *   <li>a pressure term \f$(a_6 + a_7 T + a_8 T^2) p\f$</li>
+ *   <li>a CO2 term \f$(a_9 + a_{10} T + a_{11} T^2) x_c\f$</li>
+ *   <li>squared terms \f$a_{12} x_w^2 + a_{13} p^2 + a_{14} x_c^2\f$</li>
+ *   <li>a cross term \f$a_{15} x_c\, p\, x_w\f$</li>
+ * </ul>
+ *
+ * where \f$x_w\f$ is the water vapor mole fraction (derived from \c
+ * relative_humidity and \f$p\f$), \f$p\f$ is \c atmospheric_pressure
+ * and \f$x_c\f$ is the CO2 mole fraction (derived from \c co2_ppm);
+ * the 16 empirical coefficients \f$a_0 \ldots a_{15}\f$ are given in
+ * speed_of_sound_cramer(). Requires \c temperature in the range of
+ * 0°C to 30°C and \c atmospheric_pressure in the range of 75,000 Pa
+ * to 102,000 Pa.
  *
  * \param temperature
  *      The temperature in degree Celsius.
@@ -252,11 +281,10 @@ float speed_of_sound_cramer(const Value temperature,
  *      (standard atmosphere).
  * \param saturation_vapor_pressure
  *      Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
- *      method. A negative value (see default) means "not specified": it is
- *      then estimated from \c temperature via the Magnus formula (see e.g.
- *      O. A. Alduchov and R. E. Eskridge, "Improved Magnus Form
- *      Approximation of Saturation Vapor Pressure," J. Appl. Meteor.,
- *      1996).
+ *      method. A missing value (see is_missing_value()) is estimated from
+ *      \c temperature via the Magnus formula (see e.g. O. A. Alduchov and
+ *      R. E. Eskridge, "Improved Magnus Form Approximation of Saturation
+ *      Vapor Pressure," J. Appl. Meteor., 1996).
  * \param co2_ppm
  *      CO2 concentration in parts per million (ppm). Only used by the
  *      "cramer" method (and to auto-select it, see below), must be in the
@@ -275,7 +303,7 @@ float speed_of_sound_cramer(const Value temperature,
  *      The speed of sound in meters per second
  */
 template <typename Value>
-float speed_of_sound(const Value temperature,
+Value speed_of_sound(const Value temperature,
                      const Value relative_humidity,
                      Value atmospheric_pressure,
                      const Value saturation_vapor_pressure,
@@ -327,23 +355,46 @@ float speed_of_sound(const Value temperature,
 }
 
 /**
- * \brief Pure tone energy attenuation coefficient, following ISO 9613-1:1993.
- *
- * \param temperature
- *      Temperature in degree Celsius. Must be greater than -73 °C for accuracy of +/-50% (and success).
- *      Must be in the range of -20 °C to 50 °C for accuracy of +/-10%.
- * \param frequency
- *      Frequency in Hz. Must be greater than 50 Hz.
- *      Frequency-to-pressure ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%.
- * \param relative_humidity
- *      Relative humidity in the range of 0 to 1.
- * \param atmospheric_pressure
- *      Atmospheric pressure in Pascal. Must be less than 200 kPa.
- *      Frequency-to-pressure ratio: 4 x 10-4 HzjPa to 10 Hz/Pa for accuracy of +/-50%.
- *
- * \return
- *      Energy decay coefficient m in 1/m.
- */
+* \brief Pure tone energy attenuation coefficient following ISO 9613-1:1993.
+* Calculates the energy attenuation coefficient in air for a given
+* frequency, temperature, relative humidity and atmospheric pressure.
+* The attenuation coefficient in dB/m is
+* \f$\alpha = 8.686 f^2 (\alpha_{cl} + \alpha_{vib})\f$, consisting of
+* a classical absorption term \f$\alpha_{cl}\f$ and a molecular
+* relaxation term \f$\alpha_{vib}\f$:
+* \f$\alpha_{cl} = 1.84 \cdot 10^{-11} (p_r / p_a) \sqrt{T / T_0}\f$
+* \f$\alpha_{vib} = (T / T_0)^{-5/2}(\alpha_O + \alpha_N)\f$
+* where \f$\alpha_O\f$ and \f$\alpha_N\f$ are the oxygen and nitrogen
+* relaxation contributions. The relaxation frequencies depend on
+* atmospheric pressure, temperature and water vapor concentration.
+* Here \f$f\f$ is \c frequency, \f$T\f$ is temperature in Kelvin,
+* \f$T_0 = 293.15\f$ K and \f$p_r = 101325\f$ Pa are the reference
+* temperature and pressure, and \f$p_a\f$ is \c atmospheric_pressure.
+* The water vapor concentration is derived from \c relative_humidity
+* and the saturation vapor pressure.
+* The returned coefficient is converted from dB/m to the natural
+* energy decay coefficient in 1/m via
+* \f$\alpha / (10 / \ln 10)\f$.
+* Validity ranges according to ISO 9613-1:
+
+*<ul>
+*  <li>\c temperature must be greater than -73 °C for an accuracy of 
+*      +/-50% and is in the range of -20 °C to 50 °C for an accuracy of +/-10%.</li>
+*  <li>\c frequency must be greater than 50 Hz.</li>
+*  <li>\c atmospheric_pressure must be less than 200 kPa.</li>
+*</ul>
+
+* \param temperature
+*      Temperature in degree Celsius.
+* \param frequency
+*      Frequency in Hz.
+* \param relative_humidity
+*      Relative humidity in the range of 0 to 1.
+* \param atmospheric_pressure
+*      Atmospheric pressure in Pascal.
+* \return
+*      Energy decay coefficient in 1/m.
+*/
 template <typename Value>
 Value energy_attenuation_coefficient(Value temperature,
                             Value frequency,
@@ -408,10 +459,40 @@ Value energy_attenuation_coefficient(Value temperature,
 /**
  * \brief Apply pure tone attenuation to an energy time curve (ETC).
  *
+ * Differentiable: under an ``*_ad_*`` variant, gradients set on \c etc (e.g.
+ * a gradient-tracked ``TensorXf`` from ``mitsuba.render()``) or on
+ * \c temperature, \c speed_of_sound_ms, \c relative_humidity or
+ * \c atmospheric_pressure propagate through to the returned ETC.
+ *
  * Multiplies each time bin of the ETC with a frequency-dependent exponential
  * decay factor derived from the distance the sound has travelled and the
  * air attenuation coefficient computed for each frequency band, following
- * ISO 9613-1:1993.
+ * ISO 9613-1:1993: bin \f$t\f$ of frequency band \f$f\f$ is scaled by
+ * \f$\exp(-d_t \, \alpha_f)\f$, where:
+ * 
+ * <ul>
+ *  <li>\f$d_t\f$ is implied distance by time and \c speed_of_sound_ms</li>
+ *  <li>\f$\alpha_f\f$ is that band's decay coefficient, in dB/m</li>
+ *  <li>\f$\alpha_f = 8.686 f^2 (\alpha_{cl} + \alpha_{vib})\f$</li>
+ *  <li>\f$\alpha_{cl}=1.84\cdot10^{-11}(p_r/p_a)\cdot\sqrt{T/T_0}\f$</li>
+ *  <li>\f$\alpha_{vib}=(T/T_0)^{-5/2}\cdot(\alpha_O + \alpha_N)\f$</li>
+ *  <li>\f$\alpha_O=\frac{0.01275 e^{-2239.1/T}}{(f_{rO}+f^2/f_{rO})}\f$</li>
+ *  <li>\f$\alpha_N=\frac{0.1068 e^{-3352/T}}{(f_{rN}+f^2/f_{rN})}\f$.</li>
+ * </ul>
+ * 
+ * Here \f$T\f$ is \c temperature in Kelvin, \f$T_0\f$ and \f$p_r\f$
+ * the reference temperature/pressure, \f$p_a\f$ is \c
+ * atmospheric_pressure, and \f$f_{rO}\f$, \f$f_{rN}\f$ are the
+ * oxygen/nitrogen relaxation frequencies,
+ * \f$f_{rO} = (p_a / p_r) (24 + 4.04 \cdot 10^4 h (0.02 + h) /
+ * (0.391 + h))\f$
+ * and
+ * \f$f_{rN} = (p_a / p_r) (T / T_0)^{-1/2} (9 + 280 h \cdot e^{-4.17
+ * [(T / T_0)^{-1/3} - 1]})\f$,
+ * where \f$h\f$ is the molar concentration of water vapor (as a
+ * percentage), derived from \c relative_humidity. \f$\alpha\f$ is
+ * converted from dB/m to the natural (1/m) coefficient used above via
+ * \f$\alpha_f = \alpha / (10 / \ln 10)\f$.
  *
  * From Python, this is a drop-in post-processing step for the output of
  * ``mitsuba.render()``: it accepts a ``TensorXf`` of arbitrary shape (not
@@ -448,8 +529,8 @@ Value energy_attenuation_coefficient(Value temperature,
  *      saved, compared, etc.).
  */
 template <typename Value>
-std::vector<Value> apply_pure_tone_attenuation(
-        const std::vector<Value>& etc,
+mitsuba::DynamicBuffer<Value> apply_pure_tone_attenuation(
+        const mitsuba::DynamicBuffer<Value>& etc,
         Value sampling_rate,
         Value speed_of_sound_ms,
         Value temperature,
@@ -457,40 +538,60 @@ std::vector<Value> apply_pure_tone_attenuation(
         Value relative_humidity,
         Value atmospheric_pressure) {
 
+    using Buffer = mitsuba::DynamicBuffer<Value>;
+    using UInt32 = dr::uint32_array_t<Buffer>;
+
     size_t n_frequencies = frequencies.size();
-    if (n_frequencies == 0 || etc.size() % n_frequencies != 0) {
+    size_t etc_size = (size_t) dr::width(etc);
+    if (n_frequencies == 0 || etc_size % n_frequencies != 0) {
         throw std::invalid_argument(
             "etc size must be a multiple of frequencies.size().");
     }
-    size_t n_time_bins = etc.size() / n_frequencies;
+    size_t n_time_bins = etc_size / n_frequencies;
 
-    // Precompute the energy decay coefficient per frequency band
+    // Precompute the energy decay coefficient per frequency band. A plain
+    // host loop: the number of bands is small and known at trace time,
+    // unlike the (potentially large) time axis handled below.
     std::vector<Value> decay(n_frequencies);
     for (size_t f = 0; f < n_frequencies; ++f) {
         decay[f] = energy_attenuation_coefficient<Value>(
             temperature, frequencies[f], relative_humidity, atmospheric_pressure);
     }
 
-    std::vector<Value> etc_attenuated(n_time_bins * n_frequencies);
+    // Distance implied by each time bin, vectorized across the whole
+    // (potentially large) time axis in a single expression.
+    Buffer time_bin  = dr::arange<Buffer>((uint32_t) n_time_bins);
+    Buffer distance  = (time_bin / sampling_rate) * speed_of_sound_ms;
 
-    for (size_t t = 0; t < n_time_bins; ++t) {
-        // Time and distance for this bin
-        Value time     = static_cast<Value>(t) / sampling_rate;
-        Value distance = time * speed_of_sound_ms;
-        if (distance > 10000.0f) {
-            throw std::invalid_argument(
-                "Distance must be smaller than 10 km for accuracy of +/-50% (and success).\n"
-                "Calculated distance was: " + std::to_string(distance) + "\n"
-                "From speed: " + std::to_string(speed_of_sound_ms) +
-                " m/s and time: " + std::to_string(time) + " s. With s = t * v.");
+    // Range check relies on scalar branching and is only meaningful (and
+    // compilable) for scalar Value types; see energy_attenuation_coefficient()
+    // for the established pattern.
+    if constexpr (!dr::is_jit_v<Value>) {
+        for (size_t t = 0; t < n_time_bins; ++t) {
+            if (distance[t] > 10000.0f) {
+                throw std::invalid_argument(
+                    "Distance must be smaller than 10 km for accuracy of +/-50% (and success).\n"
+                    "Calculated distance was: " + std::to_string(distance[t]) + "\n"
+                    "From speed: " + std::to_string(speed_of_sound_ms) +
+                    " m/s and time: " + std::to_string(static_cast<Value>(t) / sampling_rate) +
+                    " s. With s = t * v.");
+            }
         }
+    }
 
-        for (size_t f = 0; f < n_frequencies; ++f) {
-            // Exponential decay:  exp(-distance * m_f)
-            Value attenuation = dr::exp(-distance * decay[f]);
-            etc_attenuated[t * n_frequencies + f] =
-                etc[t * n_frequencies + f] * attenuation;
-        }
+    // Row-major (n_time_bins, n_frequencies) layout: column f lives at flat
+    // indices f, f + n_frequencies, f + 2*n_frequencies, ... Each column is
+    // gathered, scaled by that band's (vectorized) exponential decay, and
+    // scattered back -- one vectorized pass per frequency band rather than
+    // a per-element host loop, so this stays efficient and AD-graph-safe
+    // under JIT/AD Value types.
+    Buffer etc_attenuated = dr::zeros<Buffer>(etc_size);
+    for (size_t f = 0; f < n_frequencies; ++f) {
+        UInt32 column_idx = dr::arange<UInt32>((uint32_t) n_time_bins)
+                             * (uint32_t) n_frequencies + (uint32_t) f;
+        Buffer etc_column  = dr::gather<Buffer>(etc, column_idx);
+        Buffer attenuation = dr::exp(-distance * decay[f]);
+        dr::scatter(etc_attenuated, etc_column * attenuation, column_idx);
     }
 
     return etc_attenuated;
