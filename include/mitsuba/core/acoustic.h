@@ -28,6 +28,31 @@ inline bool is_missing_value(const Value &value) {
 }
 
 // -----------------------------------------------------------------------
+//! @{ \name Standard atmospheric conditions
+// -----------------------------------------------------------------------
+
+/**
+ * \brief "Standard medium" reference atmospheric conditions.
+ *
+ * Used by the acoustic_path/acoustic_ad integrators to fill in whichever
+ * fields of an ``acoustic_medium`` dict were left unspecified, so that a
+ * (possibly empty) ``acoustic_medium`` always describes a complete,
+ * physically valid medium. Room-temperature values, internally consistent
+ * (\ref acoustic_medium_standard_saturation_vapor_pressure is within 0.2%
+ * of the Magnus-formula estimate at
+ * \ref acoustic_medium_standard_temperature, see
+ * speed_of_sound_ideal_gas()).
+ */
+constexpr float acoustic_medium_standard_temperature               = 25.0f;    ///< degree Celsius
+constexpr float acoustic_medium_standard_relative_humidity         = 0.6f;     ///< in the range 0 to 1
+constexpr float acoustic_medium_standard_atmospheric_pressure      = 101825.0f; ///< Pascal
+constexpr float acoustic_medium_standard_saturation_vapor_pressure = 3167.0f;  ///< Pascal
+constexpr float acoustic_medium_standard_co2_ppm                   = 400.0f;   ///< parts per million
+
+//! @}
+// -----------------------------------------------------------------------
+
+// -----------------------------------------------------------------------
 //! @{ \name Speed of sound calculation (adapts to the type of input parameters)
 // -----------------------------------------------------------------------
 

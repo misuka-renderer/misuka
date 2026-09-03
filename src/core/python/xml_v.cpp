@@ -353,6 +353,11 @@ void parse_dictionary(DictParseContext &ctx,
             // "medium_temperature".
             if (!has_type(dict2)) {
                 std::string prefix = key;
+                // Marks that this key was given as a (possibly empty) plain
+                // dictionary, so callers can tell "key={}" apart from "key"
+                // being absent entirely, even when the dictionary has no
+                // fields to flatten below.
+                props.set_bool(prefix + "_present", true);
                 for (const auto &[k2, value] : dict2) {
                     std::string key = prefix + "_" + nb::cast<std::string>(k2);
 

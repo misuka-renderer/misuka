@@ -7,6 +7,20 @@ import gc
 
 from .common import RBIntegrator, mis_weight
 
+# "Standard medium" reference atmospheric conditions -- mirrors the
+# acoustic_medium_standard_* constants in include/mitsuba/core/acoustic.h.
+# Used to fill in whichever fields of an 'acoustic_medium' dict were left
+# unspecified, so a (possibly empty) 'acoustic_medium' always describes a
+# complete, physically valid medium. Room-temperature values, internally
+# consistent (ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE is within
+# 0.2% of the Magnus-formula estimate at
+# ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE).
+ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE = 25.0                # degree Celsius
+ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY = 0.6           # in the range 0 to 1
+ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE = 101825.0   # Pascal
+ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE = 3167.0  # Pascal
+ACOUSTIC_MEDIUM_STANDARD_CO2_PPM = 400.0                   # parts per million
+
 class AcousticADIntegrator(RBIntegrator):
     r"""
     .. _integrator-acoustic_ad:
@@ -31,7 +45,15 @@ class AcousticADIntegrator(RBIntegrator):
          recognized fields and their meaning. The medium fields
          (``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
          ``saturation_vapor_pressure``, ``co2_ppm``) are exposed as
-         differentiable parameters via :py:func:`mitsuba.traverse`.
+         differentiable parameters via :py:func:`mitsuba.traverse`. Any
+         field left unspecified (and every field, if ``acoustic_medium`` is
+         given as an empty dict) falls back to a standard/reference medium:
+         25°C, 60% relative humidity, 101,825 Pa, 3,167 Pa saturation vapor
+         pressure, 400 ppm CO2. Since this always yields a complete medium,
+         ``apply_attenuation`` always succeeds and
+         ``speed_of_sound_method: "auto"`` always resolves to ``"cramer"``
+         (the only method that uses every field) once ``acoustic_medium``
+         is given at all, however (in)complete.
 
      * - max_time
        - |float|
@@ -131,42 +153,38 @@ class AcousticADIntegrator(RBIntegrator):
 
         # An 'acoustic_medium' dict (see acoustic.h) is only used to derive
         # the speed of sound when 'speed_of_sound' was not set explicitly.
-        # Its fields are read unconditionally so they're always marked as
-        # queried. Named 'acoustic_medium' (not 'medium') to avoid confusion
-        # with mitsuba's existing Medium plugin (participating media).
-        self.has_medium = (
-            props.has_property("acoustic_medium_temperature") or
-            props.has_property("acoustic_medium_relative_humidity") or
-            props.has_property("acoustic_medium_atmospheric_pressure") or
-            props.has_property("acoustic_medium_saturation_vapor_pressure") or
-            props.has_property("acoustic_medium_co2_ppm"))
-        medium_temperature = props.get("acoustic_medium_temperature", float('nan'))
-        medium_relative_humidity = props.get("acoustic_medium_relative_humidity", float('nan'))
-        medium_atmospheric_pressure = props.get("acoustic_medium_atmospheric_pressure", float('nan'))
-        medium_saturation_vapor_pressure = props.get("acoustic_medium_saturation_vapor_pressure", float('nan'))
-        medium_co2_ppm = props.get("acoustic_medium_co2_ppm", float('nan'))
+        # Named 'acoustic_medium' (not 'medium') to avoid confusion with
+        # mitsuba's existing Medium plugin (participating media).
+        #
+        # 'acoustic_medium_present' is set by the dict parser whenever the
+        # 'acoustic_medium' key was given at all, even as an empty dict --
+        # this is what distinguishes "acoustic_medium omitted" (unaffected
+        # by any of this, self.has_medium False, unchanged
+        # pre-acoustic_medium behavior) from "acoustic_medium given, however
+        # (in)complete" (a standard/reference medium, see
+        # ACOUSTIC_MEDIUM_STANDARD_* below, fills in whichever fields were
+        # left unspecified, so every field is always a concrete value below
+        # -- no per-field "was this provided" checks are needed anywhere
+        # past this point).
+        self.has_medium = props.get("acoustic_medium_present", False)
+        medium_temperature = props.get("acoustic_medium_temperature", ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE)
+        medium_relative_humidity = props.get("acoustic_medium_relative_humidity", ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY)
+        medium_atmospheric_pressure = props.get("acoustic_medium_atmospheric_pressure", ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE)
+        medium_saturation_vapor_pressure = props.get("acoustic_medium_saturation_vapor_pressure", ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE)
+        medium_co2_ppm = props.get("acoustic_medium_co2_ppm", ACOUSTIC_MEDIUM_STANDARD_CO2_PPM)
         self.speed_of_sound_method = props.get("acoustic_medium_speed_of_sound_method", "auto")
 
         if not speed_of_sound_explicit and self.has_medium:
-            # Resolve "auto" once, here, in plain Python floats -- mirrors
-            # mi.acoustic.speed_of_sound()'s own selection logic, but stores
-            # *which* method was picked (self.speed_of_sound_method) instead
-            # of re-running "auto" detection every time update_speed_of_sound()
-            # (see below) re-derives the speed of sound from the live
-            # mi.Float medium fields, since "was this optional argument
-            # provided" has no well-defined meaning once a field may carry
-            # gradients from an optimizer.
+            # Every medium field always has a concrete value (real or
+            # standard-default, see above), so "auto" has nothing left to
+            # infer from -- it always resolves to "cramer", the most
+            # complete of the three models (the only one that uses all of
+            # temperature/relative_humidity/atmospheric_pressure/co2_ppm).
             if self.speed_of_sound_method == "auto":
-                if dr.isnan(medium_relative_humidity):
-                    self.speed_of_sound_method = "simple"
-                elif not dr.isnan(medium_co2_ppm):
-                    self.speed_of_sound_method = "cramer"
-                else:
-                    self.speed_of_sound_method = "ideal_gas"
+                self.speed_of_sound_method = "cramer"
                 mi.Log(mi.LogLevel.Warn,
-                       "speed_of_sound: no method specified, automatically "
-                       f"selected \"{self.speed_of_sound_method}\" based on "
-                       "the provided parameters.")
+                       "speed_of_sound: no method specified, defaulting to "
+                       f"\"{self.speed_of_sound_method}\".")
         elif speed_of_sound_explicit and self.has_medium:
             mi.Log(mi.LogLevel.Warn,
                    "Both \"speed_of_sound\" and \"acoustic_medium\" were "
@@ -191,23 +209,12 @@ class AcousticADIntegrator(RBIntegrator):
         if self.speed_of_sound is None or self.speed_of_sound <= 0.:
             raise ValueError("Property \"speed_of_sound\" must be set to a value greater than zero!")
 
-        # Air attenuation (ISO 9613-1) needs temperature, relative_humidity
-        # and atmospheric_pressure from 'acoustic_medium'; unlike the speed
-        # of sound, there is no fallback formula that needs fewer inputs.
-        apply_attenuation_explicit = props.has_property("acoustic_medium_apply_attenuation")
-        self.apply_attenuation = props.get("acoustic_medium_apply_attenuation", True)
-        has_attenuation_medium = (
-            props.has_property("acoustic_medium_temperature") and
-            props.has_property("acoustic_medium_relative_humidity") and
-            props.has_property("acoustic_medium_atmospheric_pressure"))
-        if self.apply_attenuation and not has_attenuation_medium:
-            if apply_attenuation_explicit:
-                raise ValueError(
-                    "\"acoustic_medium.apply_attenuation\" is enabled, but "
-                    "\"acoustic_medium\" must provide 'temperature', "
-                    "'relative_humidity' and 'atmospheric_pressure' to "
-                    "compute air attenuation (ISO 9613-1).")
-            self.apply_attenuation = False
+        # Air attenuation (ISO 9613-1) needs the medium's temperature,
+        # relative_humidity and atmospheric_pressure. All three are always
+        # concrete once self.has_medium is set (see above), so attenuation
+        # is simply on-by-default whenever a medium was given, and forced
+        # off when it wasn't (there's nothing to compute it from).
+        self.apply_attenuation = self.has_medium and props.get("acoustic_medium_apply_attenuation", True)
 
 
         self.is_detached = props.get("is_detached", True)
