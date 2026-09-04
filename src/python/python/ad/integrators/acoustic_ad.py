@@ -7,6 +7,20 @@ import gc
 
 from .common import RBIntegrator, mis_weight
 
+# "Standard medium" reference atmospheric conditions -- mirrors the
+# acoustic_medium_standard_* constants in include/mitsuba/core/acoustic.h.
+# Used to fill in whichever fields of an 'acoustic_medium' dict were left
+# unspecified, so a (possibly empty) 'acoustic_medium' always describes a
+# complete, physically valid medium. Room-temperature values, internally
+# consistent (ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE is within
+# 0.2% of the Magnus-formula estimate at
+# ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE).
+ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE = 25.0                # degree Celsius
+ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY = 0.6           # in the range 0 to 1
+ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE = 101825.0   # Pascal
+ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE = 3167.0  # Pascal
+ACOUSTIC_MEDIUM_STANDARD_CO2_PPM = 400.0                   # parts per million
+
 class AcousticADIntegrator(RBIntegrator):
     r"""
     .. _integrator-acoustic_ad:
@@ -18,7 +32,28 @@ class AcousticADIntegrator(RBIntegrator):
 
      * - speed_of_sound
        - |float|
-       - Speed of sound in meters per second. (Default: 343.0)
+       - Speed of sound in meters per second. If set explicitly, this value
+         is always used, regardless of ``acoustic_medium``. If both
+         ``speed_of_sound`` and ``acoustic_medium`` are given, a warning is
+         logged. (Default: 343.0, unless overridden by ``acoustic_medium``)
+
+     * - acoustic_medium
+       - |dict|
+       - Optional dictionary describing the propagation medium (air). See
+         :py:func:`mitsuba.acoustic.speed_of_sound` and
+         :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation` for the
+         recognized fields and their meaning. The medium fields
+         (``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
+         ``saturation_vapor_pressure``, ``co2_ppm``) are exposed as
+         differentiable parameters via :py:func:`mitsuba.traverse`. Any
+         field left unspecified (and every field, if ``acoustic_medium`` is
+         given as an empty dict) falls back to a standard/reference medium:
+         25°C, 60% relative humidity, 101,825 Pa, 3,167 Pa saturation vapor
+         pressure, 400 ppm CO2. Since this always yields a complete medium,
+         ``apply_attenuation`` always succeeds and
+         ``speed_of_sound_method: "auto"`` always resolves to ``"cramer"``
+         (the only method that uses every field) once ``acoustic_medium``
+         is given at all, however (in)complete.
 
      * - max_time
        - |float|
@@ -88,6 +123,21 @@ class AcousticADIntegrator(RBIntegrator):
             'max_time': 1.0,
             'speed_of_sound': 343.0,
             'max_depth': -1,
+
+        .. code-tab:: python
+            :name: integrator-acoustic_ad-medium
+
+            'type': 'acoustic_ad',
+            'max_time': 1.0,
+            'acoustic_medium': {
+                'temperature': 20.0,
+                'relative_humidity': 0.5,
+                'atmospheric_pressure': 101325.0,
+                'saturation_vapor_pressure': 3200.0,
+                'co2_ppm': 400,
+                'speed_of_sound_method': 'auto',
+            },
+            'max_depth': -1,
     """
 
     def __init__(self, props):
@@ -98,9 +148,74 @@ class AcousticADIntegrator(RBIntegrator):
             raise ValueError("\"max_time\" must be set to a value greater than zero!")
 
 
-        self.speed_of_sound = props.get("speed_of_sound", 343.)
+        speed_of_sound_prop = props.get("speed_of_sound", 343.)
+        speed_of_sound_explicit = props.has_property("speed_of_sound")
+        self.speed_of_sound_explicit = speed_of_sound_explicit
+
+        # An 'acoustic_medium' dict (see acoustic.h) is only used to derive
+        # the speed of sound when 'speed_of_sound' was not set explicitly.
+        # Named 'acoustic_medium' (not 'medium') to avoid confusion with
+        # mitsuba's existing Medium plugin (participating media).
+        #
+        # 'acoustic_medium_present' is set by the dict parser whenever the
+        # 'acoustic_medium' key was given at all, even as an empty dict --
+        # this is what distinguishes "acoustic_medium omitted" (unaffected
+        # by any of this, self.has_medium False, unchanged
+        # pre-acoustic_medium behavior) from "acoustic_medium given, however
+        # (in)complete" (a standard/reference medium, see
+        # ACOUSTIC_MEDIUM_STANDARD_* below, fills in whichever fields were
+        # left unspecified, so every field is always a concrete value below
+        # -- no per-field "was this provided" checks are needed anywhere
+        # past this point).
+        self.has_medium = props.get("acoustic_medium_present", False)
+        medium_temperature = props.get("acoustic_medium_temperature", ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE)
+        medium_relative_humidity = props.get("acoustic_medium_relative_humidity", ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY)
+        medium_atmospheric_pressure = props.get("acoustic_medium_atmospheric_pressure", ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE)
+        medium_saturation_vapor_pressure = props.get("acoustic_medium_saturation_vapor_pressure", ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE)
+        medium_co2_ppm = props.get("acoustic_medium_co2_ppm", ACOUSTIC_MEDIUM_STANDARD_CO2_PPM)
+        self.speed_of_sound_method = props.get("acoustic_medium_speed_of_sound_method", "auto")
+
+        if not speed_of_sound_explicit and self.has_medium:
+            # Every medium field always has a concrete value (real or
+            # standard-default, see above), so "auto" has nothing left to
+            # infer from -- it always resolves to "cramer", the most
+            # complete of the three models (the only one that uses all of
+            # temperature/relative_humidity/atmospheric_pressure/co2_ppm).
+            if self.speed_of_sound_method == "auto":
+                self.speed_of_sound_method = "cramer"
+                mi.Log(mi.LogLevel.Warn,
+                       "speed_of_sound: no method specified, defaulting to "
+                       f"\"{self.speed_of_sound_method}\".")
+        elif speed_of_sound_explicit and self.has_medium:
+            mi.Log(mi.LogLevel.Warn,
+                   "Both \"speed_of_sound\" and \"acoustic_medium\" were "
+                   f"specified: the explicit \"speed_of_sound\" value ({speed_of_sound_prop}) "
+                   "is used, \"acoustic_medium\" is ignored for the speed of sound.")
+
+        # Live (mi.Float, not a plain Python float) so gradients set on them
+        # via mi.traverse() + an optimizer survive into speed_of_sound() /
+        # the attenuation coefficient computed in sample() -- see
+        # traverse()/parameters_changed() below.
+        self.medium_temperature = mi.Float(medium_temperature)
+        self.medium_relative_humidity = mi.Float(medium_relative_humidity)
+        self.medium_atmospheric_pressure = mi.Float(medium_atmospheric_pressure)
+        self.medium_saturation_vapor_pressure = mi.Float(medium_saturation_vapor_pressure)
+        self.medium_co2_ppm = mi.Float(medium_co2_ppm)
+
+        if not speed_of_sound_explicit and self.has_medium:
+            self.update_speed_of_sound()
+        else:
+            self.speed_of_sound = speed_of_sound_prop
+
         if self.speed_of_sound is None or self.speed_of_sound <= 0.:
             raise ValueError("Property \"speed_of_sound\" must be set to a value greater than zero!")
+
+        # Air attenuation (ISO 9613-1) needs the medium's temperature,
+        # relative_humidity and atmospheric_pressure. All three are always
+        # concrete once self.has_medium is set (see above), so attenuation
+        # is simply on-by-default whenever a medium was given, and forced
+        # off when it wasn't (there's nothing to compute it from).
+        self.apply_attenuation = self.has_medium and props.get("acoustic_medium_apply_attenuation", True)
 
 
         self.is_detached = props.get("is_detached", True)
@@ -126,6 +241,76 @@ class AcousticADIntegrator(RBIntegrator):
 
         self.throughput_threshold = \
             0. if max_energy_loss == -1. else 10 ** (-max_energy_loss / 10.)
+
+    def compute_speed_of_sound(self):
+        """Pure (no side effects on self) re-derivation of the speed of
+        sound from the (live) medium fields, using the method resolved once
+        at construction time (see __init__ and the speed_of_sound_method
+        docs above). method= is always one of "simple"/"ideal_gas"/"cramer"
+        here (never "auto"), so this does not re-trigger auto-detection or
+        its log message. Only valid when self.has_medium.
+
+        Split out from update_speed_of_sound() (below) so that PRB-style
+        integrators can call it fresh on every loop iteration -- inside a
+        resume_grad() scope, without mutating self -- to keep the medium's
+        effect on speed_of_sound (and hence on time-bin placement) attached
+        to the AD graph. See acoustic_prb.py's sample()."""
+        if self.speed_of_sound_method == "simple":
+            return mi.acoustic.speed_of_sound(
+                temperature=self.medium_temperature, method="simple")
+        elif self.speed_of_sound_method == "ideal_gas":
+            return mi.acoustic.speed_of_sound(
+                temperature=self.medium_temperature,
+                relative_humidity=self.medium_relative_humidity,
+                atmospheric_pressure=self.medium_atmospheric_pressure,
+                saturation_vapor_pressure=self.medium_saturation_vapor_pressure,
+                method="ideal_gas")
+        elif self.speed_of_sound_method == "cramer":
+            return mi.acoustic.speed_of_sound(
+                temperature=self.medium_temperature,
+                relative_humidity=self.medium_relative_humidity,
+                atmospheric_pressure=self.medium_atmospheric_pressure,
+                co2_ppm=self.medium_co2_ppm,
+                method="cramer")
+        else:
+            raise ValueError(
+                "Invalid method specified for speed of sound calculation. "
+                "Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.")
+
+    def update_speed_of_sound(self):
+        """Re-derive self.speed_of_sound from the (live) medium fields.
+        Called at construction and again from parameters_changed() whenever
+        an optimizer updates one of the traversed medium parameters."""
+        self.speed_of_sound = self.compute_speed_of_sound()
+
+    def traverse(self, callback):
+        # Only the atmospheric medium parameters are exposed: they are the
+        # physically meaningful optimization targets (e.g. inferring
+        # atmospheric conditions from an observed echogram). An explicitly
+        # set 'speed_of_sound' bypasses 'acoustic_medium' entirely (see
+        # __init__) and has no medium fields to expose here.
+        if self.has_medium:
+            callback.put_parameter("medium_temperature", self.medium_temperature, mi.ParamFlags.Differentiable)
+            callback.put_parameter("medium_relative_humidity", self.medium_relative_humidity, mi.ParamFlags.Differentiable)
+            callback.put_parameter("medium_atmospheric_pressure", self.medium_atmospheric_pressure, mi.ParamFlags.Differentiable)
+            callback.put_parameter("medium_saturation_vapor_pressure", self.medium_saturation_vapor_pressure, mi.ParamFlags.Differentiable)
+            callback.put_parameter("medium_co2_ppm", self.medium_co2_ppm, mi.ParamFlags.Differentiable)
+
+    def parameters_changed(self, keys):
+        if self.has_medium:
+            # Prevents the JIT from baking these in as compile-time
+            # literals across optimizer iterations, matching e.g.
+            # roughplastic.cpp's parameters_changed().
+            dr.make_opaque(self.medium_temperature, self.medium_relative_humidity,
+                            self.medium_atmospheric_pressure,
+                            self.medium_saturation_vapor_pressure, self.medium_co2_ppm)
+            # Only re-derive speed_of_sound from the medium if it wasn't set
+            # explicitly (see __init__): self.speed_of_sound_method stays the
+            # unresolved literal "auto" in the explicit case, which
+            # compute_speed_of_sound() cannot handle.
+            if not self.speed_of_sound_explicit:
+                self.update_speed_of_sound()
+                dr.make_opaque(self.speed_of_sound)
 
     def to_string(self):
         md = self.max_depth if self.max_depth != 0xffffffff else -1
@@ -346,6 +531,17 @@ class AcousticADIntegrator(RBIntegrator):
         distance     = mi.Float(0.0)
         max_distance = self.max_time * self.speed_of_sound
 
+        # Air attenuation (ISO 9613-1) decay coefficient for this path's
+        # frequency. Constant along the whole path (only distance varies),
+        # so it is computed once upfront; 0 when attenuation is disabled,
+        # which makes the exp(-distance * decay) factor a no-op (== 1).
+        attenuation_decay = mi.Float(0.0)
+        if self.apply_attenuation:
+            attenuation_decay = mi.acoustic.energy_attenuation_coefficient(
+                temperature=self.medium_temperature, frequency=ray.wavelengths[0],
+                relative_humidity=self.medium_relative_humidity,
+                atmospheric_pressure=self.medium_atmospheric_pressure)
+
         # Copy input arguments to avoid mutating the caller's state
         ray = mi.Ray3f(ray)
         depth = mi.UInt32(0)  # Depth of current vertex
@@ -401,6 +597,7 @@ class AcousticADIntegrator(RBIntegrator):
 
             # Store (direct) intensity to the image block
             T      = distance + τ
+            Le     *= dr.exp(-T * attenuation_decay)
             active_next &= si.is_valid()
             Le_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                 block.size().y * T / max_distance)
@@ -458,6 +655,7 @@ class AcousticADIntegrator(RBIntegrator):
             # shortened by the spawn-ray epsilon offset)
             τ_dir      = dr.norm(ds.p - si.p)
             T_dir      = T + τ_dir
+            Lr_dir     *= dr.exp(-T_dir * attenuation_decay)
             Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                     block.size().y * T_dir / max_distance)
             block.put(pos=Lr_dir_pos,

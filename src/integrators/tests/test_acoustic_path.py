@@ -41,8 +41,10 @@ def test02_constructor_max_time_invalid(variants_all_acoustic):
         mi.load_dict({'type': 'acoustic_path', 'max_time': 0.0})
 
 
-def test03_constructor_speed_of_sound_invalid(variants_all_acoustic):
-    """speed_of_sound <= 0 must raise an exception."""
+def test03_constructor_speed_of_sound_invalid(variant_scalar_acoustic):
+    """speed_of_sound <= 0 must raise an exception. Scalar-only: this check
+    is skipped for JIT/AD Float (see AcousticPathIntegrator's constructor),
+    matching the pattern established in energy_attenuation_coefficient()."""
     with pytest.raises(Exception):
         mi.load_dict({'type': 'acoustic_path', 'max_time': 1.0, 'speed_of_sound': 0.0})
     with pytest.raises(Exception):
@@ -330,6 +332,54 @@ def test08_rendering_primal(variants_all_acoustic, integrator_name, config):
         mi.util.write_bitmap(filename_ref, etc_ref)
         pytest.fail("ETC values exceeded configuration's tolerances!")
 
+
+def test09_traverse_medium_parameters(variants_all_ad_acoustic):
+    """The five acoustic_medium fields must be exposed via mi.traverse() as
+    differentiable parameters, and updating one must observably re-derive
+    speed_of_sound (see AcousticPathIntegrator::traverse()/parameters_changed()).
+    A structural check (no rendering, no reference data needed) -- separate
+    from whether gradients actually propagate all the way through render(),
+    which is a property of the integrator's sampling loop, not of this
+    parameter-wiring."""
+    integrator = mi.load_dict({
+        'type': 'acoustic_path',
+        'max_time': 1.0,
+        'acoustic_medium': {
+            'temperature': 20.0,
+            'relative_humidity': 0.5,
+            'atmospheric_pressure': 101325.0,
+        },
+    })
+
+    params = mi.traverse(integrator)
+    for key in ('medium_temperature', 'medium_relative_humidity',
+                'medium_atmospheric_pressure', 'medium_saturation_vapor_pressure',
+                'medium_co2_ppm'):
+        assert key in params
+
+    # speed_of_sound is a protected C++ member (not exposed to Python
+    # directly); to_string() is the only way to observe it from here.
+    import re
+    def _speed_of_sound(s):
+        return float(re.search(r"speed_of_sound = \[?([\d.]+)", s).group(1))
+
+    speed_of_sound_before = _speed_of_sound(str(integrator))
+
+    params['medium_temperature'] = mi.Float(30.0)
+    params.update()
+
+    speed_of_sound_after = _speed_of_sound(str(integrator))
+    assert speed_of_sound_after != pytest.approx(speed_of_sound_before)
+
+
+def test10_traverse_no_medium(variants_all_ad_acoustic):
+    """When 'speed_of_sound' is set explicitly (no acoustic_medium), there
+    are no medium fields to expose."""
+    integrator = mi.load_dict({
+        'type': 'acoustic_path', 'max_time': 1.0, 'speed_of_sound': 340.0,
+    })
+    params = mi.traverse(integrator)
+    assert len(params.keys()) == 0
 
 
 # -------------------------------------------------------------------

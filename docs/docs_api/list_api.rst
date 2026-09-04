@@ -218,8 +218,6 @@
 
 .. autoclass:: mitsuba.ObjectPtr
 
-.. autoclass:: mitsuba.OptixDenoiser
-
 .. autoclass:: mitsuba.PCG32
 
 .. autoclass:: mitsuba.ParamFlags
@@ -550,6 +548,12 @@
 
 .. autoclass:: mitsuba.ZStream
 
+.. autofunction:: mitsuba.acoustic.apply_pure_tone_attenuation
+
+.. autofunction:: mitsuba.acoustic.energy_attenuation_coefficient
+
+.. autofunction:: mitsuba.acoustic.speed_of_sound
+
 .. autoclass:: mitsuba.ad.Adam
 
 .. autoclass:: mitsuba.ad.BaseGuidingDistr
@@ -567,6 +571,32 @@
 .. autoclass:: mitsuba.ad.SGD
 
 .. autoclass:: mitsuba.ad.UniformDistr
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_CO2_PPM
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE
+
+.. autoclass:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.Callable
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.Optional
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.Tuple
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.Union
+
+.. autoclass:: mitsuba.ad.integrators.acoustic_ad_threepoint.AcousticADThreePointIntegrator
+
+.. autoclass:: mitsuba.ad.integrators.acoustic_prb.AcousticPRBIntegrator
+
+.. autoclass:: mitsuba.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator
 
 .. autoclass:: mitsuba.ad.integrators.common.ADIntegrator
 

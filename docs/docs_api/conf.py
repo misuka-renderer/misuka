@@ -153,6 +153,7 @@ excluded_api = [
 
 # Define the structure of the generated reference pages for the different libraries.
 api_doc_structure = {
+    'Acoustic': [r'mitsuba.acoustic.([\w]+)'],
     'Core': ['mitsuba.render', 'mitsuba.set_variant', 'mitsuba.variant',
              'mitsuba.traverse', 'mitsuba.SceneParameters',
              'mitsuba.variants', 'mitsuba.set_log_level',
