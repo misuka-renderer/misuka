@@ -18113,6 +18113,26 @@
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
 
+.. py:data:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE
+    :type: float
+    :value: 101825.0
+
+.. py:data:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_CO2_PPM
+    :type: float
+    :value: 400.0
+
+.. py:data:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY
+    :type: float
+    :value: 0.6
+
+.. py:data:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE
+    :type: float
+    :value: 3167.0
+
+.. py:data:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE
+    :type: float
+    :value: 25.0
+
 .. py:class:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator
 
     Base class: :py:obj:`mitsuba.ad.integrators.common.RBIntegrator`
@@ -18139,7 +18159,15 @@
            recognized fields and their meaning. The medium fields
            (``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
            ``saturation_vapor_pressure``, ``co2_ppm``) are exposed as
-           differentiable parameters via :py:func:`mitsuba.traverse`.
+           differentiable parameters via :py:func:`mitsuba.traverse`. Any
+           field left unspecified (and every field, if ``acoustic_medium`` is
+           given as an empty dict) falls back to a standard/reference medium:
+           25°C, 60% relative humidity, 101,825 Pa, 3,167 Pa saturation vapor
+           pressure, 400 ppm CO2. Since this always yields a complete medium,
+           ``apply_attenuation`` always succeeds and
+           ``speed_of_sound_method: "auto"`` always resolves to ``"cramer"``
+           (the only method that uses every field) once ``acoustic_medium``
+           is given at all, however (in)complete.
 
      * - max_time
          - |float|
@@ -18231,15 +18259,26 @@
             *no description available*
 
 
+    .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.compute_speed_of_sound()
+
+        Pure (no side effects on self) re-derivation of the speed of
+        sound from the (live) medium fields, using the method resolved once
+        at construction time (see __init__ and the speed_of_sound_method
+        docs above). method= is always one of "simple"/"ideal_gas"/"cramer"
+        here (never "auto"), so this does not re-trigger auto-detection or
+        its log message. Only valid when self.has_medium.
+
+        Split out from update_speed_of_sound() (below) so that PRB-style
+        integrators can call it fresh on every loop iteration -- inside a
+        resume_grad() scope, without mutating self -- to keep the medium's
+        effect on speed_of_sound (and hence on time-bin placement) attached
+        to the AD graph. See acoustic_prb.py's sample().
+
     .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.update_speed_of_sound()
 
-        Re-derive self.speed_of_sound from the (live) medium fields,
-        using the method resolved once at construction time (see __init__
-        and the speed_of_sound_method docs above). Called at construction
-        and again from parameters_changed() whenever an optimizer updates
-        one of the traversed medium parameters. method= is always one of
-        "simple"/"ideal_gas"/"cramer" here (never "auto"), so this does not
-        re-trigger auto-detection or its log message.
+        Re-derive self.speed_of_sound from the (live) medium fields.
+        Called at construction and again from parameters_changed() whenever
+        an optimizer updates one of the traversed medium parameters.
 
     .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.traverse(self, cb)
 

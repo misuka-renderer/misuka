@@ -572,6 +572,16 @@
 
 .. autoclass:: mitsuba.ad.UniformDistr
 
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_CO2_PPM
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE
+
+.. autofunction:: mitsuba.ad.integrators.acoustic_ad.ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE
+
 .. autoclass:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator
 
 .. autofunction:: mitsuba.ad.integrators.acoustic_ad.Callable

@@ -37,11 +37,7 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
      recognized fields and their meaning. Any field left unspecified (and
      every field, if ``acoustic_medium`` is given as an empty dict) falls
      back to a standard/reference medium: 25°C, 60% relative humidity,
-     101,825 Pa, 3,167 Pa saturation vapor pressure, 400 ppm CO2. Since
-     this always yields a complete medium, ``apply_attenuation`` always
-     succeeds and ``speed_of_sound_method: "auto"`` always resolves to
-     ``"cramer"`` (the only method that uses every field) once
-     ``acoustic_medium`` is given at all, however (in)complete.
+     101,825 Pa, 3,167 Pa saturation vapor pressure, 400 ppm CO2.
 
  * - max_time
    - |float|
