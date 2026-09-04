@@ -142,6 +142,7 @@ public:
         m_max_time    = props.get<float>("max_time");
         float speed_of_sound_prop = props.get<float>("speed_of_sound", 343.f);
         bool speed_of_sound_explicit = props.has_property("speed_of_sound");
+        m_speed_of_sound_explicit = speed_of_sound_explicit;
 
         // An 'acoustic_medium' dict (see acoustic.h) is only used to derive
         // the speed of sound when 'speed_of_sound' was not set explicitly.
@@ -279,14 +280,20 @@ public:
 
     void parameters_changed(const std::vector<std::string> & /*keys*/ = {}) override {
         if (m_has_medium) {
-            update_speed_of_sound();
             // Prevents the JIT from baking these in as compile-time
             // literals across optimizer iterations, matching e.g.
             // roughplastic.cpp's parameters_changed().
             dr::make_opaque(m_medium_temperature, m_medium_relative_humidity,
                             m_medium_atmospheric_pressure,
-                            m_medium_saturation_vapor_pressure, m_medium_co2_ppm,
-                            m_speed_of_sound);
+                            m_medium_saturation_vapor_pressure, m_medium_co2_ppm);
+            // Only re-derive m_speed_of_sound from the medium if it wasn't
+            // set explicitly (see the constructor): m_speed_of_sound_method
+            // stays the unresolved literal "auto" in the explicit case,
+            // which update_speed_of_sound() cannot handle.
+            if (!m_speed_of_sound_explicit) {
+                update_speed_of_sound();
+                dr::make_opaque(m_speed_of_sound);
+            }
         }
     }
 
@@ -951,6 +958,7 @@ protected:
     // infer once every field is always populated, and no well-defined
     // meaning once a member may carry gradients from an optimizer.
     bool  m_has_medium = false;
+    bool  m_speed_of_sound_explicit = false;
     std::string m_speed_of_sound_method;
     Float m_medium_temperature;
     Float m_medium_relative_humidity;

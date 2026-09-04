@@ -150,6 +150,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         speed_of_sound_prop = props.get("speed_of_sound", 343.)
         speed_of_sound_explicit = props.has_property("speed_of_sound")
+        self.speed_of_sound_explicit = speed_of_sound_explicit
 
         # An 'acoustic_medium' dict (see acoustic.h) is only used to derive
         # the speed of sound when 'speed_of_sound' was not set explicitly.
@@ -241,26 +242,31 @@ class AcousticADIntegrator(RBIntegrator):
         self.throughput_threshold = \
             0. if max_energy_loss == -1. else 10 ** (-max_energy_loss / 10.)
 
-    def update_speed_of_sound(self):
-        """Re-derive self.speed_of_sound from the (live) medium fields,
-        using the method resolved once at construction time (see __init__
-        and the speed_of_sound_method docs above). Called at construction
-        and again from parameters_changed() whenever an optimizer updates
-        one of the traversed medium parameters. method= is always one of
-        "simple"/"ideal_gas"/"cramer" here (never "auto"), so this does not
-        re-trigger auto-detection or its log message."""
+    def compute_speed_of_sound(self):
+        """Pure (no side effects on self) re-derivation of the speed of
+        sound from the (live) medium fields, using the method resolved once
+        at construction time (see __init__ and the speed_of_sound_method
+        docs above). method= is always one of "simple"/"ideal_gas"/"cramer"
+        here (never "auto"), so this does not re-trigger auto-detection or
+        its log message. Only valid when self.has_medium.
+
+        Split out from update_speed_of_sound() (below) so that PRB-style
+        integrators can call it fresh on every loop iteration -- inside a
+        resume_grad() scope, without mutating self -- to keep the medium's
+        effect on speed_of_sound (and hence on time-bin placement) attached
+        to the AD graph. See acoustic_prb.py's sample()."""
         if self.speed_of_sound_method == "simple":
-            self.speed_of_sound = mi.acoustic.speed_of_sound(
+            return mi.acoustic.speed_of_sound(
                 temperature=self.medium_temperature, method="simple")
         elif self.speed_of_sound_method == "ideal_gas":
-            self.speed_of_sound = mi.acoustic.speed_of_sound(
+            return mi.acoustic.speed_of_sound(
                 temperature=self.medium_temperature,
                 relative_humidity=self.medium_relative_humidity,
                 atmospheric_pressure=self.medium_atmospheric_pressure,
                 saturation_vapor_pressure=self.medium_saturation_vapor_pressure,
                 method="ideal_gas")
         elif self.speed_of_sound_method == "cramer":
-            self.speed_of_sound = mi.acoustic.speed_of_sound(
+            return mi.acoustic.speed_of_sound(
                 temperature=self.medium_temperature,
                 relative_humidity=self.medium_relative_humidity,
                 atmospheric_pressure=self.medium_atmospheric_pressure,
@@ -270,6 +276,12 @@ class AcousticADIntegrator(RBIntegrator):
             raise ValueError(
                 "Invalid method specified for speed of sound calculation. "
                 "Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.")
+
+    def update_speed_of_sound(self):
+        """Re-derive self.speed_of_sound from the (live) medium fields.
+        Called at construction and again from parameters_changed() whenever
+        an optimizer updates one of the traversed medium parameters."""
+        self.speed_of_sound = self.compute_speed_of_sound()
 
     def traverse(self, callback):
         # Only the atmospheric medium parameters are exposed: they are the
@@ -286,14 +298,19 @@ class AcousticADIntegrator(RBIntegrator):
 
     def parameters_changed(self, keys):
         if self.has_medium:
-            self.update_speed_of_sound()
             # Prevents the JIT from baking these in as compile-time
             # literals across optimizer iterations, matching e.g.
             # roughplastic.cpp's parameters_changed().
             dr.make_opaque(self.medium_temperature, self.medium_relative_humidity,
                             self.medium_atmospheric_pressure,
-                            self.medium_saturation_vapor_pressure, self.medium_co2_ppm,
-                            self.speed_of_sound)
+                            self.medium_saturation_vapor_pressure, self.medium_co2_ppm)
+            # Only re-derive speed_of_sound from the medium if it wasn't set
+            # explicitly (see __init__): self.speed_of_sound_method stays the
+            # unresolved literal "auto" in the explicit case, which
+            # compute_speed_of_sound() cannot handle.
+            if not self.speed_of_sound_explicit:
+                self.update_speed_of_sound()
+                dr.make_opaque(self.speed_of_sound)
 
     def to_string(self):
         md = self.max_depth if self.max_depth != 0xffffffff else -1

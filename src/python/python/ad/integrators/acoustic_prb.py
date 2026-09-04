@@ -78,6 +78,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
         distance     = mi.Float(0.0)
         max_distance = self.max_time * self.speed_of_sound
+        frequency    = ray.wavelengths[0]
 
         # Copy input arguments to avoid mutating the caller's state
         ray = mi.Ray3f(dr.detach(ray))
@@ -157,13 +158,27 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 τ = dr.select(first_vertex, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
             #
-            T       = distance + τ
+            T = distance + τ
+            if dr.hint(self.apply_attenuation, mode='scalar'):
+                with dr.resume_grad(when=not primal):
+                    decay = mi.acoustic.energy_attenuation_coefficient(
+                        temperature=self.medium_temperature, frequency=frequency,
+                        relative_humidity=self.medium_relative_humidity,
+                        atmospheric_pressure=self.medium_atmospheric_pressure)
+                    Le = Le * dr.exp(-T * decay)
             δHdLedT = compute_δH_dot_dLedT(Le, T, ray, active=active_next & si.is_valid()) \
                       if dr.hint(prb_mode and self.track_time_derivatives, mode='scalar') else 0
 
             # ---------------------- Emitter sampling ----------------------
 
             # Should we continue tracing to reach one more vertex?
+            # The direct term (Le) is a 0-bounce contribution: it must stay
+            # valid whenever si.is_valid(), even at max_depth == 1 (direct
+            # sound only) where depth + 1 < max_depth is False at depth 0.
+            # Keep its mask separate from active_next, which additionally
+            # gates emitter sampling / continuation (both are 1-bounce-or-later
+            # contributions that do require depth + 1 < max_depth).
+            active_direct = active_next & si.is_valid()
             active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
             # Is emitter sampling even possible on the current vertex?
@@ -204,7 +219,14 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 τ_dir = dr.norm(ds_em.p - si.p)
 
             #
-            T_dir       = distance + τ + τ_dir
+            T_dir = distance + τ + τ_dir
+            if dr.hint(self.apply_attenuation, mode='scalar'):
+                with dr.resume_grad(when=not primal):
+                    decay_dir = mi.acoustic.energy_attenuation_coefficient(
+                        temperature=self.medium_temperature, frequency=frequency,
+                        relative_humidity=self.medium_relative_humidity,
+                        atmospheric_pressure=self.medium_atmospheric_pressure)
+                    Lr_dir = Lr_dir * dr.exp(-T_dir * decay_dir)
             δHdLr_dirdT = compute_δH_dot_dLedT(Lr_dir, T_dir, ray, active=active_em) \
                           if dr.hint(prb_mode and self.track_time_derivatives, mode='scalar') else 0
 
@@ -243,7 +265,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             else: # primal
                 block.put(pos=Le_pos,
                           values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
-                          active=active_next & (Le[0] > 0.))
+                          active=active_direct & (Le[0] > 0.))
                 block.put(pos=Lr_dir_pos,
                           values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                           active=active_em & (Lr_dir[0] > 0.))
