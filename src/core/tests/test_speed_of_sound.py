@@ -4,11 +4,11 @@ import mitsuba as mi
 
 
 def _as_float(x):
-    """speed_of_sound()/apply_pure_tone_attenuation() return the variant's
-    native Float (needed so gradients survive under *_ad_* variants, see
-    acoustic.h) -- a bare Python float for scalar variants, a width-1 drjit
-    array otherwise. Extract a plain Python float uniformly for comparison
-    against pytest.approx()/==, which can't handle drjit arrays directly."""
+    """speed_of_sound() returns the variant's native Float (needed so
+    gradients survive under *_ad_* variants, see acoustic.h) -- a bare
+    Python float for scalar variants, a width-1 drjit array otherwise.
+    Extract a plain Python float uniformly for comparison against
+    pytest.approx()/==, which can't handle drjit arrays directly."""
     return float(x) if isinstance(x, float) else x[0]
 
 

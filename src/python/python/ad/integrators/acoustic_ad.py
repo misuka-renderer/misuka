@@ -49,22 +49,17 @@ class AcousticADIntegrator(RBIntegrator):
          behaves the same as spelling out the standard medium in full.
          Recognized fields: ``temperature``, ``relative_humidity``,
          ``atmospheric_pressure``, ``saturation_vapor_pressure``,
-         ``co2_ppm`` (see :py:func:`mitsuba.acoustic.speed_of_sound`,
+         ``co2_ppm`` (see
+         :ref:`key_topics-environmental_conditions-speed_of_sound`,
          exposed as differentiable parameters via
          :py:func:`mitsuba.traverse`), plus:
 
          - ``speed_of_sound_method``: ``"simple"`` (default),
            ``"ideal_gas"`` or ``"cramer"`` -- see
-           :py:func:`mitsuba.acoustic.speed_of_sound` for what each one
-           uses. ``"simple"`` is the default since it only needs
-           ``temperature``, which in practice is measured far more often
-           than humidity or pressure; pick one of the other two explicitly
-           if you have those measurements too.
-         - ``apply_attenuation``: |bool|. Whether to apply
-           frequency-dependent air attenuation (ISO 9613-1, see
-           :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation`) to path
-           contributions during rendering. Since every field above always
-           has a concrete value, this is on by default. (Default: |true|)
+           :ref:`key_topics-environmental_conditions-speed_of_sound`.
+         - ``apply_attenuation``: |bool|. Whether to apply air attenuation
+           (see :ref:`key_topics-environmental_conditions-attenuation`)
+           during rendering. (Default: |true|)
 
      * - max_time
        - |float|

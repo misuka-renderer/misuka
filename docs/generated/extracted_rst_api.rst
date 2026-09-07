@@ -17429,87 +17429,6 @@
         Returns → object:
             *no description available*
 
-.. py:function:: mitsuba.acoustic.apply_pure_tone_attenuation(etc, sampling_rate, speed_of_sound_ms, temperature, frequencies, relative_humidity, atmospheric_pressure)
-
-    Apply pure tone attenuation to an energy time curve (ETC).
-
-    Differentiable: under an ``*_ad_*`` variant, gradients set on ``etc``
-    (e.g. a gradient-tracked ``TensorXf`` from ``mitsuba.render()``) or on
-    ``temperature``, ``speed_of_sound_ms``, ``relative_humidity`` or
-    ``atmospheric_pressure`` propagate through to the returned ETC.
-
-    Multiplies each time bin of the ETC with a frequency-dependent
-    exponential decay factor derived from the distance the sound has
-    travelled and the air attenuation coefficient computed for each
-    frequency band, following ISO 9613-1:1993: bin :math:`t` of frequency
-    band :math:`f` is scaled by :math:`\exp(-d_t \, \alpha_f)`, where:
-
-    * :math:`d_t` is implied distance by time and ``speed_of_sound_ms``
-
-    * :math:`\alpha_f` is that band's decay coefficient, in dB/m
-
-    * :math:`\alpha_f = 8.686 f^2 (\alpha_{cl} + \alpha_{vib})`
-
-    * :math:`\alpha_{cl}=1.84\cdot10^{-11}(p_r/p_a)\cdot\sqrt{T/T_0}`
-
-    * :math:`\alpha_{vib}=(T/T_0)^{-5/2}\cdot(\alpha_O + \alpha_N)`
-
-    * :math:`\alpha_O=\frac{0.01275 e^{-2239.1/T}}{(f_{rO}+f^2/f_{rO})}`
-
-    * :math:`\alpha_N=\frac{0.1068 e^{-3352/T}}{(f_{rN}+f^2/f_{rN})}`.
-
-    Here :math:`T` is ``temperature`` in Kelvin, :math:`T_0` and
-    :math:`p_r` the reference temperature/pressure, :math:`p_a` is
-    ``atmospheric_pressure``, and :math:`f_{rO}`, :math:`f_{rN}` are the
-    oxygen/nitrogen relaxation frequencies, :math:`f_{rO} = (p_a / p_r)
-    (24 + 4.04 \cdot 10^4 h (0.02 + h) / (0.391 + h))` and :math:`f_{rN} =
-    (p_a / p_r) (T / T_0)^{-1/2} (9 + 280 h \cdot e^{-4.17 [(T /
-    T_0)^{-1/3} - 1]})`, where :math:`h` is the molar concentration of
-    water vapor (as a percentage), derived from ``relative_humidity``.
-    :math:`\alpha` is converted from dB/m to the natural (1/m) coefficient
-    used above via :math:`\alpha_f = \alpha / (10 / \ln 10)`.
-
-    From Python, this is a drop-in post-processing step for the output of
-    ``mitsuba.render()``: it accepts a ``TensorXf`` of arbitrary shape
-    (not just a flat/2-D array) directly, and returns a ``TensorXf`` of
-    that exact same shape and type, as long as its total size is a
-    multiple of ``len(frequencies)``.
-
-    Parameter ``etc`` (object):
-        Input energy time curve as a 2-D array of shape (n_time_bins,
-        n_frequencies). From Python, the output of ``mitsuba.render()`` (a
-        ``TensorXf`` of arbitrary shape, e.g. also including a frequency
-        axis) can be passed directly, e.g.
-        ``apply_pure_tone_attenuation(etc=:py:obj:`mitsuba.render`(scene,
-        sensor=microphone, integrator=integrator), ...)``.
-
-    Parameter ``sampling_rate`` (drjit.llvm.ad.Float):
-        Sampling rate in Hz used to convert sample indices to times.
-
-    Parameter ``speed_of_sound_ms`` (drjit.llvm.ad.Float):
-        Speed of sound in m/s (use the return value of speed_of_sound()).
-
-    Parameter ``temperature`` (drjit.llvm.ad.Float):
-        Temperature in degree Celsius.
-
-    Parameter ``frequencies`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-        Center frequencies in Hz, one value per frequency band. Must have
-        the same number of entries as ``etc`` has columns.
-
-    Parameter ``relative_humidity`` (drjit.llvm.ad.Float):
-        Relative humidity in the range of 0 to 1.
-
-    Parameter ``atmospheric_pressure`` (drjit.llvm.ad.Float):
-        Atmospheric pressure in Pascal.
-
-    Returns → object:
-        A new vector containing the attenuated ETC with the same layout as
-        the input (row-major, n_time_bins × n_frequencies). From Python,
-        when ``etc`` was a ``TensorXf`` (e.g. straight from
-        ``mitsuba.render()``), the result is a ``TensorXf`` of that same
-        shape, ready to be used like any other rendered output (plotted,
-        saved, compared, etc.).
-
 .. py:function:: mitsuba.acoustic.energy_attenuation_coefficient(temperature, frequency, relative_humidity, atmospheric_pressure)
 
     Pure tone energy attenuation coefficient following ISO 9613-1:1993.
@@ -17555,10 +17474,9 @@
     Returns → drjit.llvm.ad.Float:
         Energy decay coefficient in 1/m.
 
-.. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity=nan, atmospheric_pressure=nan, saturation_vapor_pressure=nan, co2_ppm=nan, method='auto')
+.. py:function:: mitsuba.acoustic.speed_of_sound(temperature, relative_humidity=nan, atmospheric_pressure=nan, saturation_vapor_pressure=nan, co2_ppm=nan, method='simple')
 
-    Calculation methods and automatic method selector for the speed of
-    sound
+    Calculation methods for the speed of sound
 
     Differentiable: under an ``*_ad_*`` variant, gradients set on
     ``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
@@ -17631,18 +17549,14 @@
 
     Parameter ``co2_ppm`` (drjit.llvm.ad.Float):
         CO2 concentration in parts per million (ppm). Only used by the
-        "cramer" method (and to auto-select it, see below), must be in the
-        range of 0 ppm to 10,000 ppm. A missing value (see
-        is_missing_value()) defaults to 428.73 ppm, the global monthly
-        mean for 2026-07 reported by NOAA GML
+        "cramer" method, must be in the range of 0 ppm to 10,000 ppm. A
+        missing value (see is_missing_value()) defaults to 428.73 ppm, the
+        global monthly mean for 2026-07 reported by NOAA GML
         (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
 
     Parameter ``method`` (str):
-        The method to use for the calculation: "simple", "ideal_gas",
-        "cramer", or "auto" (default), which automatically selects one of
-        the other three based on which of the parameters above were
-        provided (see the warning logged at runtime for which one was
-        picked).
+        The method to use for the calculation: "simple" (default),
+        "ideal_gas" or "cramer".
 
     Returns → drjit.llvm.ad.Float:
         The speed of sound in meters per second
@@ -18147,27 +18061,39 @@
      * - speed_of_sound
          - |float|
          - Speed of sound in meters per second. If set explicitly, this value
-           is always used, regardless of ``acoustic_medium``. If both
-           ``speed_of_sound`` and ``acoustic_medium`` are given, a warning is
-           logged. (Default: 343.0, unless overridden by ``acoustic_medium``)
+           is always used for path timing, regardless of ``acoustic_medium``
+           (``acoustic_medium`` is then only used for air attenuation, if
+           enabled; see below). If both ``speed_of_sound`` and
+           ``acoustic_medium`` are given, a warning is logged. (Default:
+           derived from ``acoustic_medium``, see below)
 
      * - acoustic_medium
          - |dict|
-         - Optional dictionary describing the propagation medium (air). See
-           :py:func:`mitsuba.acoustic.speed_of_sound` and
-           :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation` for the
-           recognized fields and their meaning. The medium fields
-           (``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
-           ``saturation_vapor_pressure``, ``co2_ppm``) are exposed as
-           differentiable parameters via :py:func:`mitsuba.traverse`. Any
-           field left unspecified (and every field, if ``acoustic_medium`` is
-           given as an empty dict) falls back to a standard/reference medium:
-           25°C, 60% relative humidity, 101,825 Pa, 3,167 Pa saturation vapor
-           pressure, 400 ppm CO2. Since this always yields a complete medium,
-           ``apply_attenuation`` always succeeds and
-           ``speed_of_sound_method: "auto"`` always resolves to ``"cramer"``
-           (the only method that uses every field) once ``acoustic_medium``
-           is given at all, however (in)complete.
+         - Dictionary describing the propagation medium (air). Every field
+           always has a concrete value: the one given, or otherwise a
+           standard/reference medium's default (25°C, 60% relative humidity,
+           101,825 Pa, 3,167 Pa saturation vapor pressure, 400 ppm CO2) -- so
+           ``acoustic_medium: {}`` (or omitting ``acoustic_medium`` entirely)
+           behaves the same as spelling out the standard medium in full.
+           Recognized fields: ``temperature``, ``relative_humidity``,
+           ``atmospheric_pressure``, ``saturation_vapor_pressure``,
+           ``co2_ppm`` (see
+           :ref:`key_topics-environmental_conditions-speed_of_sound`,
+           exposed as differentiable parameters via
+           :py:func:`mitsuba.traverse`), plus:
+
+         - ``speed_of_sound_method``: ``"simple"`` (default),
+           ``"ideal_gas"`` or ``"cramer"`` -- see
+           :ref:`key_topics-environmental_conditions-speed_of_sound` for
+           what each one uses. ``"simple"`` is the default since it only
+           needs ``temperature``, which in practice is measured far more
+           often than humidity or pressure; pick one of the other two
+           explicitly if you have those measurements too.
+         - ``apply_attenuation``: |bool|. Whether to apply
+           frequency-dependent air attenuation (ISO 9613-1, see
+           :ref:`key_topics-environmental_conditions-attenuation`) to path
+           contributions during rendering. Since every field above always
+           has a concrete value, this is on by default. (Default: |true|)
 
      * - max_time
          - |float|
@@ -18249,8 +18175,17 @@
                 'atmospheric_pressure': 101325.0,
                 'saturation_vapor_pressure': 3200.0,
                 'co2_ppm': 400,
-                'speed_of_sound_method': 'auto',
+                'speed_of_sound_method': 'cramer',
             },
+            'max_depth': -1,
+
+        .. code-tab:: python
+            :name: integrator-acoustic_ad-standard-medium
+
+            # 'acoustic_medium' omitted entirely (or given as {}) uses the
+            # standard medium and "simple" for every field/method above.
+            'type': 'acoustic_ad',
+            'max_time': 1.0,
             'max_depth': -1,
 
     .. py:method:: __init__(self, arg)
@@ -18262,11 +18197,10 @@
     .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.compute_speed_of_sound()
 
         Pure (no side effects on self) re-derivation of the speed of
-        sound from the (live) medium fields, using the method resolved once
-        at construction time (see __init__ and the speed_of_sound_method
-        docs above). method= is always one of "simple"/"ideal_gas"/"cramer"
-        here (never "auto"), so this does not re-trigger auto-detection or
-        its log message. Only valid when self.has_medium.
+        sound from the (live) medium fields, using
+        self.speed_of_sound_method (one of "simple"/"ideal_gas"/"cramer",
+        see __init__). Always valid: the medium fields always have a
+        concrete value, real or standard-default (see __init__).
 
         Split out from update_speed_of_sound() (below) so that PRB-style
         integrators can call it fresh on every loop iteration -- inside a
