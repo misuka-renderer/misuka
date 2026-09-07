@@ -128,6 +128,7 @@ def test07_hide_emitters(variants_all_acoustic, rfilter):
 
     integrator = mi.load_dict({'type': 'acoustic_path',
                                'speed_of_sound': speed_of_sound,
+                               'acoustic_medium': {'apply_attenuation': False},
                                'max_depth': 1,
                                'max_time': max_time, 'hide_emitters': True})
     assert integrator.hide_emitters
@@ -138,6 +139,7 @@ def test07_hide_emitters(variants_all_acoustic, rfilter):
 
     integrator = mi.load_dict({'type': 'acoustic_path',
                                'speed_of_sound': speed_of_sound,
+                               'acoustic_medium': {'apply_attenuation': False},
                                'max_depth': 1,
                                'max_time': max_time, 'hide_emitters': False})
     assert not integrator.hide_emitters
@@ -373,10 +375,12 @@ def test09_traverse_medium_parameters(variants_all_ad_acoustic):
 
 
 def test10_traverse_no_medium(variants_all_ad_acoustic):
-    """When 'speed_of_sound' is set explicitly (no acoustic_medium), there
-    are no medium fields to expose."""
+    """When 'speed_of_sound' is set explicitly and attenuation is disabled,
+    the (standard-valued) medium fields have no effect on the render, so
+    there is nothing to expose."""
     integrator = mi.load_dict({
         'type': 'acoustic_path', 'max_time': 1.0, 'speed_of_sound': 340.0,
+        'acoustic_medium': {'apply_attenuation': False},
     })
     params = mi.traverse(integrator)
     assert len(params.keys()) == 0

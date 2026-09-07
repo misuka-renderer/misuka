@@ -9642,8 +9642,7 @@ Returns:
 static const char *__doc_mitsuba_acoustic_is_missing_value = R"doc()doc";
 
 static const char *__doc_mitsuba_acoustic_speed_of_sound =
-R"doc(Calculation methods and automatic method selector for the speed of
-sound
+R"doc(Calculation methods for the speed of sound
 
 Differentiable: under an ``*_ad_*`` variant, gradients set on
 ``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
@@ -9716,18 +9715,14 @@ Parameter ``saturation_vapor_pressure``:
 
 Parameter ``co2_ppm``:
     CO2 concentration in parts per million (ppm). Only used by the
-    "cramer" method (and to auto-select it, see below), must be in the
-    range of 0 ppm to 10,000 ppm. A missing value (see
-    is_missing_value()) defaults to 428.73 ppm, the global monthly
-    mean for 2026-07 reported by NOAA GML
+    "cramer" method, must be in the range of 0 ppm to 10,000 ppm. A
+    missing value (see is_missing_value()) defaults to 428.73 ppm, the
+    global monthly mean for 2026-07 reported by NOAA GML
     (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
 
 Parameter ``method``:
-    The method to use for the calculation: "simple", "ideal_gas",
-    "cramer", or "auto" (default), which automatically selects one of
-    the other three based on which of the parameters above were
-    provided (see the warning logged at runtime for which one was
-    picked).
+    The method to use for the calculation: "simple" (default),
+    "ideal_gas" or "cramer".
 
 Returns:
     The speed of sound in meters per second)doc";

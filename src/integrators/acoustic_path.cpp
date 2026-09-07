@@ -25,19 +25,35 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
  * - speed_of_sound
    - |float|
    - Speed of sound in meters per second. If set explicitly, this value is
-     always used, regardless of ``acoustic_medium``. If both
-     ``speed_of_sound`` and ``acoustic_medium`` are given, a warning is
-     logged. (Default: 343.0, unless overridden by ``acoustic_medium``)
+     always used for path timing, regardless of ``acoustic_medium``
+     (``acoustic_medium`` is then only used for air attenuation, if
+     enabled; see below). If both ``speed_of_sound`` and ``acoustic_medium``
+     are given, a warning is logged. (Default: derived from
+     ``acoustic_medium``, see below)
 
  * - acoustic_medium
    - dict
-   - Optional dictionary describing the propagation medium (air). See
-     :py:func:`mitsuba.acoustic.speed_of_sound` and
-     :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation` for the
-     recognized fields and their meaning. Any field left unspecified (and
-     every field, if ``acoustic_medium`` is given as an empty dict) falls
-     back to a standard/reference medium: 25°C, 60% relative humidity,
-     101,825 Pa, 3,167 Pa saturation vapor pressure, 400 ppm CO2.
+   - Dictionary describing the propagation medium (air). Every field always
+     has a concrete value: the one given, or otherwise a standard/reference
+     medium's default (25°C, 60% relative humidity, 101,825 Pa, 3,167 Pa
+     saturation vapor pressure, 400 ppm CO2) -- so ``acoustic_medium: {}``
+     (or omitting ``acoustic_medium`` entirely) behaves the same as
+     spelling out the standard medium in full. Recognized fields:
+     ``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
+     ``saturation_vapor_pressure``, ``co2_ppm`` (see
+     :py:func:`mitsuba.acoustic.speed_of_sound`), plus:
+
+     - ``speed_of_sound_method``: ``"simple"`` (default), ``"ideal_gas"``
+       or ``"cramer"`` -- see :py:func:`mitsuba.acoustic.speed_of_sound`
+       for what each one uses. ``"simple"`` is the default since it only
+       needs ``temperature``, which in practice is measured far more often
+       than humidity or pressure; pick one of the other two explicitly if
+       you have those measurements too.
+     - ``apply_attenuation``: |bool|. Whether to apply frequency-dependent
+       air attenuation (ISO 9613-1, see
+       :py:func:`mitsuba.acoustic.apply_pure_tone_attenuation`) to path
+       contributions during rendering. Since every field above always has
+       a concrete value, this is on by default. (Default: |true|)
 
  * - max_time
    - |float|
@@ -119,9 +135,18 @@ Sound paths are terminated when any of the following conditions are met:
             'atmospheric_pressure': 101325.0,
             'saturation_vapor_pressure': 3200.0,
             'co2_ppm': 400,
-            'speed_of_sound_method': 'auto',
+            'speed_of_sound_method': 'cramer',
             'apply_attenuation': True,
         },
+        'max_depth': -1,
+
+    .. code-tab:: python
+        :name: acoustic-path-integrator-standard-medium
+
+        # 'acoustic_medium' omitted entirely (or given as {}) uses the
+        # standard medium and "simple" for every field/method above.
+        'type': 'acoustic_path',
+        'max_time': 1.0,
         'max_depth': -1,
 
  */
@@ -140,44 +165,39 @@ public:
         bool speed_of_sound_explicit = props.has_property("speed_of_sound");
         m_speed_of_sound_explicit = speed_of_sound_explicit;
 
-        // An 'acoustic_medium' dict (see acoustic.h) is only used to derive
-        // the speed of sound when 'speed_of_sound' was not set explicitly.
-        // Named 'acoustic_medium' (not 'medium') to avoid confusion with
-        // mitsuba's existing Medium plugin (participating media).
-        //
-        // 'acoustic_medium_present' is set by the dict parser whenever the
-        // 'acoustic_medium' key was given at all, even as an empty dict --
-        // this is what distinguishes "acoustic_medium omitted" (unaffected
-        // by any of this, m_has_medium false, unchanged pre-acoustic_medium
-        // behavior) from "acoustic_medium given, however (in)complete" (a
-        // standard/reference medium, see acoustic_medium_standard_* in
-        // acoustic.h, fills in whichever fields were left unspecified, so
-        // every field is always a concrete value below -- no per-field
-        // "was this provided" checks are needed anywhere past this point).
-        m_has_medium = props.get<bool>("acoustic_medium_present", false);
+        // 'acoustic_medium' fields (see acoustic.h) always have a concrete
+        // value: the real value, if given, or otherwise the
+        // standard/reference medium's default (acoustic_medium_standard_*
+        // in acoustic.h). This holds regardless of whether 'acoustic_medium'
+        // was mentioned at all, so 'acoustic_medium: {}' behaves exactly
+        // like omitting 'acoustic_medium' entirely, and there is no
+        // separate "was this provided" bookkeeping anywhere past this
+        // point. Named 'acoustic_medium' (not 'medium') to avoid confusion
+        // with mitsuba's existing Medium plugin (participating media).
         float medium_temperature = props.get<float>("acoustic_medium_temperature", acoustic::acoustic_medium_standard_temperature);
         float medium_relative_humidity = props.get<float>("acoustic_medium_relative_humidity", acoustic::acoustic_medium_standard_relative_humidity);
         float medium_atmospheric_pressure = props.get<float>("acoustic_medium_atmospheric_pressure", acoustic::acoustic_medium_standard_atmospheric_pressure);
         float medium_saturation_vapor_pressure = props.get<float>("acoustic_medium_saturation_vapor_pressure", acoustic::acoustic_medium_standard_saturation_vapor_pressure);
         float medium_co2_ppm = props.get<float>("acoustic_medium_co2_ppm", acoustic::acoustic_medium_standard_co2_ppm);
-        m_speed_of_sound_method = props.string("acoustic_medium_speed_of_sound_method", "auto");
+        // "simple" (ISO 9613-1 / DIN) is the default: in practice
+        // temperature is measured far more often than humidity or
+        // atmospheric pressure, so it needs the fewest actually-measured
+        // inputs to be accurate. Pick "ideal_gas"/"cramer" explicitly if
+        // you have those measurements too.
+        m_speed_of_sound_method = props.string("acoustic_medium_speed_of_sound_method", "simple");
 
-        if (!speed_of_sound_explicit && m_has_medium) {
-            // Every medium field always has a concrete value (real or
-            // standard-default, see above), so "auto" has nothing left to
-            // infer from -- it always resolves to "cramer", the most
-            // complete of the three models (the only one that uses all of
-            // temperature/relative_humidity/atmospheric_pressure/co2_ppm).
-            if (m_speed_of_sound_method == "auto") {
-                m_speed_of_sound_method = "cramer";
-                Log(Warn, "speed_of_sound: no method specified, defaulting "
-                          "to \"%s\".", m_speed_of_sound_method);
-            }
-        } else if (speed_of_sound_explicit && m_has_medium) {
+        if (speed_of_sound_explicit &&
+            (props.has_property("acoustic_medium_temperature") ||
+             props.has_property("acoustic_medium_relative_humidity") ||
+             props.has_property("acoustic_medium_atmospheric_pressure") ||
+             props.has_property("acoustic_medium_saturation_vapor_pressure") ||
+             props.has_property("acoustic_medium_co2_ppm") ||
+             props.has_property("acoustic_medium_speed_of_sound_method"))) {
             Log(Warn, "Both \"speed_of_sound\" and \"acoustic_medium\" were "
                       "specified: the explicit \"speed_of_sound\" value "
-                      "(%f) is used, \"acoustic_medium\" is ignored for the "
-                      "speed of sound.", speed_of_sound_prop);
+                      "(%f) is used for path timing; \"acoustic_medium\" "
+                      "still applies to air attenuation, if enabled.",
+                      speed_of_sound_prop);
         }
 
         m_medium_temperature               = medium_temperature;
@@ -186,7 +206,7 @@ public:
         m_medium_saturation_vapor_pressure = medium_saturation_vapor_pressure;
         m_medium_co2_ppm                   = medium_co2_ppm;
 
-        if (!speed_of_sound_explicit && m_has_medium)
+        if (!speed_of_sound_explicit)
             update_speed_of_sound();
         else
             m_speed_of_sound = speed_of_sound_prop;
@@ -202,12 +222,17 @@ public:
                 Throw("\"speed_of_sound\" must be set to a value greater than zero!");
         }
 
-        // Air attenuation (ISO 9613-1) needs the medium's temperature,
-        // relative_humidity and atmospheric_pressure. All three are always
-        // concrete once m_has_medium is set (see above), so attenuation is
-        // simply on-by-default whenever a medium was given, and forced off
-        // when it wasn't (there's nothing to compute it from).
-        m_apply_attenuation = m_has_medium && props.get<bool>("acoustic_medium_apply_attenuation", true);
+        // Air attenuation (ISO 9613-1) uses the medium's temperature,
+        // relative_humidity and atmospheric_pressure, which -- like every
+        // other medium field -- always have a concrete value (see above),
+        // so it's simply on by default.
+        m_apply_attenuation = props.get<bool>("acoustic_medium_apply_attenuation", true);
+        // Whether the medium fields actually influence anything: attenuation
+        // (if enabled), and/or speed_of_sound (unless it was pinned
+        // explicitly). Gates traverse()/parameters_changed() below, so
+        // gradient-based optimization doesn't expose parameters that
+        // wouldn't affect the render anyway.
+        m_medium_matters = m_apply_attenuation || !speed_of_sound_explicit;
 
         int max_depth = props.get<int>("max_depth", -1);
         if (max_depth < 0 && max_depth != -1)
@@ -250,17 +275,19 @@ public:
                 m_medium_atmospheric_pressure, m_medium_co2_ppm);
         } else {
             Throw("Invalid method specified for speed of sound calculation. "
-                  "Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.");
+                  "Valid options are 'simple', 'ideal_gas', 'cramer' or no argument.");
         }
     }
 
     void traverse(TraversalCallback *callback) override {
         // Only the atmospheric medium parameters are exposed: they are the
         // physically meaningful optimization targets (e.g. inferring
-        // atmospheric conditions from an observed echogram). An explicitly
-        // set 'speed_of_sound' bypasses 'acoustic_medium' entirely (see the
-        // constructor) and has no medium fields to expose here.
-        if (m_has_medium) {
+        // atmospheric conditions from an observed echogram). Skipped
+        // entirely when they wouldn't affect the render at all -- i.e. an
+        // explicit 'speed_of_sound' bypasses 'acoustic_medium' for path
+        // timing, and if attenuation is also disabled, the medium fields
+        // have no effect anywhere (see m_medium_matters in the constructor).
+        if (m_medium_matters) {
             callback->put_parameter("medium_temperature", m_medium_temperature,
                                     +ParamFlags::Differentiable);
             callback->put_parameter("medium_relative_humidity", m_medium_relative_humidity,
@@ -275,7 +302,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> & /*keys*/ = {}) override {
-        if (m_has_medium) {
+        if (m_medium_matters) {
             // Prevents the JIT from baking these in as compile-time
             // literals across optimizer iterations, matching e.g.
             // roughplastic.cpp's parameters_changed().
@@ -283,9 +310,7 @@ public:
                             m_medium_atmospheric_pressure,
                             m_medium_saturation_vapor_pressure, m_medium_co2_ppm);
             // Only re-derive m_speed_of_sound from the medium if it wasn't
-            // set explicitly (see the constructor): m_speed_of_sound_method
-            // stays the unresolved literal "auto" in the explicit case,
-            // which update_speed_of_sound() cannot handle.
+            // set explicitly (see the constructor).
             if (!m_speed_of_sound_explicit) {
                 update_speed_of_sound();
                 dr::make_opaque(m_speed_of_sound);
@@ -946,14 +971,10 @@ protected:
     // Live (Float, not plain float) so gradients set on them via
     // mi.traverse() + an optimizer survive into speed_of_sound/attenuation
     // computations -- see traverse()/parameters_changed() below. Always
-    // concrete values whenever m_has_medium (real, or the standard/reference
-    // medium's defaults, see acoustic_medium_standard_* in acoustic.h and
-    // the constructor); "auto" method selection happens once at construction
-    // time (in plain float, see the constructor) and is deliberately never
-    // re-run on these live members afterwards, since it has nothing left to
-    // infer once every field is always populated, and no well-defined
-    // meaning once a member may carry gradients from an optimizer.
-    bool  m_has_medium = false;
+    // concrete values (real, or the standard/reference medium's defaults,
+    // see acoustic_medium_standard_* in acoustic.h and the constructor),
+    // regardless of whether/how 'acoustic_medium' was specified.
+    bool  m_medium_matters = false; ///< see the constructor
     bool  m_speed_of_sound_explicit = false;
     std::string m_speed_of_sound_method;
     Float m_medium_temperature;

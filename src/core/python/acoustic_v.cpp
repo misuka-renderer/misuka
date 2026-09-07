@@ -27,7 +27,7 @@ MI_PY_EXPORT(acoustic) {
           "atmospheric_pressure"_a = std::numeric_limits<float>::quiet_NaN(),
           "saturation_vapor_pressure"_a = std::numeric_limits<float>::quiet_NaN(),
           "co2_ppm"_a = std::numeric_limits<float>::quiet_NaN(),
-          "method"_a = std::string("auto"),
+          "method"_a = std::string("simple"),
           D(acoustic, speed_of_sound));
 
     m.def("energy_attenuation_coefficient",

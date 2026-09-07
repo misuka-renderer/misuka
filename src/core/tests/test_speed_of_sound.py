@@ -100,38 +100,8 @@ def test01_hasattr_acoustic(variants_all_acoustic):
 
 
 def test02_method_selection(variants_all_acoustic):
-    assert _as_float(mi.acoustic.speed_of_sound(temperature=20.0)) == pytest.approx(_simple(20.0), rel=1e-6) # function selects automatically
-    assert _as_float(mi.acoustic.speed_of_sound(temperature=20.0, method="auto")) == pytest.approx(_simple(20.0), rel=1e-6)  # function selects automatically
+    assert _as_float(mi.acoustic.speed_of_sound(temperature=20.0)) == pytest.approx(_simple(20.0), rel=1e-6) # "simple" is the default method
     assert _as_float(mi.acoustic.speed_of_sound(temperature=25.0, method="simple")) == pytest.approx(_simple(25.0), rel=1e-6)  # function should use simple method
-
-
-def test03_auto_selects_simple_without_humidity(variants_all_acoustic):
-    # relative_humidity not provided -> "auto" should fall back to "simple"
-    result = _as_float(mi.acoustic.speed_of_sound(temperature=15.0))
-    assert result == pytest.approx(_simple(15.0), rel=1e-6)
-
-
-def test04_auto_selects_ideal_gas_with_humidity_only(variants_all_acoustic):
-    # relative_humidity provided, co2_ppm not provided -> "auto" should select "ideal_gas"
-    result = _as_float(mi.acoustic.speed_of_sound(
-        temperature=20.0,
-        relative_humidity=0.5,
-        atmospheric_pressure=101325.0,
-    ))
-    expected = _ideal_gas(20.0, 0.5, 101325.0)
-    assert result == pytest.approx(expected, rel=1e-5)
-
-
-def test05_auto_selects_cramer_with_humidity_and_co2(variants_all_acoustic):
-    # relative_humidity and co2_ppm both provided -> "auto" should select "cramer"
-    result = _as_float(mi.acoustic.speed_of_sound(
-        temperature=20.0,
-        relative_humidity=0.5,
-        atmospheric_pressure=101325.0,
-        co2_ppm=400.0,
-    ))
-    expected = _cramer(20.0, 0.5, 101325.0, 400.0)
-    assert result == pytest.approx(expected, rel=1e-5)
 
 
 def test06_simple_method_matches_formula(variants_all_acoustic):

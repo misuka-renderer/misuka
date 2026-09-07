@@ -72,7 +72,8 @@ def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name
     """Test that default property values are set correctly."""
     integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
 
-    assert integrator.speed_of_sound == 343.0
+    # Standard medium (25 degC, ...) via the default "simple" method.
+    assert dr.allclose(integrator.speed_of_sound, 346.114)
     assert integrator.max_time == 1.0
     assert integrator.is_detached
     assert not integrator.hide_emitters
@@ -643,10 +644,12 @@ def test14_traverse_medium_parameters(variants_all_jit_acoustic, integrator_name
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test15_traverse_no_medium(variants_all_jit_acoustic, integrator_name):
-    """When 'speed_of_sound' is set explicitly (no acoustic_medium), there
-    are no medium fields to expose."""
+    """When 'speed_of_sound' is set explicitly and attenuation is disabled,
+    the (standard-valued) medium fields have no effect on the render, so
+    there is nothing to expose."""
     integrator = mi.load_dict({
         'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 340.0,
+        'acoustic_medium': {'apply_attenuation': False},
     })
     params = mi.traverse(integrator)
     assert len(params.keys()) == 0

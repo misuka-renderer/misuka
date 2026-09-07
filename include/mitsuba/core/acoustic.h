@@ -246,7 +246,7 @@ Value speed_of_sound_cramer(const Value temperature,
 }
 
 /**
- * \brief Calculation methods and automatic method selector for the speed of sound
+ * \brief Calculation methods for the speed of sound
  *
  * Differentiable: under an ``*_ad_*`` variant, gradients set on
  * \c temperature, \c relative_humidity, \c atmospheric_pressure,
@@ -312,17 +312,13 @@ Value speed_of_sound_cramer(const Value temperature,
  *      Vapor Pressure," J. Appl. Meteor., 1996).
  * \param co2_ppm
  *      CO2 concentration in parts per million (ppm). Only used by the
- *      "cramer" method (and to auto-select it, see below), must be in the
- *      range of 0 ppm to 10,000 ppm. A missing value (see
- *      is_missing_value()) defaults to 428.73 ppm, the global monthly mean
- *      for 2026-07 reported by NOAA GML
+ *      "cramer" method, must be in the range of 0 ppm to 10,000 ppm. A
+ *      missing value (see is_missing_value()) defaults to 428.73 ppm, the
+ *      global monthly mean for 2026-07 reported by NOAA GML
  *      (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
  * \param method
- *      The method to use for the calculation: "simple", "ideal_gas",
- *      "cramer", or "auto" (default), which automatically selects one of
- *      the other three based on which of the parameters above were
- *      provided (see the warning logged at runtime for which one was
- *      picked).
+ *      The method to use for the calculation: "simple" (default),
+ *      "ideal_gas" or "cramer".
  *
  * \return
  *      The speed of sound in meters per second
@@ -333,49 +329,24 @@ Value speed_of_sound(const Value temperature,
                      Value atmospheric_pressure,
                      const Value saturation_vapor_pressure,
                      const Value co2_ppm,
-                     const std::string& method = "auto") {
+                     const std::string& method = "simple") {
 
     // input validation - at least temperature must be provided
     if (is_missing_value(temperature)) {
         throw std::invalid_argument("Temperature must be provided.");
     }
 
-    std::string selected_method = method;
-
-    // selection logic
-    if (selected_method == "auto") {
-        if (is_missing_value(relative_humidity)) {
-            selected_method = "simple";
-        } else if (!is_missing_value(co2_ppm)) {
-            selected_method = "cramer";
-        } else {
-            selected_method = "ideal_gas";
-        }
-        // No method was explicitly requested: let the user know which one
-        // was picked, since it depends on which parameters were provided
-        // and silently changes if that set of parameters changes later.
-        // Logged at Warn (not Info) since mitsuba's default log level is
-        // Warn; an Info-level message here would be silently suppressed
-        // unless the user explicitly lowers the log level.
-        // Note: the extra parentheses around the function name prevent this
-        // call from being expanded by the member-function-only `Log(...)`
-        // macro defined in logger.h (this is a free function, no m_class).
-        (mitsuba::detail::Log)(Warn, nullptr, __FILE__, __LINE__,
-            "speed_of_sound(): no method specified, automatically selected "
-            "\"%s\" based on the provided parameters.", selected_method);
-    }
-
-    if (selected_method == "simple") {
+    if (method == "simple") {
         return speed_of_sound_simple<Value>(temperature);
-    } else if (selected_method == "ideal_gas") {
+    } else if (method == "ideal_gas") {
         return speed_of_sound_ideal_gas<Value>(temperature, relative_humidity,
                                                atmospheric_pressure, saturation_vapor_pressure);
-    } else if (selected_method == "cramer") {
+    } else if (method == "cramer") {
         return speed_of_sound_cramer<Value>(temperature, relative_humidity,
                                             atmospheric_pressure, co2_ppm);
     } else {
         throw std::invalid_argument("Invalid method specified for speed of sound calculation. "
-                                    "Valid options are 'auto', 'simple', 'cramer', 'ideal_gas' or no argument.");
+                                    "Valid options are 'simple', 'ideal_gas', 'cramer' or no argument.");
     }
 }
 
