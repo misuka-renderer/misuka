@@ -189,3 +189,31 @@ def test07_frequency_to_pressure_ratio_out_of_range_raises(variant_scalar_acoust
         mi.acoustic.energy_attenuation_coefficient(
             temperature=20.0, frequency=10000.0,
             relative_humidity=0.5, atmospheric_pressure=500.0)
+
+
+def _iso9613_db_per_m(T_c, f, rh, p_a):
+    # Direct transcription of ISO 9613-1:1993 Eq. (3)-(5) and Annex B
+    p_r, T_0, T_01 = 101325.0, 293.15, 273.16
+    T = T_c + 273.15
+    p_sat_ratio = 10 ** (-6.8346 * (T_01 / T) ** 1.261 + 4.6151)
+    h = rh * 100.0 * p_sat_ratio / (p_a / p_r)
+    f_rO = (p_a / p_r) * (24 + 4.04e4 * h * (0.02 + h) / (0.391 + h))
+    f_rN = (p_a / p_r) * (T / T_0) ** -0.5 * \
+        (9 + 280 * h * math.exp(-4.170 * ((T / T_0) ** (-1 / 3) - 1)))
+    return 8.686 * f ** 2 * (
+        1.84e-11 * (p_r / p_a) * (T / T_0) ** 0.5
+        + (T / T_0) ** -2.5 * (
+            0.01275 * math.exp(-2239.1 / T) / (f_rO + f ** 2 / f_rO)
+            + 0.1068 * math.exp(-3352.0 / T) / (f_rN + f ** 2 / f_rN)))
+
+
+@pytest.mark.parametrize("p_a", [60000.0, 101325.0, 150000.0])
+def test08_non_reference_pressure_matches_iso(variants_all_acoustic, p_a):
+    # the ISO tables are for p_a = p_r only; this checks the pressure
+    # dependence of h (Eq. B.1: h = h_r (p_sat/p_r) / (p_a/p_r))
+    for f in (125.0, 1000.0, 8000.0):
+        got = _as_float(mi.acoustic.energy_attenuation_coefficient(
+            temperature=15.0, frequency=f,
+            relative_humidity=0.4, atmospheric_pressure=p_a))
+        expected = _iso9613_db_per_m(15.0, f, 0.4, p_a) / (10.0 * math.log10(math.e))
+        assert got == pytest.approx(expected, rel=1e-4)

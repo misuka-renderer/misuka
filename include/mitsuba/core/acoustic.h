@@ -428,7 +428,7 @@ Value energy_attenuation_coefficient(Value temperature,
         Value(-6.8346f) * dr::pow(Value(T_01) / T, Value(1.261f)) + Value(4.6151f));
 
     // molar concentration of water vapor as a percentage (Eq. B.1)
-    Value h = (relative_humidity * 100.f) * p_sat_ratio * (atmospheric_pressure / p_r);
+    Value h = (relative_humidity * 100.f) * p_sat_ratio / (atmospheric_pressure / p_r);
 
     // Oxygen relaxation frequency
     Value f_rO = (atmospheric_pressure / p_r) *
