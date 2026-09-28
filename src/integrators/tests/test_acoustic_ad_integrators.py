@@ -72,7 +72,8 @@ def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name
     """Test that default property values are set correctly."""
     integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
 
-    assert integrator.speed_of_sound == 343.0
+    # Standard medium (25 degC, ...) via the default "simple" method.
+    assert dr.allclose(integrator.speed_of_sound, 346.114)
     assert integrator.max_time == 1.0
     assert integrator.is_detached
     assert not integrator.hide_emitters
@@ -604,6 +605,54 @@ def test13_ad_prb_equivalence(variants_all_ad_acoustic, ad_name, prb_name, confi
         print(f"-> abs diff: {diff}")
         print(f"-> rel diff: {rel}")
         pytest.fail(f"{ad_name} and {prb_name} disagree on gradient!")
+
+
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test14_traverse_medium_parameters(variants_all_jit_acoustic, integrator_name):
+    """The five acoustic_medium fields must be exposed via mi.traverse() as
+    differentiable parameters, and updating one must observably re-derive
+    speed_of_sound (see AcousticADIntegrator.traverse()/parameters_changed()
+    in acoustic_ad.py, inherited unchanged by all four integrators here).
+    A structural check (no rendering) -- separate from whether gradients
+    actually propagate all the way through render_forward()/render_backward(),
+    which is a property of each integrator's sampling loop, not of this
+    parameter-wiring."""
+    integrator = mi.load_dict({
+        'type': integrator_name,
+        'max_time': 1.0,
+        'acoustic_medium': {
+            'temperature': 20.0,
+            'relative_humidity': 0.5,
+            'atmospheric_pressure': 101325.0,
+        },
+    })
+
+    params = mi.traverse(integrator)
+    for key in ('medium_temperature', 'medium_relative_humidity',
+                'medium_atmospheric_pressure', 'medium_saturation_vapor_pressure',
+                'medium_co2_ppm'):
+        assert key in params
+
+    speed_of_sound_before = dr.detach(integrator.speed_of_sound)[0]
+
+    params['medium_temperature'] = mi.Float(30.0)
+    params.update()
+
+    speed_of_sound_after = dr.detach(integrator.speed_of_sound)[0]
+    assert speed_of_sound_after != pytest.approx(speed_of_sound_before)
+
+
+@pytest.mark.parametrize('integrator_name', INTEGRATORS)
+def test15_traverse_no_medium(variants_all_jit_acoustic, integrator_name):
+    """When 'speed_of_sound' is set explicitly and attenuation is disabled,
+    the (standard-valued) medium fields have no effect on the render, so
+    there is nothing to expose."""
+    integrator = mi.load_dict({
+        'type': integrator_name, 'max_time': 1.0, 'speed_of_sound': 340.0,
+        'acoustic_medium': {'apply_attenuation': False},
+    })
+    params = mi.traverse(integrator)
+    assert len(params.keys()) == 0
 
 
 # -------------------------------------------------------------------

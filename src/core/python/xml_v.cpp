@@ -170,6 +170,14 @@ std::string get_type(const nb::dict &dict) {
     Throw("Missing key 'type' in dictionary: %s", nb::str(dict).c_str());
 }
 
+// Helper function to check whether a Python dictionary has a "type" entry
+bool has_type(const nb::dict &dict) {
+    for (const auto &[key, value] : dict)
+        if (nb::cast<std::string>(key) == "type")
+            return true;
+    return false;
+}
+
 #define SET_PROPS(PyType, Type, Setter)            \
     if (nb::isinstance<PyType>(value)) {           \
         props.Setter(key, nb::cast<Type>(value));  \
@@ -337,6 +345,30 @@ void parse_dictionary(DictParseContext &ctx,
         // Parse nested dictionary
         if (nb::isinstance<nb::dict>(value)) {
             nb::dict dict2 = nb::cast<nb::dict>(value);
+
+            // A nested dictionary without a "type" key is not a plugin
+            // instantiation. Flatten its (scalar) entries directly into the
+            // parent's properties as "<key>_<subkey>", e.g. a dictionary
+            // passed as medium={'temperature': 20} becomes the property
+            // "medium_temperature".
+            if (!has_type(dict2)) {
+                std::string prefix = key;
+                for (const auto &[k2, value] : dict2) {
+                    std::string key = prefix + "_" + nb::cast<std::string>(k2);
+
+                    SET_PROPS(nb::bool_, bool, set_bool);
+                    SET_PROPS(nb::int_, int64_t, set_long);
+                    SET_PROPS(nb::float_, Properties::Float, set_float);
+                    SET_PROPS(nb::str, std::string, set_string);
+
+                    Throw("Unsupported value type for parameter \"%s.%s\": %s! "
+                          "Plain nested dictionaries (without a \"type\" key) "
+                          "only support bool, int, float and str values.",
+                          path, key, nb::str(value.type()).c_str());
+                }
+                continue;
+            }
+
             std::string type2 = get_type(dict2);
 
             if (type2 == "spectrum" || type2 == "rgb") {
