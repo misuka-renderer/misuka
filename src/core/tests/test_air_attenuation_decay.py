@@ -142,7 +142,7 @@ def test02_energy_attenuation_coefficient_matches_reference(variants_all_acousti
             got_m = _as_float(mi.acoustic.energy_attenuation_coefficient(
                 temperature=temperature, frequency=frequency,
                 relative_humidity=humidity / 100.0, atmospheric_pressure=101325.0))
-            assert got_m == pytest.approx(expected_m, rel=0.015) #1,5% relative tolerance
+            assert got_m == pytest.approx(expected_m, rel=0.005) #0.5% relative tolerance
 
 
 def test03_higher_frequency_attenuates_more(variants_all_acoustic):
