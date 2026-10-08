@@ -52,7 +52,7 @@ constexpr float acoustic_medium_standard_co2_ppm                   = 400.0f;   /
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
-//! @{ \name Speed of sound calculation (adapts to the type of input parameters)
+//! @{ \name Speed of sound calculation
 // -----------------------------------------------------------------------
 
 /**
@@ -345,7 +345,7 @@ Value speed_of_sound(const Value temperature,
                                             atmospheric_pressure, co2_ppm);
     } else {
         throw std::invalid_argument("Invalid method specified for speed of sound calculation. "
-                                    "Valid options are 'simple', 'ideal_gas', 'cramer' or no argument.");
+                                    "Valid options are 'simple', 'ideal_gas' or 'cramer'.");
     }
 }
 
