@@ -12,6 +12,7 @@ Release notes
     - Add an energy-loss stopping criterion: paths terminate once their throughput drops below `max_energy_loss` in dB `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
     - Add a `hide_emitters` option to exclude direct emitter contributions from the ETC `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
 - Add a test pipeline for the acoustic AD integrators `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
+- Add an `acoustic_medium` (speed of sound and ISO 9613-1 air attenuation), differentiable w.r.t. its atmospheric parameters in `acoustic_prb`
 
 misuka 0.0.0
 ------------
