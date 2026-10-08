@@ -5735,7 +5735,7 @@
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
-    :value: False
+    :value: True
 
 .. py:data:: mitsuba.MI_ENABLE_EMBREE
     :type: bool
@@ -8015,6 +8015,148 @@
 
 .. py:class:: mitsuba.ObjectPtr
 
+.. py:class:: mitsuba.OptixDenoiser
+
+    Base class: :py:obj:`mitsuba.Object`
+
+    Wrapper for the OptiX AI denoiser
+
+    The OptiX AI denoiser is wrapped in this object such that it can work
+    directly with Mitsuba types and its conventions.
+
+    The denoiser works best when applied to noisy renderings that were
+    produced with a Film which used the `box` ReconstructionFilter. With a
+    filter that spans multiple pixels, the denoiser might identify some
+    local variance as a feature of the scene and will not denoise it.
+
+    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False, denoise_alpha=False)
+
+        Constructs an OptiX denoiser
+        
+        Parameter ``input_size`` (:py:obj:`mitsuba.ScalarVector2u`):
+            Resolution of noisy images that will be fed to the denoiser.
+        
+        Parameter ``albedo`` (bool):
+            Whether or not albedo information will also be given to the
+            denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``normals`` (bool):
+            Whether or not shading normals information will also be given to
+            the denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``temporal`` (bool):
+            Whether or not temporal information will also be given to the
+            denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``denoise_alpha`` (bool):
+            Whether or not the alpha channel (if specified in the noisy input)
+            should be denoised too. This parameter is optional, by default it
+            is false.
+        
+        Returns:
+            A callable object which will apply the OptiX denoiser.
+
+        
+    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, albedo, normals, to_sensor=None, flow, previous_denoised)
+
+        Overloaded function.
+
+        1. ``__call__(self, noisy: drjit.llvm.ad.TensorXf, albedo: drjit.llvm.ad.TensorXf, normals: drjit.llvm.ad.TensorXf, to_sensor: object | None = None, flow: drjit.llvm.ad.TensorXf, previous_denoised: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf``
+
+        Apply denoiser on inputs which are TensorXf objects.
+
+        Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
+            The noisy input. (tensor shape: (width, height, 3 | 4))
+
+        Parameter ``albedo`` (drjit.llvm.ad.TensorXf):
+            Albedo information of the noisy rendering. This parameter is
+            optional unless the OptixDenoiser was built with albedo support.
+            (tensor shape: (width, height, 3))
+
+        Parameter ``normals`` (drjit.llvm.ad.TensorXf):
+            Shading normal information of the noisy rendering. The normals
+            must be in the coordinate frame of the sensor which was used to
+            render the noisy input. This parameter is optional unless the
+            OptixDenoiser was built with normals support. (tensor shape:
+            (width, height, 3))
+
+        Parameter ``to_sensor`` (object | None):
+            A Transform4f which is applied to the ``normals`` parameter before
+            denoising. This should be used to transform the normals into the
+            correct coordinate frame. This parameter is optional, by default
+            no transformation is applied.
+
+        Parameter ``flow`` (drjit.llvm.ad.TensorXf):
+            With temporal denoising, this parameter is the optical flow
+            between the previous frame and the current one. It should capture
+            the 2D motion of each individual pixel. When this parameter is
+            unknown, it can been set to a zero-initialized TensorXf of the
+            correct size and still produce convincing results. This parameter
+            is optional unless the OptixDenoiser was built with temporal
+            denoising support. (tensor shape: (width, height, 2))
+
+        Parameter ``previous_denoised`` (drjit.llvm.ad.TensorXf):
+            With temporal denoising, the previous denoised frame should be
+            passed here. For the very first frame, the OptiX documentation
+            recommends passing the noisy input for this argument. This
+            parameter is optional unless the OptixDenoiser was built with
+            temporal denoising support. (tensor shape: (width, height, 3 | 4))
+
+        Returns → drjit.llvm.ad.TensorXf:
+            The denoised input.
+
+        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
+
+        Apply denoiser on inputs which are Bitmap objects.
+
+        Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
+            The noisy input. When passing additional information like albedo
+            or normals to the denoiser, this Bitmap object must be a
+            MultiChannel bitmap.
+
+        Parameter ``albedo_ch``:
+            The name of the channel in the ``noisy`` parameter which contains
+            the albedo information of the noisy rendering. This parameter is
+            optional unless the OptixDenoiser was built with albedo support.
+
+        Parameter ``normals_ch``:
+            The name of the channel in the ``noisy`` parameter which contains
+            the shading normal information of the noisy rendering. The normals
+            must be in the coordinate frame of the sensor which was used to
+            render the noisy input. This parameter is optional unless the
+            OptixDenoiser was built with normals support.
+
+        Parameter ``to_sensor`` (object | None):
+            A Transform4f which is applied to the ``normals`` parameter before
+            denoising. This should be used to transform the normals into the
+            correct coordinate frame. This parameter is optional, by default
+            no transformation is applied.
+
+        Parameter ``flow_ch``:
+            With temporal denoising, this parameter is name of the channel in
+            the ``noisy`` parameter which contains the optical flow between
+            the previous frame and the current one. It should capture the 2D
+            motion of each individual pixel. When this parameter is unknown,
+            it can been set to a zero-initialized TensorXf of the correct size
+            and still produce convincing results. This parameter is optional
+            unless the OptixDenoiser was built with temporal denoising
+            support.
+
+        Parameter ``previous_denoised_ch``:
+            With temporal denoising, this parameter is name of the channel in
+            the ``noisy`` parameter which contains the previous denoised
+            frame. For the very first frame, the OptiX documentation
+            recommends passing the noisy input for this argument. This
+            parameter is optional unless the OptixDenoiser was built with
+            temporal denoising support.
+
+        Parameter ``noisy_ch``:
+            The name of the channel in the ``noisy`` parameter which contains
+            the shading normal information of the noisy rendering.
+
+        Returns → drjit.llvm.ad.TensorXf:
+            The denoised input.
+
 .. py:class:: mitsuba.PCG32
 
     Implementation of PCG32, a member of the PCG family of random number generators
@@ -8408,7 +8550,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit::DiffArray<(JitBackend)2, unsigned long>:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.eval_pdf(self, ctx, mi, wo, active=True)
@@ -17700,7 +17842,6 @@
             The hyper parameter λ. This controls how much gradients are diffused
             on the surface. this value should increase with the tesselation of
             the mesh.
-        
 
         
     .. py:method:: mitsuba.ad.LargeSteps.to_differential()
@@ -17958,10 +18099,9 @@
 
     .. py:class:: mitsuba.ad.ProjectiveDetail.ProjectOperation
 
-                Projection operation takes a seed ray as input and outputs a
-                
+        Projection operation takes a seed ray as input and outputs a
+
         ef SilhouetteSample3f object.
-                
 
     .. py:method:: mitsuba.ad.ProjectiveDetail.ProjectOperation.eval()
 
@@ -18084,16 +18224,10 @@
 
          - ``speed_of_sound_method``: ``"simple"`` (default),
            ``"ideal_gas"`` or ``"cramer"`` -- see
-           :ref:`key_topics-environmental_conditions-speed_of_sound` for
-           what each one uses. ``"simple"`` is the default since it only
-           needs ``temperature``, which in practice is measured far more
-           often than humidity or pressure; pick one of the other two
-           explicitly if you have those measurements too.
-         - ``apply_attenuation``: |bool|. Whether to apply
-           frequency-dependent air attenuation (ISO 9613-1, see
-           :ref:`key_topics-environmental_conditions-attenuation`) to path
-           contributions during rendering. Since every field above always
-           has a concrete value, this is on by default. (Default: |true|)
+           :ref:`key_topics-environmental_conditions-speed_of_sound`.
+         - ``apply_attenuation``: |bool|. Whether to apply air attenuation
+           (see :ref:`key_topics-environmental_conditions-attenuation`)
+           during rendering. (Default: |true|)
 
      * - max_time
          - |float|
@@ -18448,7 +18582,6 @@
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
 
-
     .. py:method:: mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
 
         Evaluates the forward-mode derivative of the rendering step.
@@ -18770,7 +18903,6 @@
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
 
-
 .. py:class:: mitsuba.ad.integrators.acoustic_prb.AcousticPRBIntegrator
 
     Base class: :py:obj:`mitsuba.ad.integrators.acoustic_ad.AcousticADIntegrator`
@@ -18886,7 +19018,6 @@
             Integrators may return one or more arbitrary output variables (AOVs).
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
-
 
     .. py:method:: mitsuba.ad.integrators.acoustic_prb.AcousticPRBIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
 
@@ -19088,7 +19219,6 @@
             Integrators may return one or more arbitrary output variables (AOVs).
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
-
 
     .. py:method:: mitsuba.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
 
@@ -19415,7 +19545,6 @@
             Integrators may return one or more arbitrary output variables (AOVs).
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
-
 
         Parameter ``mode`` (dr.ADMode):
             *no description available*
@@ -20064,7 +20193,6 @@
         Returns → bool:
             ``True`` upon success, ``False`` if the null hypothesis was
             rejected.
-
 
 .. py:function:: mitsuba.chi2.EmitterAdapter()
 

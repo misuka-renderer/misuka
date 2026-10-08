@@ -218,6 +218,8 @@
 
 .. autoclass:: mitsuba.ObjectPtr
 
+.. autoclass:: mitsuba.OptixDenoiser
+
 .. autoclass:: mitsuba.PCG32
 
 .. autoclass:: mitsuba.ParamFlags
