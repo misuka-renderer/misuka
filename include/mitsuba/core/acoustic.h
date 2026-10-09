@@ -335,6 +335,12 @@ Value speed_of_sound(const Value temperature,
     if (is_missing_value(temperature)) {
         throw std::invalid_argument("Temperature must be provided.");
     }
+    if (method != "simple" && is_missing_value(relative_humidity)) {
+        throw std::invalid_argument("Relative humidity must be provided for the 'ideal_gas' and 'cramer' methods.");
+    }
+    if (method == "ideal_gas" && is_missing_value(atmospheric_pressure)) {
+        throw std::invalid_argument("Atmospheric pressure must be provided for the 'ideal_gas' method.");
+    }
 
     if (method == "simple") {
         return speed_of_sound_simple<Value>(temperature);

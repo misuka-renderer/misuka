@@ -179,6 +179,10 @@ public:
         // inputs to be accurate. Pick "ideal_gas"/"cramer" explicitly if
         // you have those measurements too.
         m_speed_of_sound_method = props.string("acoustic_medium_speed_of_sound_method", "simple");
+        if (m_speed_of_sound_method != "simple" && m_speed_of_sound_method != "ideal_gas" &&
+            m_speed_of_sound_method != "cramer")
+            Throw("Invalid \"speed_of_sound_method\": %s. Valid options are 'simple', "
+                  "'ideal_gas' or 'cramer'.", m_speed_of_sound_method);
 
         if (speed_of_sound_explicit &&
             (props.has_property("acoustic_medium_temperature") ||
