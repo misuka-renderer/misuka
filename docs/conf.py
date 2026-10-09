@@ -35,6 +35,9 @@ if not os.path.exists('src/others'):
 if not os.path.exists('src/how_to_guides/'):
     os.symlink('../../tutorials/how_to_guides', 'src/how_to_guides', target_is_directory=True)
 
+if not os.path.exists('src/tutorials_acoustic'):
+    os.symlink('../../tutorials_acoustic', 'src/tutorials_acoustic', target_is_directory=True)
+
 if not os.path.exists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
 
