@@ -42,11 +42,16 @@ inline bool is_missing_value(const Value &value) {
  * \ref acoustic_medium_standard_temperature, see
  * speed_of_sound_ideal_gas()).
  */
-constexpr float acoustic_medium_standard_temperature               = 20.0f;    ///< degree Celsius
-constexpr float acoustic_medium_standard_relative_humidity         = 0.6f;     ///< in the range 0 to 1
-constexpr float acoustic_medium_standard_atmospheric_pressure      = 101325.0f; ///< Pascal
-constexpr float acoustic_medium_standard_saturation_vapor_pressure = 2333.0f;  ///< Pascal
-constexpr float acoustic_medium_standard_co2_ppm                   = 428.73f;  ///< parts per million
+constexpr float acoustic_medium_standard_temperature               = 20.0f;    ///< degree Celsius
+
+constexpr float acoustic_medium_standard_relative_humidity         = 0.6f;     ///< in the range 0 to 1
+
+constexpr float acoustic_medium_standard_atmospheric_pressure      = 101325.0f; ///< Pascal
+
+constexpr float acoustic_medium_standard_saturation_vapor_pressure = 2333.0f;  ///< Pascal
+
+constexpr float acoustic_medium_standard_co2_ppm                   = 428.73f;  ///< parts per million
+
 
 //! @}
 // -----------------------------------------------------------------------
@@ -213,7 +218,8 @@ Value speed_of_sound_cramer(const Value temperature,
     Value p_sv = dr::exp(1.2811805e-5f * T * T - 1.9509874e-2f * T +
                          Value(34.04926034f) - 6.3536311e3f / T);
 
-    Value x_w = relative_humidity * p_sv / p; // Mole fraction of water vapor
+    Value f = 1.00062f + 3.14e-8f * p + 5.6e-7f * temperature * temperature; // enhancement factor (Cramer Eq. A2)
+    Value x_w = relative_humidity * f * p_sv / p; // Mole fraction of water vapor
 
     float a0 = 331.5024f;
     float a1 = 0.603055f;
