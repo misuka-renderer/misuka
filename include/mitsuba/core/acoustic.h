@@ -42,11 +42,11 @@ inline bool is_missing_value(const Value &value) {
  * \ref acoustic_medium_standard_temperature, see
  * speed_of_sound_ideal_gas()).
  */
-constexpr float acoustic_medium_standard_temperature               = 25.0f;    ///< degree Celsius
-constexpr float acoustic_medium_standard_relative_humidity         = 0.6f;     ///< in the range 0 to 1
-constexpr float acoustic_medium_standard_atmospheric_pressure      = 101825.0f; ///< Pascal
-constexpr float acoustic_medium_standard_saturation_vapor_pressure = 3167.0f;  ///< Pascal
-constexpr float acoustic_medium_standard_co2_ppm                   = 400.0f;   ///< parts per million
+constexpr float acoustic_medium_standard_temperature               = 20.0f;    ///< degree Celsius
+constexpr float acoustic_medium_standard_relative_humidity         = 0.6f;     ///< in the range 0 to 1
+constexpr float acoustic_medium_standard_atmospheric_pressure      = 101325.0f; ///< Pascal
+constexpr float acoustic_medium_standard_saturation_vapor_pressure = 2333.0f;  ///< Pascal
+constexpr float acoustic_medium_standard_co2_ppm                   = 428.73f;  ///< parts per million
 
 //! @}
 // -----------------------------------------------------------------------

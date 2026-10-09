@@ -72,8 +72,8 @@ def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name
     """Test that default property values are set correctly."""
     integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0})
 
-    # Standard medium (25 degC, ...) via the default "simple" method.
-    assert dr.allclose(integrator.speed_of_sound, 346.114)
+    # Standard medium (20 degC, ...) via the default "simple" method.
+    assert dr.allclose(integrator.speed_of_sound, 343.2)
     assert integrator.max_time == 1.0
     assert integrator.is_detached
     assert not integrator.hide_emitters
