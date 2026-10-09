@@ -186,6 +186,9 @@ class AcousticADIntegrator(RBIntegrator):
         # inputs to be accurate. Pick "ideal_gas"/"cramer" explicitly if you
         # have those measurements too.
         self.speed_of_sound_method = props.get("acoustic_medium_speed_of_sound_method", "simple")
+        if self.speed_of_sound_method not in ("simple", "ideal_gas", "cramer"):
+            raise ValueError(f"Invalid \"speed_of_sound_method\": {self.speed_of_sound_method}. "
+                             "Valid options are 'simple', 'ideal_gas' or 'cramer'.")
 
         medium_explicit = (
             props.has_property("acoustic_medium_temperature") or

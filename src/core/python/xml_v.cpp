@@ -346,12 +346,12 @@ void parse_dictionary(DictParseContext &ctx,
         if (nb::isinstance<nb::dict>(value)) {
             nb::dict dict2 = nb::cast<nb::dict>(value);
 
-            // A nested dictionary without a "type" key is not a plugin
-            // instantiation. Flatten its (scalar) entries directly into the
-            // parent's properties as "<key>_<subkey>", e.g. a dictionary
-            // passed as medium={'temperature': 20} becomes the property
-            // "medium_temperature".
-            if (!has_type(dict2)) {
+            // A nested "acoustic_medium" dictionary (without a "type" key) is
+            // not a plugin instantiation. Flatten its (scalar) entries directly
+            // into the parent's properties as "acoustic_medium_<subkey>", e.g.
+            // acoustic_medium={'temperature': 20} becomes the property
+            // "acoustic_medium_temperature".
+            if (key == "acoustic_medium" && !has_type(dict2)) {
                 std::string prefix = key;
                 for (const auto &[k2, value] : dict2) {
                     std::string key = prefix + "_" + nb::cast<std::string>(k2);
