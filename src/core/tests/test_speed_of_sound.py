@@ -234,19 +234,6 @@ def test15_cramer_co2_out_of_range_raises(variant_scalar_acoustic):
             method="cramer",
         )
 
-# 0.0 > x_w > 0.06 cannot be reached with current input validation
-# def test16_cramer_mole_fraction_out_of_range_raises(variants_all_acoustic):
-#     # very highest humidity at lowest temperature pushes the computed water vapor
-#     # mole fraction above the valid 0-0.06 range
-#     with pytest.raises(Exception):
-#         mi.acoustic.speed_of_sound(
-#             temperature=0.0,
-#             relative_humidity=1.0,
-#             atmospheric_pressure=75000.0,
-#             co2_ppm=400.0,
-#             method="cramer",
-#         )
-
 
 def test17_invalid_method_raises(variants_all_acoustic):
     with pytest.raises(Exception):
@@ -259,10 +246,8 @@ def test18_missing_temperature_raises(variants_all_acoustic):
 
 
 def test19_ideal_gas_explicit_saturation_vapor_pressure_matches_formula(variants_all_acoustic):
-    # regression test for a bug where the water vapor partial pressure was
-    # computed as atmospheric_pressure * relative_humidity instead of
-    # saturation_vapor_pressure * relative_humidity, making an explicitly
-    # provided saturation_vapor_pressure have no effect on the result
+    # an explicitly provided saturation_vapor_pressure must be used instead of
+    # the Magnus-formula estimate
     temperature, rh, pressure, e_s = 20.0, 1.0, 90000.0, 500.0
     result = _as_float(mi.acoustic.speed_of_sound(
         temperature=temperature,

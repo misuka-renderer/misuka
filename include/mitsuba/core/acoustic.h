@@ -88,7 +88,7 @@ Value speed_of_sound_simple(const Value temperature) {
  * \param relative_humidity
  *     Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
- *    Atmospheric pressure in Pascal, must be non-negative.
+ *    Atmospheric pressure in Pascal, must be positive.
  * \param saturation_vapor_pressure
  *    Saturation vapor pressure in Pascal. Missing values (see
  *    is_missing_value()) are estimated from \c temperature via the Magnus
@@ -106,8 +106,8 @@ Value speed_of_sound_ideal_gas(const Value temperature,
         if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
             throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
         }
-        if (atmospheric_pressure < 0.0f) {
-            throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+        if (atmospheric_pressure <= 0.0f) {
+            throw std::invalid_argument("Atmospheric pressure must be positive.");
         }
     }
 
@@ -158,7 +158,7 @@ Value speed_of_sound_ideal_gas(const Value temperature,
  * \param relative_humidity
  *     Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
- *    Atmospheric pressure in Pascal, must be non-negative and in the range
+ *    Atmospheric pressure in Pascal, must be positive and in the range
  *    of 75,000 Pa to 102,000 Pa. Missing values (see is_missing_value())
  *    default to 101,325 Pa (standard atmosphere).
  * \param co2_ppm
@@ -179,8 +179,8 @@ Value speed_of_sound_cramer(const Value temperature,
         if (relative_humidity < 0.0f || relative_humidity > 1.0f) {
             throw std::invalid_argument("Relative humidity must be in the range of 0 to 1.");
         }
-        if (atmospheric_pressure < 0.0f) {
-            throw std::invalid_argument("Atmospheric pressure must be non-negative.");
+        if (atmospheric_pressure <= 0.0f) {
+            throw std::invalid_argument("Atmospheric pressure must be positive.");
         }
     }
 
@@ -214,11 +214,6 @@ Value speed_of_sound_cramer(const Value temperature,
                          Value(34.04926034f) - 6.3536311e3f / T);
 
     Value x_w = relative_humidity * p_sv / p; // Mole fraction of water vapor
-
-    // cannot happen with inut parameter limitation
-    // if (x_w < 0.0f || x_w > 0.06f) {
-    //     throw std::invalid_argument("Calculated mole fraction of water vapor is out of range (0 to 0.06). Check input parameters. This input combination of values is not allowed for cramer.");
-    // }
 
     float a0 = 331.5024f;
     float a1 = 0.603055f;
@@ -300,7 +295,7 @@ Value speed_of_sound_cramer(const Value temperature,
  * \param relative_humidity
  *      Relative humidity in the range of 0 to 1.
  * \param atmospheric_pressure
- *      Atmospheric pressure in Pascal, must be non-negative. For "cramer",
+ *      Atmospheric pressure in Pascal, must be positive. For "cramer",
  *      a missing value (see is_missing_value()) defaults to 101,325 Pa
  *      (standard atmosphere).
  * \param saturation_vapor_pressure
@@ -371,14 +366,14 @@ Value speed_of_sound(const Value temperature,
 * energy decay coefficient in 1/m via
 * \f$\alpha / (10 / \ln 10)\f$.
 * Validity ranges according to ISO 9613-1:
-
+*
 *<ul>
-*  <li>\c temperature must be greater than -73 °C for an accuracy of 
+*  <li>\c temperature must be greater than -73 °C for an accuracy of
 *      +/-50% and is in the range of -20 °C to 50 °C for an accuracy of +/-10%.</li>
 *  <li>\c frequency must be greater than 50 Hz.</li>
 *  <li>\c atmospheric_pressure must be less than 200 kPa.</li>
 *</ul>
-
+*
 * \param temperature
 *      Temperature in degree Celsius.
 * \param frequency
@@ -403,17 +398,17 @@ Value energy_attenuation_coefficient(Value temperature,
     // branch-free.
     if constexpr (!dr::is_jit_v<Value>) {
         if (temperature < -73.0f) {
-            throw std::invalid_argument("Temperature must be above -73 °C for accuracy of +/-50% (and success)");
+            throw std::invalid_argument("Temperature must be above -73 °C (ISO 9613-1 validity range).");
         }
         else if (frequency < 50.0f) {
-            throw std::invalid_argument("Frequency in Hz. Must be greater than 50 Hz.");
+            throw std::invalid_argument("Frequency must be at least 50 Hz (ISO 9613-1 validity range).");
         }
         else if (atmospheric_pressure > 200000.0f)
         {
-            throw std::invalid_argument("Atmospheric pressure in Pascal. Must be less than 200 kPa.");
+            throw std::invalid_argument("Atmospheric pressure must be less than 200 kPa (ISO 9613-1 validity range).");
         }
         else if (frequency/atmospheric_pressure < 0.0004f || frequency/atmospheric_pressure > 10.0f) {
-            throw std::invalid_argument(" Frequency-to-pressure ratio: 4 x 10-4 Hz/Pa to 10 Hz/Pa for accuracy of +/-50%. (and success)");
+            throw std::invalid_argument("Frequency-to-pressure ratio must be between 4e-4 Hz/Pa and 10 Hz/Pa (ISO 9613-1 validity range).");
         }
     }
 
@@ -423,7 +418,7 @@ Value energy_attenuation_coefficient(Value temperature,
 
     Value T = temperature + 273.15f;
 
-    // saturation vapour pressure ratio p_sat/p_r (ISO 9613-1)
+    // saturation vapor pressure ratio p_sat/p_r (ISO 9613-1)
     Value p_sat_ratio = dr::pow(Value(10.f),
         Value(-6.8346f) * dr::pow(Value(T_01) / T, Value(1.261f)) + Value(4.6151f));
 

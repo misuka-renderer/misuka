@@ -9,9 +9,9 @@ Environmental conditions in acoustic rendering
     **For example usage see the tutorials** :doc:`../tutorials_acoustic/rendering/atmospheric_rendering` **and** 
     :doc:`../tutorials_acoustic/inverse_rendering/atmosphere_optimization`
     
-The acoustic integrators (:ref:`acoustic_path <integrator-acoustic_path>`, :monosp:`acoustic_ad`, :monosp:`acoustic_prb` and their three-point variants) simulate sound propagation through air, whose state -- temperature, humidity, pressure, CO2 concentration -- affects two things:
+The acoustic integrators (:ref:`acoustic_path <integrator-acoustic_path>`, :ref:`acoustic_ad <integrator-acoustic_ad>`, :ref:`acoustic_prb <integrator-acoustic_prb>` and their three-point variants) simulate sound propagation through air, whose state -- temperature, humidity, pressure, CO2 concentration -- affects two things:
 
-* the **speed of sound**, which determines how a path's travelled distance maps to a time bin, and
+* the **speed of sound**, which determines how a path's traveled distance maps to a time bin, and
 * the **frequency-dependent air attenuation** (ISO 9613-1), which determines how much energy a path loses over that distance.
 
 Every integrator exposes both through a single ``acoustic_medium`` plugin parameter (a dictionary of atmospheric fields plus ``speed_of_sound_method`` and ``apply_attenuation``); see its own :ref:`plugin documentation <integrator-acoustic_path>` for the parameter reference. This page documents the underlying physics and formulas in full detail.
@@ -21,7 +21,7 @@ Every integrator exposes both through a single ``acoustic_medium`` plugin parame
 Speed of sound
 --------------
 
-Three calculation methods are available, selected via ``speed_of_sound_method``. All three are differentiable: under an ``*_ad_*`` variant, gradients set on ``temperature``, ``relative_humidity``, ``atmospheric_pressure``, ``saturation_vapor_pressure`` or ``co2_ppm`` propagate through to the returned speed of sound.
+Three calculation methods are available, selected via ``speed_of_sound_method``. All three are differentiable: under an ``*_ad_*`` variant, gradients set on ``temperature``, ``relative_humidity``, ``atmospheric_pressure``, ``saturation_vapor_pressure`` or ``co2_ppm`` propagate through to the returned speed of sound. Note that in the PRB integrators (``acoustic_prb``, ``acoustic_prb_threepoint``), these gradients only flow through air attenuation: the effect of the speed of sound on time-bin placement is not differentiated.
 
 ``"simple"`` (default)
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -45,7 +45,7 @@ Speed of sound of a humid-air mixture treated as an ideal gas, based on chapter 
 
     c = \sqrt{\gamma_a R_a T_K \left(1 + (\alpha (1 + \delta - \nu) - 1) C\right)}
 
-where :math:`T_K` is temperature in Kelvin, :math:`R_a` the specific gas constant of dry air, :math:`\gamma_a, \gamma_w` the heat capacity ratios of dry air and water vapor, :math:`\alpha` the ratio of their molar masses, and :math:`C` the water vapor mole fraction term derived from relative humidity, atmospheric pressure and saturation vapor pressure. A missing saturation vapor pressure is estimated from temperature via the Magnus formula (O. A. Alduchov and R. E. Eskridge, "Improved Magnus Form Approximation of Saturation Vapor Pressure," J. Appl. Meteor., 1996). Relative humidity must be in the range of 0 to 1, atmospheric pressure must be non-negative.
+where :math:`T_K` is temperature in Kelvin, :math:`R_a` the specific gas constant of dry air, :math:`\gamma_a, \gamma_w` the heat capacity ratios of dry air and water vapor, :math:`\alpha` the ratio of their molar masses, and :math:`C` the water vapor mole fraction term derived from relative humidity, atmospheric pressure and saturation vapor pressure. A missing saturation vapor pressure is estimated from temperature via the Magnus formula (O. A. Alduchov and R. E. Eskridge, "Improved Magnus Form Approximation of Saturation Vapor Pressure," J. Appl. Meteor., 1996). Relative humidity must be in the range of 0 to 1, atmospheric pressure must be positive.
 
 ``"cramer"``
 ^^^^^^^^^^^^^
@@ -87,7 +87,7 @@ where :math:`\alpha_O` and :math:`\alpha_N` are the oxygen and nitrogen relaxati
 
 Validity ranges (per ISO 9613-1): temperature must be greater than -73°C (for an accuracy of +/-50%, +/-10% in the range of -20°C to 50°C), frequency must be greater than 50 Hz, atmospheric pressure must be less than 200 kPa, and the frequency-to-pressure ratio must be between :math:`4 \times 10^{-4}` Hz/Pa and 10 Hz/Pa.
 
-During rendering, each path contribution of frequency :math:`f` is scaled by :math:`\exp(-d \, \alpha_f)`, where :math:`d` is the path's travelled distance -- applied per-vertex to the true accumulated geometric distance in the ``acoustic_path``/``acoustic_prb`` integrators, which is more accurate than deriving distance from a time bin's index after the fact.
+During rendering, each path contribution of frequency :math:`f` is scaled by :math:`\exp(-d \, \alpha_f)`, where :math:`d` is the path's traveled distance -- applied per-vertex to the true accumulated geometric distance in the ``acoustic_path``, ``acoustic_ad`` and ``acoustic_prb`` integrators.
 
 .. _key_topics-environmental_conditions-python_api:
 

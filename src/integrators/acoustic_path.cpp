@@ -99,7 +99,7 @@ Sound paths are terminated when any of the following conditions are met:
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
 - The path throughput drops below the energy loss threshold (``max_energy_loss``).
 
-.. note:: This integrator does not handle polarized
+.. note:: This integrator does not handle participating media or polarized
    rendering. It requires a ``Microphone`` sensor with a ``Tape`` film type.
 
 .. tabs::
@@ -165,9 +165,8 @@ public:
         // standard/reference medium's default (acoustic_medium_standard_*
         // in acoustic.h). This holds regardless of whether 'acoustic_medium'
         // was mentioned at all, so 'acoustic_medium: {}' behaves exactly
-        // like omitting 'acoustic_medium' entirely, and there is no
-        // separate "was this provided" bookkeeping anywhere past this
-        // point. Named 'acoustic_medium' (not 'medium') to avoid confusion
+        // like omitting 'acoustic_medium' entirely. Named 'acoustic_medium'
+        // (not 'medium') to avoid confusion
         // with mitsuba's existing Medium plugin (participating media).
         float medium_temperature = props.get<float>("acoustic_medium_temperature", acoustic::acoustic_medium_standard_temperature);
         float medium_relative_humidity = props.get<float>("acoustic_medium_relative_humidity", acoustic::acoustic_medium_standard_relative_humidity);
@@ -252,9 +251,8 @@ public:
             : dr::pow(10.f, -max_energy_loss / 10.f);
     }
 
-    /// Re-derive m_speed_of_sound from the (live) medium members, using the
-    /// method resolved once at construction time (see the constructor and
-    /// the m_speed_of_sound_method member docs). Called at construction and
+    /// Re-derive m_speed_of_sound from the (live) medium members, using
+    /// m_speed_of_sound_method. Called at construction and
     /// again from parameters_changed() whenever an optimizer updates one of
     /// the traversed medium parameters.
     void update_speed_of_sound() {
@@ -270,7 +268,7 @@ public:
                 m_medium_atmospheric_pressure, m_medium_co2_ppm);
         } else {
             Throw("Invalid method specified for speed of sound calculation. "
-                  "Valid options are 'simple', 'ideal_gas', 'cramer' or no argument.");
+                  "Valid options are 'simple', 'ideal_gas' or 'cramer'.");
         }
     }
 

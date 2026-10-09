@@ -172,8 +172,7 @@ class AcousticADIntegrator(RBIntegrator):
         # standard/reference medium's default (ACOUSTIC_MEDIUM_STANDARD_*
         # above). This holds regardless of whether 'acoustic_medium' was
         # mentioned at all, so 'acoustic_medium: {}' behaves exactly like
-        # omitting 'acoustic_medium' entirely, and there is no separate
-        # "was this provided" bookkeeping anywhere past this point. Named
+        # omitting 'acoustic_medium' entirely. Named
         # 'acoustic_medium' (not 'medium') to avoid confusion with
         # mitsuba's existing Medium plugin (participating media).
         medium_temperature = props.get("acoustic_medium_temperature", ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE)
@@ -262,13 +261,7 @@ class AcousticADIntegrator(RBIntegrator):
         sound from the (live) medium fields, using
         self.speed_of_sound_method (one of "simple"/"ideal_gas"/"cramer",
         see __init__). Always valid: the medium fields always have a
-        concrete value, real or standard-default (see __init__).
-
-        Split out from update_speed_of_sound() (below) so that PRB-style
-        integrators can call it fresh on every loop iteration -- inside a
-        resume_grad() scope, without mutating self -- to keep the medium's
-        effect on speed_of_sound (and hence on time-bin placement) attached
-        to the AD graph. See acoustic_prb.py's sample()."""
+        concrete value, real or standard-default (see __init__)."""
         if self.speed_of_sound_method == "simple":
             return mi.acoustic.speed_of_sound(
                 temperature=self.medium_temperature, method="simple")
@@ -289,7 +282,7 @@ class AcousticADIntegrator(RBIntegrator):
         else:
             raise ValueError(
                 "Invalid method specified for speed of sound calculation. "
-                "Valid options are 'simple', 'ideal_gas', 'cramer' or no argument.")
+                "Valid options are 'simple', 'ideal_gas' or 'cramer'.")
 
     def update_speed_of_sound(self):
         """Re-derive self.speed_of_sound from the (live) medium fields.
