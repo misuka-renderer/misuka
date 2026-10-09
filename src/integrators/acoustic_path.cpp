@@ -35,8 +35,8 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
    - dict
    - Dictionary describing the propagation medium (air). Every field always
      has a concrete value: the one given, or otherwise a standard/reference
-     medium's default (25°C, 60% relative humidity, 101,825 Pa, 3,167 Pa
-     saturation vapor pressure, 400 ppm CO2) -- so ``acoustic_medium: {}``
+     medium's default (20°C, 60% relative humidity, 101,325 Pa, 2,333 Pa
+     saturation vapor pressure, 428.73 ppm CO2) -- so ``acoustic_medium: {}``
      (or omitting ``acoustic_medium`` entirely) behaves the same as
      spelling out the standard medium in full. Recognized fields:
      ``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
