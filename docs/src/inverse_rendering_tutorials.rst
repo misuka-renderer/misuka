@@ -23,3 +23,4 @@ applications:
     inverse_rendering/radiance_field_reconstruction
     inverse_rendering/polarizer_optimization
     inverse_rendering/pytorch_mitsuba_interoperability
+    tutorials_acoustic/inverse_rendering/atmosphere_optimization

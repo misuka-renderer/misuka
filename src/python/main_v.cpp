@@ -81,6 +81,7 @@ MI_PY_DECLARE(vector);
 MI_PY_DECLARE(warp);
 MI_PY_DECLARE(xml);
 MI_PY_DECLARE(quad);
+MI_PY_DECLARE(acoustic);
 
 // render
 MI_PY_DECLARE(BSDFSample);
@@ -125,18 +126,20 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     // Create sub-modules
     // Don't use nb::def_submodule because of namespace collisions
     // create_submodule will always create a new module
-    nb::module_ math    = create_submodule(m, "math"),
-                spline  = create_submodule(m, "spline"),
-                warp    = create_submodule(m, "warp"),
-                quad    = create_submodule(m, "quad"),
-                mueller = create_submodule(m, "mueller");
+    nb::module_ math           = create_submodule(m, "math"),
+                acoustic       = create_submodule(m, "acoustic"),
+                spline         = create_submodule(m, "spline"),
+                warp           = create_submodule(m, "warp"),
+                quad           = create_submodule(m, "quad"),
+                mueller        = create_submodule(m, "mueller");
 
-    math.doc()    = "Mathematical routines, special functions, etc.";
-    spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
-    warp.doc()    = "Common warping techniques that map from the unit square to other "
-                    "domains, such as spheres, hemispheres, etc.";
-    quad.doc()    = "Functions for numerical quadrature";
-    mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
+    math.doc()           = "Mathematical routines, special functions, etc.";
+    acoustic.doc()       = "Acoustic helper functions.";
+    spline.doc()         = "Functions for evaluating and sampling Catmull-Rom splines";
+    warp.doc()           = "Common warping techniques that map from the unit square to other "
+                           "domains, such as spheres, hemispheres, etc.";
+    quad.doc()           = "Functions for numerical quadrature";
+    mueller.doc()        = "Routines to manipulate Mueller matrices for polarized rendering.";
 
     // FIXME: we don't really need a list of casters
     /// Initialize the list of casters
@@ -167,6 +170,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(ContinuousDistribution);
     MI_PY_IMPORT(IrregularContinuousDistribution);
     MI_PY_IMPORT_SUBMODULE(math);
+    MI_PY_IMPORT_SUBMODULE(acoustic);
     MI_PY_IMPORT(qmc);
     MI_PY_IMPORT(Properties);
     MI_PY_IMPORT(rfilter);

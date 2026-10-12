@@ -17,3 +17,4 @@ with Mitsuba 3:
     rendering/multi_view_rendering
     rendering/scripting_renderer
     rendering/polarized_rendering
+    tutorials_acoustic/rendering/atmospheric_rendering

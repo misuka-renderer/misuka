@@ -101,13 +101,95 @@ static const char *__doc_OptixBuildInputCustomPrimitiveArray_sbtIndexOffsetStrid
 
 static const char *__doc_OptixBuildInputCustomPrimitiveArray_strideInBytes = R"doc()doc";
 
+static const char *__doc_OptixBuildInputDisplacementMicromap = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_indexingMode = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_numDisplacementMicromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_triangleFlagsBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_triangleFlagsStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexBiasAndScaleBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexBiasAndScaleFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexBiasAndScaleStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexDirectionFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexDirectionStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexDirectionsBuffer = R"doc()doc";
+
 static const char *__doc_OptixBuildInputInstanceArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputInstanceArray_instanceStride = R"doc()doc";
 
 static const char *__doc_OptixBuildInputInstanceArray_instances = R"doc()doc";
 
 static const char *__doc_OptixBuildInputInstanceArray_numInstances = R"doc()doc";
 
+static const char *__doc_OptixBuildInputOpacityMicromap = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexingMode = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_micromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_numMicromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_opacityMicromapArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_flags = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_numSbtRecords = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_numVertices = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_primitiveIndexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_radiusBuffers = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_radiusStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_sbtIndexOffsetBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_sbtIndexOffsetSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_sbtIndexOffsetStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_singleRadius = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_vertexBuffers = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_vertexStrideInBytes = R"doc()doc";
+
 static const char *__doc_OptixBuildInputTriangleArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_displacementMicromap = R"doc()doc";
 
 static const char *__doc_OptixBuildInputTriangleArray_flags = R"doc()doc";
 
@@ -122,6 +204,8 @@ static const char *__doc_OptixBuildInputTriangleArray_numIndexTriplets = R"doc()
 static const char *__doc_OptixBuildInputTriangleArray_numSbtRecords = R"doc()doc";
 
 static const char *__doc_OptixBuildInputTriangleArray_numVertices = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_opacityMicromap = R"doc()doc";
 
 static const char *__doc_OptixBuildInputTriangleArray_preTransform = R"doc()doc";
 
@@ -153,13 +237,39 @@ static const char *__doc_OptixBuiltinISOptions_curveEndcapFlags = R"doc()doc";
 
 static const char *__doc_OptixBuiltinISOptions_usesMotionBlur = R"doc()doc";
 
+static const char *__doc_OptixDenoiserAOVType = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_BEAUTY = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_DIFFUSE = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_NONE = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_REFLECTION = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_REFRACTION = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_SPECULAR = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAlphaMode = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAlphaMode_OPTIX_DENOISER_ALPHA_MODE_COPY = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAlphaMode_OPTIX_DENOISER_ALPHA_MODE_DENOISE = R"doc()doc";
+
 static const char *__doc_OptixDenoiserGuideLayer = R"doc()doc";
 
 static const char *__doc_OptixDenoiserGuideLayer_albedo = R"doc()doc";
 
 static const char *__doc_OptixDenoiserGuideLayer_flow = R"doc()doc";
 
+static const char *__doc_OptixDenoiserGuideLayer_flowTrustworthiness = R"doc()doc";
+
 static const char *__doc_OptixDenoiserGuideLayer_normal = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_outputInternalGuideLayer = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_previousOutputInternalGuideLayer = R"doc()doc";
 
 static const char *__doc_OptixDenoiserLayer = R"doc()doc";
 
@@ -169,6 +279,8 @@ static const char *__doc_OptixDenoiserLayer_output = R"doc()doc";
 
 static const char *__doc_OptixDenoiserLayer_previousOutput = R"doc()doc";
 
+static const char *__doc_OptixDenoiserLayer_type = R"doc()doc";
+
 static const char *__doc_OptixDenoiserModelKind = R"doc()doc";
 
 static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_HDR = R"doc()doc";
@@ -176,6 +288,8 @@ static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_HDR = 
 static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_TEMPORAL = R"doc()doc";
 
 static const char *__doc_OptixDenoiserOptions = R"doc()doc";
+
+static const char *__doc_OptixDenoiserOptions_denoiseAlpha = R"doc()doc";
 
 static const char *__doc_OptixDenoiserOptions_guideAlbedo = R"doc()doc";
 
@@ -185,13 +299,19 @@ static const char *__doc_OptixDenoiserParams = R"doc()doc";
 
 static const char *__doc_OptixDenoiserParams_blendFactor = R"doc()doc";
 
-static const char *__doc_OptixDenoiserParams_denoiseAlpha = R"doc()doc";
-
 static const char *__doc_OptixDenoiserParams_hdrAverageColor = R"doc()doc";
 
 static const char *__doc_OptixDenoiserParams_hdrIntensity = R"doc()doc";
 
+static const char *__doc_OptixDenoiserParams_temporalModeUsePreviousLayers = R"doc()doc";
+
 static const char *__doc_OptixDenoiserSizes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_computeAverageColorSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_computeIntensitySizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_internalGuideLayerPixelSizeInBytes = R"doc()doc";
 
 static const char *__doc_OptixDenoiserSizes_overlapWindowSizeInPixels = R"doc()doc";
 
@@ -200,6 +320,14 @@ static const char *__doc_OptixDenoiserSizes_stateSizeInBytes = R"doc()doc";
 static const char *__doc_OptixDenoiserSizes_withOverlapScratchSizeInBytes = R"doc()doc";
 
 static const char *__doc_OptixDenoiserSizes_withoutOverlapScratchSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount_count = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount_format = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount_subdivisionLevel = R"doc()doc";
 
 static const char *__doc_OptixHitGroupData = R"doc(Stores information about a Shape on the Optix side)doc";
 
@@ -263,6 +391,14 @@ static const char *__doc_OptixMotionOptions_timeBegin = R"doc()doc";
 
 static const char *__doc_OptixMotionOptions_timeEnd = R"doc()doc";
 
+static const char *__doc_OptixOpacityMicromapUsageCount = R"doc()doc";
+
+static const char *__doc_OptixOpacityMicromapUsageCount_count = R"doc()doc";
+
+static const char *__doc_OptixOpacityMicromapUsageCount_format = R"doc()doc";
+
+static const char *__doc_OptixOpacityMicromapUsageCount_subdivisionLevel = R"doc()doc";
+
 static const char *__doc_OptixPayloadType = R"doc()doc";
 
 static const char *__doc_OptixPayloadType_numPayloadValues = R"doc()doc";
@@ -270,6 +406,8 @@ static const char *__doc_OptixPayloadType_numPayloadValues = R"doc()doc";
 static const char *__doc_OptixPayloadType_payloadSemantics = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_allowOpacityMicromaps = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions_exceptionFlags = R"doc()doc";
 
@@ -302,6 +440,16 @@ static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_HALF4 = R"doc()doc"
 static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_UCHAR3 = R"doc()doc";
 
 static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_UCHAR4 = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_entryFunctionNameCC = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_entryFunctionNameDC = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_moduleCC = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_moduleDC = R"doc()doc";
 
 static const char *__doc_OptixProgramGroupDesc = R"doc()doc";
 
@@ -388,6 +536,8 @@ static const char *__doc_mitsuba_AdjointIntegrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
@@ -615,6 +765,8 @@ static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -2387,6 +2539,8 @@ static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2483,6 +2637,8 @@ static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -2886,6 +3042,8 @@ static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
 static const char *__doc_mitsuba_FilmFlags_Alpha = R"doc(The film stores an alpha channel)doc";
@@ -2936,6 +3094,8 @@ static const char *__doc_mitsuba_Film_develop = R"doc(Return a image buffer obje
 
 static const char *__doc_mitsuba_Film_flags = R"doc(Flags for all properties combined.)doc";
 
+static const char *__doc_mitsuba_Film_frequencies_spectrum = R"doc(Return the frequencies used by the film (only used in tape))doc";
+
 static const char *__doc_mitsuba_Film_m_crop_offset = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_crop_size = R"doc()doc";
@@ -2943,6 +3103,8 @@ static const char *__doc_mitsuba_Film_m_crop_size = R"doc()doc";
 static const char *__doc_mitsuba_Film_m_filter = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_flags = R"doc(Combined flags for all properties of this film.)doc";
+
+static const char *__doc_mitsuba_Film_m_frequencies_spectrum = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_sample_border = R"doc()doc";
 
@@ -3333,6 +3495,8 @@ static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3473,6 +3637,8 @@ static const char *__doc_mitsuba_ImageBlock_m_warn_invalid = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_warn_negative = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_m_y_only = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_normalize = R"doc(Re-normalize filter weights in put() and read())doc";
 
 static const char *__doc_mitsuba_ImageBlock_offset = R"doc(Return the current block offset)doc";
@@ -3548,6 +3714,8 @@ static const char *__doc_mitsuba_ImageBlock_set_warn_invalid = R"doc(Warn when w
 
 static const char *__doc_mitsuba_ImageBlock_set_warn_negative = R"doc(Warn when writing negative sample values?)doc";
 
+static const char *__doc_mitsuba_ImageBlock_set_y_only = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_size = R"doc(Return the current block size)doc";
 
 static const char *__doc_mitsuba_ImageBlock_tensor = R"doc(Return the underlying image tensor)doc";
@@ -3561,6 +3729,8 @@ static const char *__doc_mitsuba_ImageBlock_warn_invalid = R"doc(Warn when writi
 static const char *__doc_mitsuba_ImageBlock_warn_negative = R"doc(Warn when writing negative sample values?)doc";
 
 static const char *__doc_mitsuba_ImageBlock_width = R"doc(Return the bitmap's width in pixels)doc";
+
+static const char *__doc_mitsuba_ImageBlock_y_only = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator =
 R"doc(Abstract integrator base class, which does not make any assumptions
@@ -3588,6 +3758,8 @@ static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -4219,6 +4391,8 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc(//! @})doc";
@@ -4495,6 +4669,8 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh =
 R"doc(Creates a zero-initialized mesh with the given vertex and face counts
@@ -4975,6 +5151,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -5139,6 +5317,8 @@ static const char *__doc_mitsuba_OptixDenoiser_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_OptixDenoiser_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser =
 R"doc(Constructs an OptiX denoiser
 
@@ -5147,11 +5327,20 @@ Parameter ``input_size``:
 
 Parameter ``albedo``:
     Whether or not albedo information will also be given to the
-    denoiser.
+    denoiser. This parameter is optional, by default it is false.
 
 Parameter ``normals``:
     Whether or not shading normals information will also be given to
-    the Denoiser.
+    the denoiser. This parameter is optional, by default it is false.
+
+Parameter ``temporal``:
+    Whether or not temporal information will also be given to the
+    denoiser. This parameter is optional, by default it is false.
+
+Parameter ``denoise_alpha``:
+    Whether or not the alpha channel (if specified in the noisy input)
+    should be denoised too. This parameter is optional, by default it
+    is false.
 
 Returns:
     A callable object which will apply the OptiX denoiser.)doc";
@@ -5185,11 +5374,6 @@ R"doc(Apply denoiser on inputs which are TensorXf objects.
 
 Parameter ``noisy``:
     The noisy input. (tensor shape: (width, height, 3 | 4))
-
-Parameter ``denoise_alpha``:
-    Whether or not the alpha channel (if specified in the noisy input)
-    should be denoised too. This parameter is optional, by default it
-    is true.
 
 Parameter ``albedo``:
     Albedo information of the noisy rendering. This parameter is
@@ -5235,11 +5419,6 @@ Parameter ``noisy``:
     The noisy input. When passing additional information like albedo
     or normals to the denoiser, this Bitmap object must be a
     MultiChannel bitmap.
-
-Parameter ``denoise_alpha``:
-    Whether or not the alpha channel (if specified in the noisy input)
-    should be denoised too. This parameter is optional, by default it
-    is true.
 
 Parameter ``albedo_ch``:
     The name of the channel in the ``noisy`` parameter which contains
@@ -5330,6 +5509,8 @@ static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_PCG32Sampler_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -5373,6 +5554,8 @@ static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -5822,6 +6005,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -6293,6 +6478,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -6441,7 +6628,7 @@ static const char *__doc_mitsuba_SGGXPhaseFunctionParams_operator_assign = R"doc
 
 static const char *__doc_mitsuba_SGGXPhaseFunctionParams_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_Array = R"doc()doc";
+static const char *__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_drjit_Array = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler =
 R"doc(Base class of all sample generators.
@@ -6501,6 +6688,8 @@ static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
 static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
@@ -6601,6 +6790,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc(//! @})doc";
@@ -6693,6 +6884,8 @@ static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -7236,6 +7429,8 @@ static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -7243,6 +7438,11 @@ static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
 static const char *__doc_mitsuba_Sensor_film = R"doc(Return the Film instance associated with this sensor)doc";
 
 static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the Film instance associated with this sensor (const))doc";
+
+static const char *__doc_mitsuba_Sensor_kappa =
+R"doc(Return the kappa parameter of the sensor
+
+This method will only be implemented in acoustic films.)doc";
 
 static const char *__doc_mitsuba_Sensor_m_alpha = R"doc()doc";
 
@@ -7345,9 +7545,6 @@ static const char *__doc_mitsuba_Sensor_traverse = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Shape = R"doc(Forward declaration for `SilhouetteSample`)doc";
 
-static const char *__doc_mitsuba_Sensor_kappa =
-R"doc(Get kappa value of the sensor's Mises-Fisher distribution.)doc";
-
 static const char *__doc_mitsuba_Shape_2 = R"doc(Forward declaration for `SilhouetteSample`)doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
@@ -7360,6 +7557,8 @@ static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_8 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -7371,6 +7570,8 @@ static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -7445,6 +7646,8 @@ static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -9383,6 +9586,8 @@ static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
 
 static const char *__doc_mitsuba_Texture_D65_2 =
@@ -9912,6 +10117,8 @@ static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -9923,6 +10130,8 @@ static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -10139,6 +10348,199 @@ Out-of-bounds regions are safely ignored. It is assumed that ``source
 
 The function supports `T` being a raw pointer or an arbitrary Dr.Jit
 array that can potentially live on the GPU and/or be differentiable.)doc";
+
+static const char *__doc_mitsuba_acoustic_energy_attenuation_coefficient =
+R"doc(Pure tone energy attenuation coefficient following ISO 9613-1:1993.
+Calculates the energy attenuation coefficient in air for a given
+frequency, temperature, relative humidity and atmospheric pressure.
+The attenuation coefficient in dB/m is :math:`\alpha = 8.686 f^2
+(\alpha_{cl} + \alpha_{vib})`, consisting of a classical absorption
+term :math:`\alpha_{cl}` and a molecular relaxation term
+:math:`\alpha_{vib}`: :math:`\alpha_{cl} = 1.84 \cdot 10^{-11} (p_r /
+p_a) \sqrt{T / T_0}` :math:`\alpha_{vib} = (T / T_0)^{-5/2}(\alpha_O +
+\alpha_N)` where :math:`\alpha_O` and :math:`\alpha_N` are the oxygen
+and nitrogen relaxation contributions. The relaxation frequencies
+depend on atmospheric pressure, temperature and water vapor
+concentration. Here :math:`f` is ``frequency``, :math:`T` is
+temperature in Kelvin, :math:`T_0 = 293.15` K and :math:`p_r = 101325`
+Pa are the reference temperature and pressure, and :math:`p_a` is
+``atmospheric_pressure``. The water vapor concentration is derived
+from ``relative_humidity`` and the saturation vapor pressure. The
+returned coefficient is converted from dB/m to the natural energy
+decay coefficient in 1/m via :math:`\alpha / (10 / \ln 10)`. Validity
+ranges according to ISO 9613-1:
+
+* ``temperature`` must be greater than -73 °C for an accuracy of
++/-50% and is in the range of -20 °C to 50 °C for an accuracy of
++/-10%.
+
+* ``frequency`` must be greater than 50 Hz.
+
+* ``atmospheric_pressure`` must be less than 200 kPa.
+
+Parameter ``temperature``:
+    Temperature in degree Celsius.
+
+Parameter ``frequency``:
+    Frequency in Hz.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal.
+
+Returns:
+    Energy decay coefficient in 1/m.)doc";
+
+static const char *__doc_mitsuba_acoustic_is_missing_value = R"doc()doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound =
+R"doc(Calculation methods for the speed of sound
+
+Differentiable: under an ``*_ad_*`` variant, gradients set on
+``temperature``, ``relative_humidity``, ``atmospheric_pressure``,
+``saturation_vapor_pressure`` or ``co2_ppm`` propagate through to the
+returned speed of sound.
+
+This function calculates the speed of sound in air, using one of the
+following methods:
+
+"simple": following ISO 9613-1 (Formula A.5), :math:`c = 343.2 \cdot
+\sqrt{(T + 273.15) / 293.15}`. Only uses ``temperature`` (:math:`T`),
+which must be in the range of -20°C to 50°C.
+
+"ideal_gas": speed of sound of a humid-air mixture treated as an ideal
+gas, based on chapter 6.3 in V. E. Ostashev and D. K. Wilson,
+Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC Press,
+2015. doi: 10.1201/b18922, :math:`c = \sqrt{\gamma_a R_a T_K (1 +
+(\alpha (1 + \delta - \nu) - 1) C)}`, where :math:`T_K` is
+``temperature`` in Kelvin, :math:`R_a` the specific gas constant of
+dry air, :math:`\gamma_a, \gamma_w` the heat capacity ratios of dry
+air and water vapor, :math:`\alpha` the ratio of their molar masses,
+and :math:`C` the water vapor mole fraction term derived from
+``relative_humidity``, ``atmospheric_pressure`` and
+``saturation_vapor_pressure``; see speed_of_sound_ideal_gas() for the
+exact constants.
+
+"cramer": O. Cramer, "The variation of the specific heat ratio and the
+speed of sound in air with temperature, pressure, humidity, and CO2
+concentration," The Journal of the Acoustical Society of America, vol.
+93, no. 5, pp. 2510-2516, May 1993, doi: 10.1121/1.405827, an
+empirical quadratic fit, the sum of:
+
+* a temperature-only term :math:`(a_0 + a_1 T + a_2 T^2)`
+
+* a water-vapor term :math:`(a_3 + a_4 T + a_5 T^2) x_w`
+
+* a pressure term :math:`(a_6 + a_7 T + a_8 T^2) p`
+
+* a CO2 term :math:`(a_9 + a_{10} T + a_{11} T^2) x_c`
+
+* squared terms :math:`a_{12} x_w^2 + a_{13} p^2 + a_{14} x_c^2`
+
+* a cross term :math:`a_{15} x_c\, p\, x_w`
+
+where :math:`x_w` is the water vapor mole fraction (derived from
+``relative_humidity`` and :math:`p`), :math:`p` is
+``atmospheric_pressure`` and :math:`x_c` is the CO2 mole fraction
+(derived from ``co2_ppm``); the 16 empirical coefficients :math:`a_0
+\ldots a_{15}` are given in speed_of_sound_cramer(). Requires
+``temperature`` in the range of 0°C to 30°C and
+``atmospheric_pressure`` in the range of 75,000 Pa to 102,000 Pa.
+
+Parameter ``temperature``:
+    The temperature in degree Celsius.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal, must be non-negative. For
+    "cramer", a missing value (see is_missing_value()) defaults to
+    101,325 Pa (standard atmosphere).
+
+Parameter ``saturation_vapor_pressure``:
+    Saturation vapor pressure in Pascal. Only used by the "ideal_gas"
+    method. A missing value (see is_missing_value()) is estimated from
+    ``temperature`` via the Magnus formula (see e.g. O. A. Alduchov
+    and R. E. Eskridge, "Improved Magnus Form Approximation of
+    Saturation Vapor Pressure," J. Appl. Meteor., 1996).
+
+Parameter ``co2_ppm``:
+    CO2 concentration in parts per million (ppm). Only used by the
+    "cramer" method, must be in the range of 0 ppm to 10,000 ppm. A
+    missing value (see is_missing_value()) defaults to 428.73 ppm, the
+    global monthly mean for 2026-07 reported by NOAA GML
+    (https://doi.org/10.15138/9N0H-ZH07, retrieved 2026-08-28).
+
+Parameter ``method``:
+    The method to use for the calculation: "simple" (default),
+    "ideal_gas" or "cramer".
+
+Returns:
+    The speed of sound in meters per second)doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound_cramer =
+R"doc(Speed of sound in air using Cramer's method described in O. Cramer,
+"The variation of the specific heat ratio and the speed of sound in
+air with temperature, pressure, humidity, and CO2 concentration," The
+Journal of the Acoustical Society of America, vol. 93, no. 5, pp.
+2510-2516, May 1993, doi: 10.1121/1.405827.
+
+Parameter ``temperature``:
+    The temperature in degree Celsius. Must be in the range of 0°C to
+    30°C.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal, must be non-negative and in the
+    range of 75,000 Pa to 102,000 Pa. Missing values (see
+    is_missing_value()) default to 101,325 Pa (standard atmosphere).
+
+Parameter ``co2_ppm``:
+    CO2 concentration in parts per million (ppm), must be in the range
+    of 0 ppm to 10,000 ppm. Missing values (see is_missing_value())
+    default to 428.73 ppm, the global monthly mean for 2026-07
+    reported by NOAA GML (https://doi.org/10.15138/9N0H-ZH07,
+    retrieved 2026-08-28).
+
+Returns:
+    The speed of sound in meters per second)doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound_ideal_gas =
+R"doc(Speed of sound in air based on chapter 6.3 in V. E. Ostashev and D. K.
+Wilson, Acoustics in Moving Inhomogeneous Media, 2nd ed. London: CRC
+Press, 2015. doi: 10.1201/b18922.
+
+Parameter ``temperature``:
+    The temperature in degree Celsius.
+
+Parameter ``relative_humidity``:
+    Relative humidity in the range of 0 to 1.
+
+Parameter ``atmospheric_pressure``:
+    Atmospheric pressure in Pascal, must be non-negative.
+
+Parameter ``saturation_vapor_pressure``:
+    Saturation vapor pressure in Pascal. Missing values (see
+    is_missing_value()) are estimated from ``temperature`` via the
+    Magnus formula.
+
+Returns:
+    The speed of sound in meters per second)doc";
+
+static const char *__doc_mitsuba_acoustic_speed_of_sound_simple =
+R"doc(Speed of sound in air following ISO 9613-1 (Formula A.5).
+
+Parameter ``temperature``:
+    The temperature in degree Celsius. Must be in the range of -20°C
+    to 50°C.
+
+Returns:
+    The speed of sound in meters per second)doc";
 
 static const char *__doc_mitsuba_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
