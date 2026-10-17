@@ -114,7 +114,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
         def compute_δH_dot_dLedT(Le: mi.Spectrum, T: mi.Float, ray: mi.Ray3f, active: mi.Mask):
             with dr.resume_grad():
                 dr.enable_grad(T)
-                pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T / max_distance)
+                pos = mi.Point2f(position_sample.x * n_frequencies, block.size().y * T / max_distance)
                 δHL = dr.detach(Le) * δH.read(pos=pos, active=active)[0]
 
                 dr.forward_from(T)
