@@ -16,7 +16,7 @@ from .common import RBIntegrator, mis_weight
 # is within 0.2% of the Magnus-formula estimate at
 # ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE).
 ACOUSTIC_MEDIUM_STANDARD_TEMPERATURE = 20.0                # degree Celsius
-ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY = 0.6           # in the range 0 to 1
+ACOUSTIC_MEDIUM_STANDARD_RELATIVE_HUMIDITY = 0.5           # in the range 0 to 1
 ACOUSTIC_MEDIUM_STANDARD_ATMOSPHERIC_PRESSURE = 101325.0   # Pascal
 ACOUSTIC_MEDIUM_STANDARD_SATURATION_VAPOR_PRESSURE = 2333.0  # Pascal
 ACOUSTIC_MEDIUM_STANDARD_CO2_PPM = 428.73                  # parts per million
@@ -43,7 +43,7 @@ class AcousticADIntegrator(RBIntegrator):
        - |dict|
        - Dictionary describing the propagation medium (air). Every field
          always has a concrete value: the one given, or otherwise a
-         standard/reference medium's default (20°C, 60% relative humidity,
+         standard/reference medium's default (20°C, 50% relative humidity,
          101,325 Pa, 2,333 Pa saturation vapor pressure, 428.73 ppm CO2) -- so
          ``acoustic_medium: {}`` (or omitting ``acoustic_medium`` entirely)
          behaves the same as spelling out the standard medium in full.

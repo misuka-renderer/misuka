@@ -44,7 +44,7 @@ inline bool is_missing_value(const Value &value) {
  */
 constexpr float acoustic_medium_standard_temperature               = 20.0f;    ///< degree Celsius
 
-constexpr float acoustic_medium_standard_relative_humidity         = 0.6f;     ///< in the range 0 to 1
+constexpr float acoustic_medium_standard_relative_humidity         = 0.5f;     ///< in the range 0 to 1
 
 constexpr float acoustic_medium_standard_atmospheric_pressure      = 101325.0f; ///< Pascal
 
