@@ -625,6 +625,42 @@ def test10b_finite_depth_emitter_hits(variant_llvm_ad_acoustic):
         assert etc_spec > 1.1 * dr.sum(etc_direct, axis=None), \
             f"{integrator_name}: specular first reflection contributes no energy"
 
+@pytest.mark.slow
+def test10c_prb_time_derivative_band_frequencies(variants_all_ad_acoustic):
+    """Regression test: ``acoustic_prb`` with ``track_time_derivatives`` must
+    match ``acoustic_ad`` for a moving emitter. The time term read the adjoint
+    at column ``frequency - 1`` (249 for 250 Hz), outside the film, so it was 0.
+    """
+    # TODO: remove this test once test13 covers scenes with moving geometry and a time-varying grad_in
+    # FIXME: acoustic_ad_threepoint aborts in jit_assemble() on this scene
+    time_bins = 200
+    scene_dict = _finite_depth_scene(scattering=0.05, time_bins=time_bins)
+    del scene_dict['shoebox']  # direct sound only, so the time term is the whole gradient
+    scene_dict['sensor']['kappa'] = 1e4  # aim the single ray at the emitter
+    scene_dict['sensor']['film']['rfilter'] = {'type': 'gaussian'}
+    scene = mi.load_dict(scene_dict)
+    params = mi.traverse(scene)
+    to_world = mi.Transform4f(params['rect_emitter.to_world'])
+
+    # d loss / d ETC that grows with time, to generate a gradient that depends on arrival time.
+    ramp = dr.repeat(dr.arange(mi.Float, time_bins) / time_bins, 2)
+    grad_in = mi.TensorXf(ramp, (time_bins, 2, 1))
+
+    def grad(**props):
+        integrator = mi.load_dict({'speed_of_sound': 340, 'max_time': 0.05, 'max_depth': 1,
+                                   'max_energy_loss': -1, **props}, parallel=False)
+        theta = mi.Float(0.0)
+        dr.enable_grad(theta)
+        params['rect_emitter.to_world'] = mi.Transform4f().translate(mi.Vector3f(theta, 0, 0)) @ to_world
+        params.update()
+        integrator.render_backward(scene, grad_in=grad_in, seed=0, spp=1, params=theta)
+        return dr.grad(theta)[0]
+
+    grad_ad = grad(type='acoustic_ad')
+    grad_prb = grad(type='acoustic_prb', track_time_derivatives=True)
+    assert dr.abs(grad_ad) > 0, "zero gradient, the test checks nothing"
+    assert dr.allclose(grad_prb, grad_ad, rtol=1e-3), f"acoustic_prb {grad_prb} != acoustic_ad {grad_ad}"
+
 
 @pytest.mark.slow
 @pytest.mark.skip(reason="Gradient estimation will be tested in a future PR.")

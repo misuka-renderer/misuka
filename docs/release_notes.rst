@@ -4,6 +4,14 @@ Release notes
 misuka release notes
 ---------------------
 
+misuka 0.1.1
+~~~~~~~~~~~~
+*Unreleased*
+
+- **PRB time derivatives**. ``acoustic_prb`` and ``acoustic_prb_threepoint``
+  no longer drop the time term of the gradient for real band frequencies.
+  `[PR #45] <https://github.com/misuka-renderer/misuka/pull/45>`_
+
 misuka 0.1.0
 ~~~~~~~~~~~~
 *August 28, 2026*
