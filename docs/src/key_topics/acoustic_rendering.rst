@@ -244,6 +244,6 @@ which propagates gradients efficiently across many reflections without
 storing the full path history.
 It is the basis for all optimization tasks and is suited for material optimization
 with static (not optimized) geometry.
-The :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` integrator produces
-unbiased gradients also when optimizing geometry. See the
+The :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` integrator is preferred when
+scene geometry is optimized. Its geometry gradients are more "complete", although still biased. See the
 :ref:`integrator reference <sec-integrators>` for further details.
