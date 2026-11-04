@@ -59,33 +59,17 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
          only. (Default: |true|)
 
     This integrator behaves similarly to
-    :ref:`acoustic_prb <integrator-acoustic_prb>`, but can also handle
-    **non-static scenes** with moving geometry. Moving geometry causes two
-    challenges:
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a surface
+    parametrization for light paths (three-point form).
 
-    1. Moving geometry can cause discontinuities in the integrand whose
-       locations depend on the scene parameters. An example is when a small
-       displacement of a surface causes a ray to start or stop intersecting it.
-       Even if the derivative of the integral with respect to a scene parameter
-       is continuous, it cannot be estimated by differentiating the individual
-       rays that sample the integrand, because those local derivatives are
-       discontinuous, making them incompatible with automatic differentiation.
-
-    2. Moving geometry influences the path geometry. When the ray sampling
-       strategy is detached from the optimized parameters, local changes of the
-       scene geometry have a global effect on all successive path vertices.
-       Standard PRB methods do not account for this and only consider the
-       influence on the next (few) ray segments.
-
-    This integrator handles both problems by reparametrizing the integral.
-    Rather than sampling directions in :math:`\mathbb{H}^2`, it samples
-    surface points in the scene (which inherently move with the geometry).
-    This:
+    Rather than sampling directions in :math:`\mathbb{H}^2`, this integrator
+    samples surface points in the scene that move with the geometry. 
+    This reparametrization:
 
     1. Removes most of the discontinuities in the rendering integral, leaving
-       discontinuities only where visibility in the scene changes (e.g., at
-       shadow boundaries).
-    2. Ensures that the influence of the geometry on the ray path is local,
+       discontinuities only where visibility in the scene changes due to an occluder
+       (e.g., at shadow boundaries).
+    2. Ensures that the influence of the geometry on a light path is local,
        i.e., only affecting immediate neighbor vertices on a path.
 
     .. note:: Unlike :ref:`acoustic_prb <integrator-acoustic_prb>`, this

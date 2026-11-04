@@ -52,27 +52,31 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
          contribution from sound sources. (Default: no, i.e. |false|)
 
     This integrator behaves similarly to
-    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form
-    reparametrization that can also handle **non-static scenes** with moving
-    geometry.
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a surface
+    parametrization for light paths (three-point form).
 
     Rather than sampling directions in :math:`\mathbb{H}^2`, this integrator
-    samples surface points in the scene (which inherently move with the
-    geometry). This reparametrization:
+    samples surface points in the scene that move with the geometry. 
+    This reparametrization:
 
     1. Removes most of the discontinuities in the rendering integral, leaving
-       discontinuities only where visibility in the scene changes (e.g., at
-       shadow boundaries).
-    2. Ensures that the influence of the geometry on the ray path is local,
+       discontinuities only where visibility in the scene changes due to an occluder
+       (e.g., at shadow boundaries).
+    2. Ensures that the influence of the geometry on a light path is local,
        i.e., only affecting immediate neighbor vertices on a path.
 
     This variant merely exists for debugging purposes and as a reference
     implementation. For differentiable rendering of non-static scenes, use
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
 
-    .. note:: Unlike :ref:`acoustic_prb <integrator-acoustic_prb>`, this
-       integrator is unbiased even with moving geometry, though its gradient
-       estimates are noisier.
+    .. note:: Unlike :ref:`acoustic_ad <integrator-acoustic_ad>`, this
+       integrator includes derivatives arising from differential transport
+       in scenes with non-static geometry, so its geometry derivatives
+       can be considered more "complete". It does not handle parametric 
+       discontinuities, though, so the gradient estimates are still biased.
+       The underlying reparameterization to surface integrals affects the
+       gradient variance: depending on the scene, gradient estimates
+       may be noisier :cite:`rb_nonstatic`.
 
     .. warning:: Because time derivatives are always tracked, the film's
        reconstruction filter has to be differentiable for those time gradients
