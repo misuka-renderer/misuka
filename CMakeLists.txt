@@ -216,7 +216,11 @@ set(MI_COPY_FILES "")
 
 # Function to make a read-only copy of a file
 macro (ro_copy IN_FILE OUT_FILE)
-  set(OUT_FILE_1 "${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE}")
+  # OUT_FILE_1 only exists because add_custom_command cannot take a generator
+  # expression in OUTPUT. It is a dependency anchor, not something to use: under
+  # MSVC the real tree lives in MI_BINARY_DIR (build/<config>), and a second copy
+  # in the build root would shadow it with a half-populated one.
+  set(OUT_FILE_1 "${CMAKE_CURRENT_BINARY_DIR}/.copy-stamps/${OUT_FILE}")
   set(OUT_FILE_2 "${MI_BINARY_DIR}/${OUT_FILE}")
   if (UNIX)
     add_custom_command(
@@ -224,8 +228,6 @@ macro (ro_copy IN_FILE OUT_FILE)
       COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_2} && chmod a=r ${OUT_FILE_2})
     list(APPEND MI_COPY_FILES ${OUT_FILE_2})
   else()
-    # add_custom_command does not support generator expressions in OUTPUT argument (grr..)
-    # make a dummy copy and then depend on that
     add_custom_command(
       OUTPUT ${OUT_FILE_1} DEPENDS ${IN_FILE} ${ARGN}
       COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_1}
@@ -243,7 +245,7 @@ if (NOT SKBUILD)
   else()
       configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
                      ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
-      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh DESTINATION ".")
       ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh setpath.sh)
 
       configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.bat
